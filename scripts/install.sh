@@ -9,9 +9,10 @@
 # O que ele faz, sem pedir nada:
 #   1. valida que estamos em NixOS e habilita flakes só para esta execução;
 #   2. clona (ou atualiza) o repo;
-#   3. gera vars/local.nix com defaults derivados da máquina;
-#   4. gera machines/<host>/ com hardware-configuration.nix real, o profile
-#      escolhido e as flags de hardware detectadas (VM / notebook / UEFI);
+#   3. gera settings.nix com defaults derivados da máquina e ABRE NO EDITOR
+#      para você revisar (pule com LCARS_EDIT=no);
+#   4. aplica o que ficou no settings.nix e gera machines/<host>/ com o
+#      hardware-configuration.nix real;
 #   5. registra tudo no index do git — flakes só enxergam arquivos rastreados;
 #   6. roda `nixos-rebuild switch --flake .#<host>`.
 #
@@ -24,7 +25,9 @@
 #   LCARS_PROFILE  "auto" (default), ou o nome de um diretório de profiles/
 #                  ("basic" headless, "personal" desktop). "auto" usa basic em VM.
 #   LCARS_ACTION   "switch" (default), "boot", "test", "dry-activate", "none"
-#   LCARS_FORCE    "yes" reescreve vars/local.nix e machines/<host> existentes
+#   LCARS_EDIT     "no" pula a abertura do editor
+#   LCARS_EDITOR   editor a usar (default: o do settings.nix, senão nano/vim/vi)
+#   LCARS_FORCE    "yes" reescreve settings.nix e machines/<host> existentes
 #   LCARS_UPDATE   "yes" faz fast-forward do repo se ele já existir
 #
 # O instalador é idempotente: rodar de novo não sobrescreve nada que você já
@@ -144,7 +147,7 @@ HOOK=".git/hooks/pre-commit"
 cat > "$HOOK" <<'HOOKEOF'
 #!/usr/bin/env bash
 # instalado por scripts/install.sh
-blocked=$(git diff --cached --name-only | grep -E '^(vars/local\.nix|machines/.+/hardware-configuration\.nix)$' || true)
+blocked=$(git diff --cached --name-only | grep -E '^(settings\.nix|machines/.+/hardware-configuration\.nix)$' || true)
 if [[ -n "$blocked" ]]; then
   echo "lcars: estes arquivos têm dados desta máquina e não devem ser commitados:" >&2
   echo "$blocked" | sed 's/^/  /' >&2
@@ -157,6 +160,8 @@ chmod +x "$HOOK"
 $SUDO chown "$TARGET_USER" "$HOOK" 2>/dev/null || true
 
 # --- 3. detecção de hardware -----------------------------------------
+# Tudo aqui vira apenas o VALOR INICIAL do settings.nix. Quem manda no fim é
+# o que estiver no arquivo depois que você o editar.
 HOST="${LCARS_HOST:-$(hostname -s 2>/dev/null || echo nixos)}"
 # hostnames NixOS aceitam só [a-zA-Z0-9-]
 HOST="$(printf '%s' "$HOST" | tr -c 'a-zA-Z0-9-' '-' | sed 's/^-*//; s/-*$//')"
@@ -171,78 +176,121 @@ IS_LAPTOP=false
 compgen -G "/sys/class/power_supply/BAT*" >/dev/null && IS_LAPTOP=true
 
 if [[ -d /sys/firmware/efi ]]; then
-  BOOTLOADER="systemd-boot"
+  BOOTMODE="uefi"
   GRUB_DEVICE=""
 else
-  BOOTLOADER="grub"
+  BOOTMODE="bios"
   ROOT_SRC="$(findmnt -no SOURCE / 2>/dev/null || true)"
   PK="$(lsblk -no PKNAME "$ROOT_SRC" 2>/dev/null | head -1 || true)"
   GRUB_DEVICE="${PK:+/dev/$PK}"
-  [[ -n "$GRUB_DEVICE" ]] || die "BIOS legado detectado mas não achei o disco de boot. defina lcars.core.grubDevice à mão em machines/$HOST/default.nix."
+  [[ -n "$GRUB_DEVICE" ]] \
+    || warn "BIOS legado, mas não achei o disco de boot. preencha grubDevice no settings.nix."
 fi
 
-# LCARS_PROFILE nomeia um diretório de profiles/. "auto" escolhe entre eles
-# pelo hardware: uma VM não ganha nada com GNOME, então cai em basic.
 case "$PROFILE" in
-  basic|personal) ;;
-  auto)
-    if [[ "$IS_VM" == true ]]; then PROFILE="basic"; else PROFILE="personal"; fi
-    ;;
-  *) die "LCARS_PROFILE inválido: $PROFILE (use auto, basic ou personal)" ;;
+  auto) if [[ "$IS_VM" == true ]]; then PROFILE="basic"; else PROFILE="personal"; fi ;;
 esac
-
 [[ -d "$DEST/profiles/$PROFILE" ]] \
-  || die "profile '$PROFILE' não existe em profiles/."
+  || die "profile '$PROFILE' não existe em profiles/ (opções: $(cd "$DEST/profiles" && ls -d */ 2>/dev/null | tr -d / | tr '\n' ' '))"
 
-log "host=$HOST  profile=$PROFILE  vm=$IS_VM  laptop=$IS_LAPTOP  boot=$BOOTLOADER"
+log "detectado: host=$HOST profile=$PROFILE vm=$IS_VM laptop=$IS_LAPTOP boot=$BOOTMODE"
 
-# --- 4. vars/local.nix ------------------------------------------------
-if [[ -f vars/local.nix && "${LCARS_FORCE:-no}" != "yes" ]]; then
-  log "vars/local.nix já existe — mantendo"
+# --- 4. settings.nix --------------------------------------------------
+# Este é o único arquivo que o operador precisa editar.
+if [[ -f settings.nix && "${LCARS_FORCE:-no}" != "yes" ]]; then
+  log "settings.nix já existe — mantendo (LCARS_FORCE=yes para recriar)"
 else
-  log "gerando vars/local.nix"
+  log "gerando settings.nix com os valores detectados"
   run_as_user env \
     LCARS_ROOT="$DEST" \
     LCARS_NONINTERACTIVE=yes \
     LCARS_FORCE="${LCARS_FORCE:-no}" \
     LCARS_USERNAME="$TARGET_USER" \
     LCARS_HOST="$HOST" \
+    LCARS_PROFILE="$PROFILE" \
+    LCARS_BOOTMODE="$BOOTMODE" \
+    LCARS_GRUBDEV="$GRUB_DEVICE" \
     bash ./scripts/bootstrap.sh
 fi
 
-# --- 5. machines/<host>/ -------------------------------------------------
-if [[ -d "machines/$HOST" && "${LCARS_FORCE:-no}" != "yes" ]]; then
-  log "machines/$HOST já existe — mantendo"
+# --- 4b. revisão pelo operador ---------------------------------------
+# Um pipe `curl | bash` ocupa o stdin, então não há terminal em $0. Mas /dev/tty
+# continua apontando para o terminal de controle quando existe um — é dele que
+# o editor precisa. Sem terminal (CI, cloud-init), seguimos com os defaults.
+if [[ "${LCARS_EDIT:-yes}" == "no" ]]; then
+  log "LCARS_EDIT=no — aplicando settings.nix sem revisão"
+elif [[ -e /dev/tty ]] && (exec </dev/tty >/dev/tty 2>&1) 2>/dev/null; then
+  EDITOR_CMD="${LCARS_EDITOR:-${EDITOR:-}}"
+  if [[ -z "$EDITOR_CMD" ]]; then
+    # O editor pedido no próprio settings.nix, se já estiver instalado.
+    WANT="$(sed -n 's/^[[:space:]]*editor[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' settings.nix | head -1)"
+    for c in "$WANT" nano vim vi; do
+      [[ -n "$c" ]] && command -v "$c" >/dev/null 2>&1 && { EDITOR_CMD="$c"; break; }
+    done
+  fi
+
+  if [[ -n "$EDITOR_CMD" ]]; then
+    log "abrindo settings.nix em '$EDITOR_CMD' — salve e feche para continuar"
+    run_as_user "$EDITOR_CMD" "$DEST/settings.nix" </dev/tty >/dev/tty 2>&1 \
+      || warn "editor saiu com erro; seguindo com o arquivo como está"
+  else
+    warn "nenhum editor encontrado — seguindo com os valores detectados"
+  fi
+else
+  log "sem terminal disponível — aplicando os valores detectados"
+  log "  para revisar antes: rode com LCARS_ACTION=none e edite $DEST/settings.nix"
+fi
+
+# --- 5. o que o operador decidiu -------------------------------------
+# A partir daqui o settings.nix é a autoridade, não a detecção. Se ele trocou
+# o hostname, é em machines/<novo>/ que o hardware-config precisa entrar.
+read_setting() {
+  sed -n "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*\"\([^\"]*\)\".*/\1/p" settings.nix | head -1
+}
+
+FINAL_HOST="$(read_setting hostname)"
+FINAL_PROFILE="$(read_setting profile)"
+[[ -n "$FINAL_HOST" ]] || die "não consegui ler 'hostname' de settings.nix."
+[[ -n "$FINAL_PROFILE" ]] || die "não consegui ler 'profile' de settings.nix."
+
+[[ -d "$DEST/profiles/$FINAL_PROFILE" ]] \
+  || die "settings.nix pede o profile '$FINAL_PROFILE', que não existe em profiles/."
+
+if [[ "$FINAL_HOST" != "$HOST" || "$FINAL_PROFILE" != "$PROFILE" ]]; then
+  log "settings.nix editado: host=$FINAL_HOST profile=$FINAL_PROFILE"
+fi
+HOST="$FINAL_HOST"
+PROFILE="$FINAL_PROFILE"
+
+# --- 6. machines/<host>/ ---------------------------------------------
+# Só o que é da máquina: hardware detectado e o hardware-config real.
+# Profile, bootloader e locale vêm do settings.nix.
+if [[ -f "machines/$HOST/default.nix" && "${LCARS_FORCE:-no}" != "yes" ]]; then
+  log "machines/$HOST/default.nix já existe — mantendo"
 else
   log "gerando machines/$HOST/default.nix"
   $SUDO mkdir -p "machines/$HOST"
   $SUDO tee "machines/$HOST/default.nix" >/dev/null <<EOF
 # Gerado por scripts/install.sh — ajuste à vontade, não será sobrescrito
 # (a menos que você rode o instalador com LCARS_FORCE=yes).
-{ config, lib, pkgs, vars, ... }:
+#
+# Profile, bootloader, locale e identidade vêm do settings.nix na raiz.
+# Aqui fica só o que é desta máquina.
+{ config, lib, pkgs, sys, user, ... }:
 
 {
   imports = [
     ./hardware-configuration.nix
   ];
 
-  # O que esta máquina é. Veja profiles/ para o que cada um liga.
-  lcars.profile = "$PROFILE";
-
-  # Ajustes de hardware detectados na instalação.
+  # Detectado na instalação.
   lcars.hardware.vm.enable     = $IS_VM;
   lcars.hardware.laptop.enable = $IS_LAPTOP;
 
-  lcars.core.bootLoader = "$BOOTLOADER";$(
-    if [[ -n "$GRUB_DEVICE" ]]; then printf '\n  lcars.core.grubDevice = "%s";' "$GRUB_DEVICE"; fi
-  )
-
-  # O profile define as flags com mkDefault — sobrescreva aqui o que quiser
-  # diferente, por exemplo:
-  # lcars.wm.gnome.enable = false;
-
-  # O sshd deste flake só aceita chave. Adicione as suas aqui:
-  # lcars.security.sshKeys = [ "ssh-ed25519 AAAA..." ];
+  # O settings.nix é aplicado com mkDefault, então declare aqui o que quiser
+  # diferente SÓ nesta máquina:
+  #   lcars.profile         = "basic";
+  #   lcars.wm.gnome.enable = false;
 }
 EOF
 fi
@@ -266,11 +314,11 @@ fi
 $SUDO chown -R "$TARGET_USER" "machines/$HOST" 2>/dev/null || true
 
 # --- 6. tornar visível para o flake ----------------------------------
-# Um flake em repo git só lê arquivos rastreados. vars/local.nix e
+# Um flake em repo git só lê arquivos rastreados. settings.nix e
 # hardware-configuration.nix estão no .gitignore, daí o -f. Isso os põe no
 # index, não em um commit — e o hook acima impede o commit acidental.
 log "registrando arquivos no index do git"
-run_as_user git -C "$DEST" add -f vars/local.nix "machines/$HOST" >/dev/null
+run_as_user git -C "$DEST" add -f settings.nix "machines/$HOST" >/dev/null
 
 # --- 7. build ---------------------------------------------------------
 if [[ "$ACTION" == "none" ]]; then

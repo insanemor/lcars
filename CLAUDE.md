@@ -63,7 +63,7 @@ Na dúvida sobre se algo entra no ciclo: entra.
   usuário o que não pôde ser verificado**. Nunca afirme que um módulo builda
   sem ter buildado.
 
-- **Flakes só leem arquivos rastreados pelo git.** `vars/local.nix` e
+- **Flakes só leem arquivos rastreados pelo git.** `settings.nix` e
   `machines/*/hardware-configuration.nix` estão no `.gitignore` e precisam de
   `git add -f` para o flake enxergá-los. Se algo "sumiu" na avaliação, essa é
   a primeira suspeita.

@@ -1,18 +1,18 @@
 # git.nix — defaults públicos e forkáveis.
-{ lib, vars, ... }:
+{ lib, user, ... }:
 
 {
   programs.git = {
     enable = true;
-    userName  = vars.fullName;
-    userEmail = vars.email;
+    userName  = user.fullName;
+    userEmail = user.email;
 
     # Só configura assinatura quando existe uma chave. Com gpgKey = null o
     # bloco inteiro sai da config, em vez de declarar `format = "ssh"` sem
     # chave nenhuma.
-    signing = lib.mkIf (vars.gpgKey != null && vars.gpgKey != "") {
+    signing = lib.mkIf (user.gpgKey != null && user.gpgKey != "") {
       format = "ssh";
-      key = vars.gpgKey;
+      key = user.gpgKey;
       signByDefault = true;
     };
 

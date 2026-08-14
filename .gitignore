@@ -3,8 +3,11 @@
 # Arquivos que contêm dados pessoais vivem aqui. Nunca faça commit deles.
 # =====================================================================
 
-# Variáveis específicas do usuário, preenchidas pelo bootstrap.sh
-vars/local.nix
+# Configuração desta instalação, gerada pelo bootstrap.sh a partir de
+# settings.example.nix. Contém seus dados — nunca faça commit dela.
+# Precisa de `git add -f` para o flake enxergá-la (flakes só leem arquivos
+# rastreados); o instalador faz isso, e um hook pre-commit impede o commit.
+settings.nix
 
 # A configuração de hardware por máquina pode vazar números de série;
 # mantenha local por padrão. Adicione com `git add -f` (o flake só lê arquivos
