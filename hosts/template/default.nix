@@ -3,20 +3,24 @@
 #
 # Passos:
 #   1. cp -r hosts/template hosts/<hostname>
-#   2. Edite default.nix: troque o hostname e ative os módulos.
-#   3. Na máquina alvo, rode:
-#        nixos-generate-config --show-hardware-config > hardware-configuration.nix
-#        cp hardware-configuration.nix hosts/<hostname>/hardware-configuration.nix
-#      (ignorado pelo git por padrão — revise antes do commit.)
-#   4. Registre o host em flake.nix dentro de nixosConfigurations.
+#   2. Edite este arquivo e ative os módulos que a máquina precisa.
+#   3. Na máquina alvo, gere o hardware-configuration.nix:
+#        sudo nixos-generate-config --show-hardware-config \
+#          > hosts/<hostname>/hardware-configuration.nix
+#   4. `git add -f hosts/<hostname>` — flakes só enxergam arquivos que o git
+#      rastreia, e hardware-configuration.nix está no .gitignore.
+#
+# Não é preciso registrar nada no flake.nix: hosts/<dir> vira uma entrada de
+# nixosConfigurations automaticamente, e networking.hostName recebe o nome do
+# diretório. `template` e `common` são ignorados pela auto-descoberta.
 # --------------------------------------------------------------------
 { config, lib, pkgs, vars, ... }:
 
 {
-  # Substitua pelo hostname real desta máquina.
-  networking.hostName = "<replace-me>";
-
-  boot.loader.systemd-boot.configurationLimit = 5;
+  # --- imports ------------------------------------------------------
+  imports = [
+    ./hardware-configuration.nix
+  ];
 
   # --- seleção de módulos -------------------------------------------
   lcars.common.enable   = true;
@@ -24,11 +28,15 @@
   lcars.laptop.enable   = false;
   lcars.desktop.enable  = true;
 
-  # --- imports ------------------------------------------------------
-  imports = [
-    ./hardware-configuration.nix
-  ];
+  # --- boot ---------------------------------------------------------
+  # "systemd-boot" exige UEFI. Em BIOS legado troque para "grub" e aponte
+  # lcars.common.grubDevice para o disco de boot.
+  lcars.common.bootLoader = "systemd-boot";
+  # lcars.common.grubDevice = "/dev/sda";
 
-  # --- documentação das chaves disponíveis --------------------------
-  # services.printing.enable = false;
+  # Descomente se o hardware-configuration.nix não trouxer swap nenhum.
+  # lcars.common.swapFileSize = 8192;
+
+  # Suas chaves públicas SSH — o sshd deste flake só aceita chave.
+  # lcars.common.sshKeys = [ "ssh-ed25519 AAAA..." ];
 }

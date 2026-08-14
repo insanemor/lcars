@@ -2,29 +2,47 @@
 
 with lib;
 
+let
+  cfg = config.lcars.laptop;
+in
 {
   # Configurações específicas de notebook (bateria, suspensão, energia).
-  options.lcars.laptop.enable = mkEnableOption "Ajustes para notebook (bateria, suspensão).";
+  options.lcars.laptop = {
+    enable = mkEnableOption "Ajustes para notebook (bateria, suspensão).";
 
-  config = mkIf config.lcars.laptop.enable {
-
-    hardware.tlp.enable = true;
-    hardware.tlp.settings = {
-      START_CHARGE_THRESH_BAT0 = 80;
-      STOP_CHARGE_THRESH_BAT0  = 90;
-      RESTORE_THRESH_BAT0      = 100;
-      TLP_DEFAULT_MODE         = "balance";
-      TLP_RADIO_DISABLE_BT     = "on";
-    };
-
-    services.power-profiles-daemon.enable = true;
-
-    services.logind = {
-      lidSwitch = "suspend";
-      lidSwitchExternalPower = "ignore";
-      extraConfig = ''
-        HandleHibernateKey=ignore
-      '';
+    # tlp e power-profiles-daemon disputam o mesmo controle de energia e o
+    # NixOS aborta a avaliação se os dois estiverem ligados. Escolha um.
+    # O GNOME integra com "ppd"; "tlp" dá mais controle fino de bateria.
+    powerManager = mkOption {
+      type = types.enum [ "tlp" "ppd" ];
+      default = "tlp";
     };
   };
+
+  config = mkIf cfg.enable (mkMerge [
+    {
+      services.thermald.enable = mkDefault true;
+      services.logind.lidSwitch = "suspend";
+      services.logind.lidSwitchExternalPower = "ignore";
+    }
+
+    (mkIf (cfg.powerManager == "tlp") {
+      # É services.tlp — hardware.tlp nunca existiu.
+      services.power-profiles-daemon.enable = false;
+      services.tlp.enable = true;
+      services.tlp.settings = {
+        START_CHARGE_THRESH_BAT0 = 80;
+        STOP_CHARGE_THRESH_BAT0  = 90;
+        # TLP_DEFAULT_MODE aceita "AC" ou "BAT", não "balance".
+        TLP_DEFAULT_MODE         = "AC";
+        CPU_SCALING_GOVERNOR_ON_AC  = "performance";
+        CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
+      };
+    })
+
+    (mkIf (cfg.powerManager == "ppd") {
+      services.tlp.enable = false;
+      services.power-profiles-daemon.enable = true;
+    })
+  ]);
 }

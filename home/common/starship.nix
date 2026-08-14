@@ -1,10 +1,10 @@
-{ pkgs, ... }:
+{ ... }:
 
 {
   programs.starship = {
     enable = true;
-    enableFishCompletion = true;
+    # `enableFishCompletion` não existe — as opções são enable*Integration.
+    enableZshIntegration = true;
+    enableBashIntegration = true;
   };
-
-  home.packages = [ pkgs.starship ];
 }

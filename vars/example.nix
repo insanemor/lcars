@@ -34,9 +34,10 @@
   # Arquivos desta lista viram arquivos gerenciados em ~/.config/dotfiles/<rel>,
   # populados a partir de Document do 1Password na ativação.
   # Caminho do Document:  op://<vault>/dotfiles-<rel>/file
+  # Use caminhos relativos SEM "./" — eles viram nomes de atributo.
   dotfilesFrom1Password = [
-    # "./zshrc"     # → ~/.config/dotfiles/zshrc
-    # "./gitconfig"
+    # "zshrc"     # → ~/.config/dotfiles/zshrc
+    # "gitconfig"
   ];
 
   # Pacotes extras do NixOS (nível de sistema)

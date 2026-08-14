@@ -46,20 +46,25 @@
         else
           import ./vars/example.nix { inherit lib; };
 
-      # Fábrica genérica de host. Junta módulos comuns + diretório do host + extras.
+      # Fábrica genérica de host. Junta TODOS os módulos lcars + o diretório do
+      # host + extras. Os módulos são opt-in via `lcars.<nome>.enable`, então
+      # importá-los sempre não liga nada por conta própria — quem decide é o
+      # arquivo do host.
       mkHost = hostName: extras:
         nixpkgs.lib.nixosSystem {
           inherit system;
-          specialArgs = { inherit inputs vars; };
+          specialArgs = { inherit inputs vars hostName; };
 
           modules = [
-            ./modules/common
+            ./modules
             ./hosts/common
             ./hosts/${hostName}
 
             home-manager.nixosModules.home-manager
 
             ({ ... }: {
+              networking.hostName = lib.mkDefault hostName;
+
               home-manager = {
                 useGlobalPkgs = true;
                 useUserPackages = true;
@@ -84,6 +89,18 @@
           ] ++ extras;
         };
 
+      # Auto-descoberta: todo diretório em hosts/ (exceto `common`, que é
+      # compartilhado, e `template`, que é o modelo a copiar) vira uma entrada
+      # em nixosConfigurations. Adicionar uma máquina = criar o diretório.
+      hostDirs =
+        let entries = builtins.readDir ./hosts;
+        in lib.filter
+          (name: entries.${name} == "directory" && !(lib.elem name [ "common" "template" ]))
+          (builtins.attrNames entries);
+
+      discoveredHosts =
+        lib.genAttrs hostDirs (name: mkHost name [ ]);
+
       # Helper empacotado de `nix run` para preencher as vars locais.
       bootstrap = pkgs.writeShellApplication {
         name = "lcars-bootstrap";
@@ -92,16 +109,15 @@
       };
     in
     {
-      # Adicione suas máquinas aqui:
-      nixosConfigurations = {
-        # meu-laptop = self.mkHost "meu-laptop" [ ./modules/laptop ./modules/desktop ];
-        # meu-pc     = self.mkHost "meu-pc"     [ ./modules/desktop ];
-        # minha-vm   = self.mkHost "minha-vm"   [ ./modules/vm ];
-      };
+      # `mkHost` fica exposto para quem quiser registrar um host à mão com
+      # módulos extras:  meu-pc = self.mkHost "meu-pc" [ ./algo-extra.nix ];
+      inherit mkHost;
+
+      nixosConfigurations = discoveredHosts;
 
       apps.${system}.bootstrap = {
         type = "app";
-        program = toString bootstrap;
+        program = "${bootstrap}/bin/lcars-bootstrap";
       };
 
       packages.${system} = { inherit bootstrap; default = bootstrap; };

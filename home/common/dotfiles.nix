@@ -9,38 +9,50 @@
 
 with lib;
 
+let
+  cacheDir = "${config.home.homeDirectory}/.1password/dotfiles";
+
+  items = map (rel: rec {
+    inherit rel;
+    # Nome de atributo seguro: nada de "/" nem "." em chaves de xdg.configFile.
+    key = builtins.replaceStrings [ "/" "." ] [ "-" "-" ] rel;
+    cachePath = "${cacheDir}/${rel}";
+    opPath = "op://${vars.onePassword.vault}/dotfiles-${rel}/file";
+  }) vars.dotfilesFrom1Password;
+in
 {
-  # Cria ~/.config/dotfiles/ como diretório gerenciado.
-  xdg.configFile = let
-    files = map (rel: {
-      target = "dotfiles/${rel}";
-      path = "${config.home.homeDirectory}/.1password/dotfiles/${rel}";
-    }) vars.dotfilesFrom1Password;
-  in builtins.listToAttrs (map (f: {
-    name  = "dotfiles-${builtins.replaceStrings ["/" "."] ["-" "."] f.target}";
-    value = { source = f.path; force = true; };
-  }) files);
+  # Os arquivos são materializados em tempo de ATIVAÇÃO, não de build — então
+  # precisam ser symlinks para fora do store. `source = <path>` faria o
+  # home-manager tentar copiá-los para o store durante o build e falhar,
+  # porque nesse momento eles ainda não existem.
+  xdg.configFile = builtins.listToAttrs (map (item: {
+    name = "dotfiles/${item.rel}";
+    value = {
+      source = config.lib.file.mkOutOfStoreSymlink item.cachePath;
+      force = true;
+    };
+  }) items);
 
   # Ativação: puxa cada Document do 1Password em `home-manager switch`.
   # Requer `op signin` ou token de service account na sessão do usuário.
   home.activation.dotfilesFrom1Password =
-    let
-      items = map (rel: {
-        rel' = rel;
-        targetPath = "${config.home.homeDirectory}/.1password/dotfiles/${rel}";
-        opPath = "op://${vars.onePassword.vault}/dotfiles-${rel}/file";
-      }) vars.dotfilesFrom1Password;
-    in
-    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      #/bin/sh -e
-      mkdir -p "${config.home.homeDirectory}/.1password/dotfiles"
-      ${concatMapStringsSep "\n" (item: ''
-        if [ -n "''${OP_SERVICE_ACCOUNT_TOKEN:-}" ] || op whoami >/dev/null 2>&1; then
-          run() { op read "${item.opPath}" > "${item.targetPath}.tmp" && mv "${item.targetPath}.tmp" "${item.targetPath}"; }
-          run
+    mkIf (items != [ ])
+      (lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        mkdir -p ${escapeShellArg cacheDir}
+
+        if ! command -v op >/dev/null 2>&1; then
+          echo "lcars: 'op' não está no PATH — pulando dotfiles do 1Password"
+        elif [ -z "''${OP_SERVICE_ACCOUNT_TOKEN:-}" ] && ! op whoami >/dev/null 2>&1; then
+          echo "lcars: sem login no 1Password — pulando dotfiles"
         else
-          echo "pulando ${item.rel'}: sem login no 1Password"
+          ${concatMapStringsSep "\n  " (item: ''
+            if op read ${escapeShellArg item.opPath} > ${escapeShellArg "${item.cachePath}.tmp"} 2>/dev/null; then
+              mv ${escapeShellArg "${item.cachePath}.tmp"} ${escapeShellArg item.cachePath}
+            else
+              rm -f ${escapeShellArg "${item.cachePath}.tmp"}
+              echo "lcars: falha ao ler ${item.rel} do 1Password"
+            fi
+          '') items}
         fi
-      '') items}
-    '';
+      '');
 }

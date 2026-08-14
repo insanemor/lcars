@@ -14,10 +14,25 @@ Este repo deliberadamente não guarda nenhum secret em texto plano na árvore p�
 Módulo `modules/onePassword/default.nix`:
 
 - `programs._1password.enable` — CLI (`op`)
-- `programs._1password-gui.enable` — Aplicativo desktop
-- `services._1password.sshAgent.enable` — Agente SSH em `~/.1password/agent.sock`
+- `programs._1password-gui.enable` — Aplicativo desktop, com `polkitPolicyOwners`
+
+Controle pelas opções `lcars.onePassword.*` (`enableCli`, `enableGui`,
+`enableSshAgent`, `polkitOwner`), cujos defaults vêm de `vars/local.nix`.
+
+**Não existe `services._1password` no NixOS.** O agente SSH não é um serviço do
+sistema: é um recurso do próprio aplicativo, ligado em **Settings → Developer →
+Use the SSH agent**. O que o módulo faz é apontar o `ssh` do sistema para o
+socket que o app cria:
+
+```
+Host *
+  IdentityAgent ~/.1password/agent.sock
+```
 
 Depois de instalar, abra a GUI e faça pareamento com o app mobile via QR code (o 1Password 8 suporta isso sem conta de email). Depois de pareado, desbloqueie qualquer sessão da área de trabalho em que confia e o agente SSH expõe as chaves do host.
+
+O 1Password é software proprietário. O módulo libera exatamente esses pacotes
+via `nixpkgs.config.allowUnfreePredicate`, sem ligar `allowUnfree` global.
 
 ## OpNix
 
@@ -41,8 +56,12 @@ services.onepassword-secrets = {
 Para `.zshrc`/`.gitconfig` e similares, guarde-os como um item **Document** num vault pessoal. Depois liste-os em `vars/local.nix`:
 
 ```nix
-dotfilesFrom1Password = [ "./zshrc" "./gitconfig" ];
+dotfilesFrom1Password = [ "zshrc" "gitconfig" ];
 ```
+
+Use os caminhos **sem** `./` — eles viram nomes de atributo em
+`xdg.configFile`. O item correspondente no vault é
+`op://<vault>/dotfiles-<rel>/file`.
 
 Durante `nixos-rebuild switch`, o Home Manager lê os itens Document correspondentes e popula `~/.config/dotfiles/`. Como cada máquina tem seu próprio vault ou referência única por dotfile, os secrets ficam isolados por escopo.
 

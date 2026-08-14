@@ -14,13 +14,13 @@ in
       description = "Instala o 1Password e configura o agente SSH.";
     };
 
-    enableCli = mkOption { type = types.bool; default = true; };
-    enableGui = mkOption { type = types.bool; default = true; };
-    enableSshAgent = mkOption { type = types.bool; default = true; };
+    enableCli = mkOption { type = types.bool; default = vars.onePassword.enableCli; };
+    enableGui = mkOption { type = types.bool; default = vars.onePassword.enableGui; };
+    enableSshAgent = mkOption { type = types.bool; default = vars.onePassword.enableSshAgent; };
 
     polkitOwner = mkOption {
       type = types.str;
-      default = vars.username;
+      default = vars.onePassword.polkitOwner;
       description = "Usuário autorizado a usar a GUI do 1Password sem prompt de senha.";
     };
 
@@ -34,7 +34,9 @@ in
   # --- Implementation --------------------------------------------------
   config = mkIf cfg.enable {
 
-    # 1Password é software proprietário — precisa ser habilitado explicitamente.
+    # 1Password é software proprietário — precisa ser liberado explicitamente.
+    # Usamos só o predicate (não allowUnfree global) para o desvio ficar
+    # limitado aos pacotes do 1Password.
     nixpkgs.config.allowUnfreePredicate =
       pkg: builtins.elem (lib.getName pkg) [
         "1password-cli"
@@ -42,19 +44,19 @@ in
         "1password"
       ];
 
-    nixpkgs.config.allowUnfree = true;
-
-    # 1Password CLI (multi-plataforma)
-    programs._1password = {
-      enable = cfg.enableCli;
+    # 1Password CLI
+    programs._1password = mkIf cfg.enableCli {
+      enable = true;
       package = pkgs._1password-cli;
     };
 
-    # 1Password GUI (para hosts desktop; seguro manter também em laptops)
+    # 1Password GUI. `polkitPolicyOwners` é uma lista de nomes de usuário — o
+    # módulo já gera a regra polkit e põe esses usuários nos grupos
+    # `onepassword`/`onepassword-cli`, então não escrevemos polkit à mão.
     programs._1password-gui = mkIf cfg.enableGui {
       enable = true;
       package = pkgs._1password-gui;
-      polkitPolicyOwners = optional cfg.polkitOwner (lib.getName cfg.polkitOwner);
+      polkitPolicyOwners = [ cfg.polkitOwner ];
     };
 
     # Hosts do GitHub conhecidos — evita prompts MITM na primeira vez
@@ -65,32 +67,12 @@ in
       };
     };
 
-    # Autentique uma vez via leitura de QR code pelo celular;
-    # o daemon então expõe o socket do agente SSH em ~/.1password/agent.sock
-    services._1password = mkIf cfg.enableSshAgent {
-      enable = true;
-      sshAgent = {
-        enable = true;
-        package = pkgs._1password-cli;
-        sshConfig = ''
-          Host *
-            IdentityAgent ${config.users.users.${cfg.user}.home}/.1password/agent.sock
-            AddKeysToAgent yes
-            IdentityFile ~/.ssh/id_ed25519
-        '';
-      };
-    };
-
-    # Agente polkit do 1Password — autoriza o dono da GUI.
-    security.polkit.extraConfig = ''
-      polkit.addRule(function(action, subject) {
-        if (action.id == "com.1password.standalone.pid" &&
-            subject.local == true && subject.active == true &&
-            subject.user == "${cfg.polkitOwner}") {
-          return polkit.Result.YES;
-        }
-        return polkit.Result.NOT_HANDLED;
-      });
+    # O agente SSH do 1Password é ligado DENTRO do app (Settings → Developer),
+    # não por um módulo NixOS — `services._1password` não existe. O que cabe
+    # ao sistema é apontar o ssh para o socket que o app expõe.
+    programs.ssh.extraConfig = mkIf cfg.enableSshAgent ''
+      Host *
+        IdentityAgent ~/.1password/agent.sock
     '';
   };
 }
