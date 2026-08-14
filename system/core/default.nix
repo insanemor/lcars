@@ -165,12 +165,30 @@ in
 
     # --- usuário -------------------------------------------------------
     users.mutableUsers = true;
-    programs.zsh.enable = true;
+
+    # O shell da conta acompanha o módulo de user/ que o configura. Sem isto,
+    # desligar lcars.user.zsh.enable deixaria a conta num zsh sem ~/.zshrc —
+    # pior que o bash, em vez de uma escolha.
+    #
+    # Um módulo de system/ lendo uma flag de user/ é seguro porque
+    # `lcars.user.*` é option NixOS, declarada em user/options.nix (veja o
+    # cabeçalho de lá): estamos na mesma árvore de módulos, e por isso o
+    # acesso é por `config`, não por `osConfig`.
+    #
+    # `programs.zsh.enable` é o que registra o zsh em /etc/shells; sem ele,
+    # `shell = pkgs.zsh` aponta para um shell que o sistema não reconhece.
+    # O bash não precisa de equivalente: o módulo programs.bash é sempre
+    # ativo no NixOS e já o deixa registrado.
+    programs.zsh.enable = config.lcars.user.zsh.enable;
+
     users.users.${user.username} = {
       isNormalUser = true;
       description  = user.fullName;
       home         = "/home/${user.username}";
-      shell        = pkgs.zsh;
+      # bashInteractive, não bash: `pkgs.bash` é a build sem readline, para
+      # scripts. Como shell de login ela não tem histórico nem edição de
+      # linha. É por isso que users.defaultUserShell do NixOS é o Interactive.
+      shell = if config.lcars.user.zsh.enable then pkgs.zsh else pkgs.bashInteractive;
       extraGroups  = [ "networkmanager" "wheel" "video" "audio" ];
       initialPassword = mkIf (cfg.initialPassword != null) cfg.initialPassword;
       packages = map pkgByName ((user.packages or [ ]) ++ cfg.userPackages);

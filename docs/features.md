@@ -65,10 +65,19 @@ num notebook ou numa VM, mude para `true` e rode o rebuild.
 - NetworkManager
 
 **Usuário**
-- Conta normal com o nome de `userSettings.username`, shell `zsh`
+- Conta normal com o nome de `userSettings.username`
 - Grupos: `networkmanager`, `wheel`, `video`, `audio`
 - Senha inicial `lcars` — **troque no primeiro login com `passwd`**
-- `programs.zsh` habilitado no sistema (necessário para o zsh ser shell de login válido)
+- **O shell segue `lcars.user.zsh.enable`**: `zsh` quando ligada (o padrão nos
+  dois profiles), `bash` quando não. `programs.zsh` do sistema acompanha a
+  mesma flag — é ele que registra o zsh em `/etc/shells`, sem o que a conta
+  apontaria para um shell que o sistema não reconhece.
+
+  Os dois andam juntos de propósito: desligar a flag desliga o módulo que
+  escreve o `~/.zshrc` (`user/shell/zsh.nix`), e sem ele um zsh como shell de
+  login seria pior que o bash — sem aliases, sem histórico compartilhado, sem
+  highlighting. `system/core/default.nix` lê a flag por `config`, e não por
+  `osConfig`, porque `lcars.user.*` é option NixOS.
 
 **Pacotes de sistema**
 
@@ -160,6 +169,9 @@ profile — os títulos abaixo trazem a flag de cada um.
 - Histórico de 50 000 linhas, compartilhado entre sessões, sem duplicatas
 - Aliases: `ll`, `la`, `l`, `gs` (git status), `gp` (push), `gpl` (pull)
 - `zsh-completions`
+
+Esta flag é a única de `user/` que mexe também no sistema: ela decide o shell
+de login da conta (`bash` quando desligada). Veja "Base do sistema" acima.
 
 ### starship · `user/shell/starship.nix` · `lcars.user.starship.enable` · só personal
 
