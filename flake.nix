@@ -17,7 +17,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # SOPS opcional — útil quando o bootstrap precisa rodar antes do 1Password
+    # SOPS opcional — útil para secrets necessários antes de o 1Password subir
     sops-nix = {
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -36,18 +36,17 @@
 
       # ---------------------------------------------------------------
       # settings.nix é a fonte única de configuração desta instalação.
-      # Fica fora do git; sem ele caímos no exemplo, para que
-      # `nix flake check` rode num fork recém-clonado.
+      # É versionado: o que vem no repo é o default básico, que um fork
+      # edita no lugar. Campos avançados (sshKeys, packages, grubDevice,
+      # swapFileSize, gpgKey, initialPassword, extraPackages) são opcionais —
+      # os módulos que os leem trazem o próprio default.
       # ---------------------------------------------------------------
-      settings =
-        let local = ./settings.nix; in
-        if builtins.pathExists local then import local else import ./settings.example.nix;
+      settings = import ./settings.nix;
 
       sys  = settings.systemSettings;
       user = settings.userSettings;
 
       system = sys.system or "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
 
       # Fábrica de máquina.
       #
@@ -110,13 +109,6 @@
 
       discoveredMachines =
         lib.genAttrs machineDirs (name: mkMachine name [ ]);
-
-      # Helper empacotado de `nix run` para gerar o settings.nix.
-      bootstrap = pkgs.writeShellApplication {
-        name = "lcars-bootstrap";
-        runtimeInputs = with pkgs; [ gnused gnugrep ];
-        text = builtins.readFile ./scripts/bootstrap.sh;
-      };
     in
     {
       # Exposto para quem quiser registrar uma máquina à mão com módulos
@@ -124,13 +116,6 @@
       inherit mkMachine;
 
       nixosConfigurations = discoveredMachines;
-
-      apps.${system}.bootstrap = {
-        type = "app";
-        program = "${bootstrap}/bin/lcars-bootstrap";
-      };
-
-      packages.${system} = { inherit bootstrap; default = bootstrap; };
     }
       // lib.optionalAttrs (inputs ? lcars-private)
             { nixosModules.default = inputs.lcars-private.nixosModules.default; };

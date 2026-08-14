@@ -87,9 +87,23 @@ sintaxe, estrutura e consistência entre options declaradas e usadas — e o que
 não foi verificado precisa ser dito explicitamente, tanto no relato quanto no
 comentário de fechamento da issue.
 
-Na prática: a primeira coisa a fazer com uma máquina NixOS à mão é rodar
+Na prática: a primeira coisa a fazer com uma máquina NixOS à mão é avaliar o
+flake de verdade. O instalador não tem modo de simulação — ele vai até o
+`switch` —, então para validar sem ativar, monte os arquivos na mão e pare
+antes do último passo:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/insanemor/lcars/main/scripts/install.sh \
-  | sudo LCARS_ACTION=dry-activate bash
+git clone https://github.com/insanemor/lcars ~/.dotfiles && cd ~/.dotfiles
+git checkout <a-branch-em-teste>
+$EDITOR settings.nix                            # já vem versionado
+cp -r machines/template machines/teste
+sudo nixos-generate-config --show-hardware-config > machines/teste/hardware-configuration.nix
+git add -f machines/teste
+
+nix flake check                                 # avalia todas as máquinas
+sudo nixos-rebuild dry-activate --flake .#teste # compila tudo, não ativa
 ```
+
+`dry-activate` **compila o sistema inteiro** — é lento, mas é o que prova que a
+mudança builda. `nix flake check` é mais rápido e já pega erro de avaliação:
+nome de option errado, enum inválido, arquivo faltando no index.

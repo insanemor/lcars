@@ -7,14 +7,16 @@
     userName  = user.fullName;
     userEmail = user.email;
 
-    # Só configura assinatura quando existe uma chave. Com gpgKey = null o
-    # bloco inteiro sai da config, em vez de declarar `format = "ssh"` sem
-    # chave nenhuma.
-    signing = lib.mkIf (user.gpgKey != null && user.gpgKey != "") {
-      format = "ssh";
-      key = user.gpgKey;
-      signByDefault = true;
-    };
+    # Só configura assinatura quando existe uma chave. Sem `gpgKey` no
+    # settings.nix, ou com ele em null, o bloco inteiro sai da config — em vez
+    # de declarar `format = "ssh"` sem chave nenhuma.
+    signing =
+      let gpgKey = user.gpgKey or null; in
+      lib.mkIf (gpgKey != null && gpgKey != "") {
+        format = "ssh";
+        key = gpgKey;
+        signByDefault = true;
+      };
 
     extraConfig = {
       init.defaultBranch   = "main";

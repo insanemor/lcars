@@ -1,13 +1,10 @@
 # =====================================================================
 # lcars-public — gitignore
 # Arquivos que contêm dados pessoais vivem aqui. Nunca faça commit deles.
+#
+# `settings.nix` NÃO está aqui de propósito: ele é versionado e traz o default
+# básico da instalação. Editá-lo deixa o clone sujo — é o esperado.
 # =====================================================================
-
-# Configuração desta instalação, gerada pelo bootstrap.sh a partir de
-# settings.example.nix. Contém seus dados — nunca faça commit dela.
-# Precisa de `git add -f` para o flake enxergá-la (flakes só leem arquivos
-# rastreados); o instalador faz isso, e um hook pre-commit impede o commit.
-settings.nix
 
 # A configuração de hardware por máquina pode vazar números de série;
 # mantenha local por padrão. Adicione com `git add -f` (o flake só lê arquivos

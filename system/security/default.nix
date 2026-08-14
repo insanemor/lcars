@@ -16,7 +16,7 @@ in
 
     sshKeys = mkOption {
       type = types.listOf types.str;
-      default = user.sshKeys;
+      default = user.sshKeys or [ ];
       description = ''
         Chaves públicas SSH autorizadas para o usuário. Enquanto esta lista
         estiver vazia não há como entrar por ssh — o login local por senha

@@ -7,50 +7,60 @@ Um flake NixOS multi-host, pensado para ser **forkável** — sem dados pessoais
 Numa máquina que já tem NixOS bootado:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/insanemor/lcars/main/scripts/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/insanemor/lcars/main/scripts/install.sh | bash
 ```
 
-É só isso. O instalador não faz perguntas e cuida de tudo:
+**Sem `sudo` na chamada.** O repositório fica no seu `$HOME` e precisa pertencer a você; o script pede sudo sozinho onde precisa dele.
 
-1. habilita flakes só para esta execução (o sistema atual não precisa já tê-los);
-2. clona o repo em `~/lcars` do seu usuário — se `git` faltar, ele se reexecuta dentro de `nix shell nixpkgs#git`;
-3. detecta o hardware — VM (`systemd-detect-virt`), notebook (`/sys/class/power_supply/BAT*`), UEFI vs BIOS — e gera o **`settings.nix`** já preenchido;
-4. **abre o `settings.nix` no seu editor** para você revisar; ao salvar e fechar, é o que estiver no arquivo que vale — inclusive se você trocar o hostname ou o profile;
-5. gera `machines/<hostname>/` com o `hardware-configuration.nix` real;
-6. registra os arquivos no index do git (flakes só leem arquivos rastreados);
-7. roda `nixos-rebuild switch --flake .#<hostname>`.
+O que ele faz, em ordem — [`scripts/install.sh`](./scripts/install.sh) tem 50 linhas e dá para ler inteiro antes de rodar:
+
+1. **clona o repositório em `~/.dotfiles`**, usando `nix-shell -p git` — a máquina não precisa ter `git` instalado, e daqui em diante tudo acontece dentro do clone;
+2. lê o **modelo do hardware** em `/sys/devices/virtual/dmi/id/product_name` e troca espaços por hífens: esse é o nome da máquina;
+3. cria `machines/<modelo>/` copiando `machines/template/`, e grava ali o `hardware-configuration.nix` real (`nixos-generate-config`);
+4. preenche no **`settings.nix`** que veio no clone o que dá para descobrir: o nome da máquina, o seu usuário, o seu nome completo (do GECOS), e UEFI vs BIOS — com o disco do grub, quando for BIOS legado;
+5. **abre o `settings.nix` no seu editor** — é a sua chance de mexer em profile, chaves SSH, pacotes e 1Password antes de qualquer build;
+6. registra `settings.nix` e `machines/<modelo>/` no index do git (flakes só leem arquivos rastreados);
+7. roda `nixos-rebuild switch --flake ~/.dotfiles#<modelo>`.
+
+Não há passo separado para o Home Manager: ele entra como módulo NixOS no mesmo rebuild.
 
 A primeira build de um desktop é longa — ela compila/baixa o Plasma, o 1Password e o mundo todo.
 
 Ao final, o usuário fica com a senha inicial `lcars`. **Troque com `passwd` no primeiro login** — o sshd deste flake só aceita chave, mas o login local aceita senha.
 
-### Ajustando o comportamento
+### O nome da máquina é o modelo do hardware
 
-Tudo por variável de ambiente, antes do `bash`:
+O diretório criado em `machines/` recebe o modelo relatado pelo DMI — `20BE0048BR`, `MS-7C56`, `OptiPlex-7070`. Como o `flake.nix` deriva `networking.hostName` do nome do diretório, é também assim que a máquina passa a se chamar, e é o alvo do rebuild:
 
-| Var | Default | Efeito |
-|---|---|---|
-| `LCARS_HOST` | `hostname -s` | nome da máquina / diretório em `machines/` |
-| `LCARS_USER` | `$SUDO_USER` | usuário Linux a configurar |
-| `LCARS_PROFILE` | `auto` | valor inicial do profile no `settings.nix`; `auto` usa `basic` em VM |
-| `LCARS_EDIT` | `yes` | `no` pula a abertura do editor |
-| `LCARS_EDITOR` | — | editor a usar (default: o do `settings.nix`, senão `nano`/`vim`/`vi`) |
-| `LCARS_ACTION` | `switch` | `switch`, `boot`, `test`, `dry-activate` ou `none` |
-| `LCARS_DEST` | `~/lcars` | onde clonar |
-| `LCARS_REPO` | `github.com/insanemor/lcars` | repo (aceita URL completa) |
-| `LCARS_BRANCH` | `main` | branch |
-| `LCARS_FORCE` | `no` | `yes` reescreve `settings.nix` e `machines/<host>/` |
-| `LCARS_UPDATE` | `no` | `yes` faz fast-forward se o repo já existir |
+```bash
+sudo nixos-rebuild switch --flake ~/.dotfiles#20BE0048BR
+```
 
-Para inspecionar sem efeito colateral nenhum, use `LCARS_ACTION=none` — ele para antes do rebuild. (`dry-activate` **compila** o sistema inteiro; só não ativa.)
+Não gostou? Renomeie o diretório e ajuste o `hostname` no `settings.nix` para não divergirem:
 
-O instalador é **idempotente**: rodar de novo não sobrescreve nada que você já editou, a não ser com `LCARS_FORCE=yes`.
+```bash
+cd ~/.dotfiles
+git mv machines/20BE0048BR machines/thinkpad
+sudo nixos-rebuild switch --flake .#thinkpad
+```
 
-### Sobre `git add -f`
+### O instalador é para a primeira vez
 
-`settings.nix` e `machines/*/hardware-configuration.nix` estão no `.gitignore` — eles contêm dados da sua máquina. Mas um flake dentro de um repo git **só enxerga arquivos rastreados pelo git**, então o instalador os põe no *index* com `git add -f`. Isso não os commita.
+Ele não foi feito para rodar duas vezes: o `git clone` falha se `~/.dotfiles` já existir, e um segundo `settings.nix` sobrescreveria o que você editou. Depois da instalação o ciclo é outro — editar `settings.nix` e rodar `nixos-rebuild`:
 
-Para você não commitá-los por acidente, o instalador também instala um hook `pre-commit` que aborta se algum deles entrar num commit.
+```bash
+cd ~/.dotfiles
+$EDITOR settings.nix
+sudo nixos-rebuild switch --flake .#<modelo>
+```
+
+Para uma máquina nova a partir de um clone que já existe, siga o [caminho manual](./docs/adding-a-host.md#caminho-manual).
+
+### O `settings.nix` é versionado; o hardware-config não
+
+`settings.nix` vem no repo com o **default básico** — é o arquivo que você edita, e editá-lo deixa o clone sujo. Nada além dele é obrigatório: os campos avançados (`sshKeys`, `packages`, `grubDevice`, `swapFileSize`, `gpgKey`, `initialPassword`, `extraPackages`) podem simplesmente não estar lá, e cada módulo usa o próprio default. A lista completa está no cabeçalho do arquivo.
+
+Já `machines/*/hardware-configuration.nix` está no `.gitignore` — ele pode vazar números de série. Mas um flake dentro de um repo git **só enxerga arquivos rastreados**, então o instalador o põe no *index* com `git add -f`. Isso não o commita, mas deixa o arquivo pronto para entrar num commit distraído: confira o `git status` antes de commitar.
 
 ## O que vem instalado
 
@@ -84,7 +94,7 @@ A árvore é dividida por **papel**, não por mecanismo do Nix:
 ├── flake.nix       # descobre machines/ automaticamente e monta cada uma
 │
 ├── machines/       # uma máquina por diretório — o que ELA é
-│   └── template/   # modelo a copiar (ignorado pela auto-descoberta)
+│   └── template/   # modelo que o instalador copia (fora da auto-descoberta)
 │
 ├── profiles/       # presets: conjuntos nomeados de flags
 │   ├── basic/      # headless: base + ssh
@@ -102,9 +112,8 @@ A árvore é dividida por **papel**, não por mecanismo do Nix:
 │   ├── app/        # git.nix, direnv.nix, dotfiles.nix
 │   └── personal/   # escape hatch via private.nix em $HOME
 │
-├── settings.nix         # SUA configuração — o único arquivo que você edita
-├── settings.example.nix # template versionado
-├── scripts/        # install.sh (one-shot) e bootstrap.sh (gera o settings)
+├── settings.nix    # SUA configuração — o único arquivo que você edita
+├── scripts/        # install.sh — clona o repo e instala a máquina
 └── docs/
 ```
 
@@ -122,19 +131,23 @@ Os profiles definem as flags com `mkDefault`, então a máquina tem prioridade e
 
 Não existe registro manual em `flake.nix`: **todo diretório em `machines/` vira um `nixosConfiguration`** (exceto `template`), e `networking.hostName` recebe o nome do diretório.
 
-A forma mais curta é rodar o instalador na máquina nova — ele cria o diretório sozinho. Para fazer à mão, veja [docs/adding-a-host.md](./docs/adding-a-host.md).
+A forma mais curta é rodar o instalador na máquina nova — ele clona o repo e cria o diretório sozinho, com o modelo do hardware por nome. Para fazer à mão, veja [docs/adding-a-host.md](./docs/adding-a-host.md).
 
 ## Fluxo manual (se você prefere ver cada passo)
 
+O instalador não faz nada que você não possa fazer na mão. Aqui, escolhendo o nome da máquina em vez de aceitar o modelo do DMI:
+
 ```bash
-git clone https://github.com/insanemor/lcars ~/lcars && cd ~/lcars
-nix run .#bootstrap                                   # gera settings.nix
-$EDITOR settings.nix                                  # hostname, profile, usuário…
+git clone https://github.com/insanemor/lcars ~/.dotfiles && cd ~/.dotfiles
+$EDITOR settings.nix                                  # profile, usuário, chaves ssh…
 cp -r machines/template machines/meu-laptop
+$EDITOR machines/meu-laptop/default.nix               # é VM? é notebook?
 sudo nixos-generate-config --show-hardware-config > machines/meu-laptop/hardware-configuration.nix
-git add -f settings.nix machines/meu-laptop           # flakes só leem o que o git rastreia
+git add -f machines/meu-laptop                        # flakes só leem o que o git rastreia
 sudo nixos-rebuild switch --flake .#meu-laptop
 ```
+
+A diferença para o instalador: aqui você escolhe o nome da máquina em vez de aceitar o modelo do DMI.
 
 ## 1Password
 
