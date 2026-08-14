@@ -10,8 +10,8 @@
 #   1. valida que estamos em NixOS e habilita flakes só para esta execução;
 #   2. clona (ou atualiza) o repo;
 #   3. gera vars/local.nix com defaults derivados da máquina;
-#   4. gera hosts/<host>/ com hardware-configuration.nix real e os módulos
-#      lcars que combinam com o hardware detectado (VM / notebook / UEFI);
+#   4. gera machines/<host>/ com hardware-configuration.nix real, o profile
+#      escolhido e as flags de hardware detectadas (VM / notebook / UEFI);
 #   5. registra tudo no index do git — flakes só enxergam arquivos rastreados;
 #   6. roda `nixos-rebuild switch --flake .#<host>`.
 #
@@ -21,9 +21,10 @@
 #   LCARS_BRANCH   branch (default: main)
 #   LCARS_DEST     onde clonar (default: ~/lcars do usuário alvo)
 #   LCARS_USER     usuário Linux a configurar (default: SUDO_USER, senão $USER)
-#   LCARS_PROFILE  "auto" (default), "desktop", "minimal"
+#   LCARS_PROFILE  "auto" (default), ou o nome de um diretório de profiles/
+#                  ("basic" headless, "personal" desktop). "auto" usa basic em VM.
 #   LCARS_ACTION   "switch" (default), "boot", "test", "dry-activate", "none"
-#   LCARS_FORCE    "yes" reescreve vars/local.nix e hosts/<host> existentes
+#   LCARS_FORCE    "yes" reescreve vars/local.nix e machines/<host> existentes
 #   LCARS_UPDATE   "yes" faz fast-forward do repo se ele já existir
 #
 # O instalador é idempotente: rodar de novo não sobrescreve nada que você já
@@ -110,7 +111,7 @@ fi
 
 if [[ -d "$DEST/.git" ]]; then
   # Nunca damos `reset --hard` aqui: o repo já pode ter edições suas em
-  # hosts/<host>/. Atualizar é opt-in e só por fast-forward.
+  # machines/<host>/. Atualizar é opt-in e só por fast-forward.
   if [[ "${LCARS_UPDATE:-no}" == "yes" ]]; then
     log "atualizando $DEST (fast-forward)"
     run_as_user git -C "$DEST" fetch origin "$BRANCH"
@@ -143,7 +144,7 @@ HOOK=".git/hooks/pre-commit"
 cat > "$HOOK" <<'HOOKEOF'
 #!/usr/bin/env bash
 # instalado por scripts/install.sh
-blocked=$(git diff --cached --name-only | grep -E '^(vars/local\.nix|hosts/.+/hardware-configuration\.nix)$' || true)
+blocked=$(git diff --cached --name-only | grep -E '^(vars/local\.nix|machines/.+/hardware-configuration\.nix)$' || true)
 if [[ -n "$blocked" ]]; then
   echo "lcars: estes arquivos têm dados desta máquina e não devem ser commitados:" >&2
   echo "$blocked" | sed 's/^/  /' >&2
@@ -177,17 +178,23 @@ else
   ROOT_SRC="$(findmnt -no SOURCE / 2>/dev/null || true)"
   PK="$(lsblk -no PKNAME "$ROOT_SRC" 2>/dev/null | head -1 || true)"
   GRUB_DEVICE="${PK:+/dev/$PK}"
-  [[ -n "$GRUB_DEVICE" ]] || die "BIOS legado detectado mas não achei o disco de boot. defina lcars.common.grubDevice à mão em hosts/$HOST/default.nix."
+  [[ -n "$GRUB_DEVICE" ]] || die "BIOS legado detectado mas não achei o disco de boot. defina lcars.core.grubDevice à mão em machines/$HOST/default.nix."
 fi
 
+# LCARS_PROFILE nomeia um diretório de profiles/. "auto" escolhe entre eles
+# pelo hardware: uma VM não ganha nada com GNOME, então cai em basic.
 case "$PROFILE" in
-  desktop) WANT_DESKTOP=true ;;
-  minimal) WANT_DESKTOP=false ;;
-  auto)    WANT_DESKTOP=true ;;
-  *)       die "LCARS_PROFILE inválido: $PROFILE (use auto, desktop ou minimal)" ;;
+  basic|personal) ;;
+  auto)
+    if [[ "$IS_VM" == true ]]; then PROFILE="basic"; else PROFILE="personal"; fi
+    ;;
+  *) die "LCARS_PROFILE inválido: $PROFILE (use auto, basic ou personal)" ;;
 esac
 
-log "host=$HOST  vm=$IS_VM  laptop=$IS_LAPTOP  boot=$BOOTLOADER  desktop=$WANT_DESKTOP"
+[[ -d "$DEST/profiles/$PROFILE" ]] \
+  || die "profile '$PROFILE' não existe em profiles/."
+
+log "host=$HOST  profile=$PROFILE  vm=$IS_VM  laptop=$IS_LAPTOP  boot=$BOOTLOADER"
 
 # --- 4. vars/local.nix ------------------------------------------------
 if [[ -f vars/local.nix && "${LCARS_FORCE:-no}" != "yes" ]]; then
@@ -203,13 +210,13 @@ else
     bash ./scripts/bootstrap.sh
 fi
 
-# --- 5. hosts/<host>/ -------------------------------------------------
-if [[ -d "hosts/$HOST" && "${LCARS_FORCE:-no}" != "yes" ]]; then
-  log "hosts/$HOST já existe — mantendo"
+# --- 5. machines/<host>/ -------------------------------------------------
+if [[ -d "machines/$HOST" && "${LCARS_FORCE:-no}" != "yes" ]]; then
+  log "machines/$HOST já existe — mantendo"
 else
-  log "gerando hosts/$HOST/default.nix"
-  $SUDO mkdir -p "hosts/$HOST"
-  $SUDO tee "hosts/$HOST/default.nix" >/dev/null <<EOF
+  log "gerando machines/$HOST/default.nix"
+  $SUDO mkdir -p "machines/$HOST"
+  $SUDO tee "machines/$HOST/default.nix" >/dev/null <<EOF
 # Gerado por scripts/install.sh — ajuste à vontade, não será sobrescrito
 # (a menos que você rode o instalador com LCARS_FORCE=yes).
 { config, lib, pkgs, vars, ... }:
@@ -219,22 +226,28 @@ else
     ./hardware-configuration.nix
   ];
 
-  lcars.common.enable  = true;
-  lcars.vm.enable      = $IS_VM;
-  lcars.laptop.enable  = $IS_LAPTOP;
-  lcars.desktop.enable = $WANT_DESKTOP;
+  # O que esta máquina é. Veja profiles/ para o que cada um liga.
+  lcars.profile = "$PROFILE";
 
-  lcars.common.bootLoader = "$BOOTLOADER";$(
-    if [[ -n "$GRUB_DEVICE" ]]; then printf '\n  lcars.common.grubDevice = "%s";' "$GRUB_DEVICE"; fi
+  # Ajustes de hardware detectados na instalação.
+  lcars.hardware.vm.enable     = $IS_VM;
+  lcars.hardware.laptop.enable = $IS_LAPTOP;
+
+  lcars.core.bootLoader = "$BOOTLOADER";$(
+    if [[ -n "$GRUB_DEVICE" ]]; then printf '\n  lcars.core.grubDevice = "%s";' "$GRUB_DEVICE"; fi
   )
 
+  # O profile define as flags com mkDefault — sobrescreva aqui o que quiser
+  # diferente, por exemplo:
+  # lcars.wm.gnome.enable = false;
+
   # O sshd deste flake só aceita chave. Adicione as suas aqui:
-  # lcars.common.sshKeys = [ "ssh-ed25519 AAAA..." ];
+  # lcars.security.sshKeys = [ "ssh-ed25519 AAAA..." ];
 }
 EOF
 fi
 
-HW="hosts/$HOST/hardware-configuration.nix"
+HW="machines/$HOST/hardware-configuration.nix"
 if [[ -f "$HW" && "${LCARS_FORCE:-no}" != "yes" ]]; then
   log "$HW já existe — mantendo"
 else
@@ -247,17 +260,17 @@ else
     rm -f "$HW_TMP"
   else
     rm -f "$HW_TMP"
-    die "nixos-generate-config falhou — não consigo montar hosts/$HOST sem o hardware-config."
+    die "nixos-generate-config falhou — não consigo montar machines/$HOST sem o hardware-config."
   fi
 fi
-$SUDO chown -R "$TARGET_USER" "hosts/$HOST" 2>/dev/null || true
+$SUDO chown -R "$TARGET_USER" "machines/$HOST" 2>/dev/null || true
 
 # --- 6. tornar visível para o flake ----------------------------------
 # Um flake em repo git só lê arquivos rastreados. vars/local.nix e
 # hardware-configuration.nix estão no .gitignore, daí o -f. Isso os põe no
 # index, não em um commit — e o hook acima impede o commit acidental.
 log "registrando arquivos no index do git"
-run_as_user git -C "$DEST" add -f vars/local.nix "hosts/$HOST" >/dev/null
+run_as_user git -C "$DEST" add -f vars/local.nix "machines/$HOST" >/dev/null
 
 # --- 7. build ---------------------------------------------------------
 if [[ "$ACTION" == "none" ]]; then
@@ -271,8 +284,8 @@ $SUDO env NIX_CONFIG="$NIX_CONFIG" nixos-rebuild "$ACTION" --flake ".#$HOST"
 
 log "pronto."
 log "  repo:     $DEST"
-log "  host:     $HOST"
+log "  máquina:  $HOST  (profile: $PROFILE)"
 log "  usuário:  $TARGET_USER (senha inicial: lcars — troque com 'passwd')"
-if [[ "$WANT_DESKTOP" == true ]]; then
+if [[ "$PROFILE" == "personal" ]]; then
   log "  1Password GUI instalado: abra '1password' e ligue o agente SSH em Developer."
 fi

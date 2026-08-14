@@ -3,11 +3,10 @@
 with lib;
 
 let
-  cfg = config.lcars.laptop;
+  cfg = config.lcars.hardware.laptop;
 in
 {
-  # Configurações específicas de notebook (bateria, suspensão, energia).
-  options.lcars.laptop = {
+  options.lcars.hardware.laptop = {
     enable = mkEnableOption "Ajustes para notebook (bateria, suspensão).";
 
     # tlp e power-profiles-daemon disputam o mesmo controle de energia e o

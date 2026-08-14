@@ -64,16 +64,18 @@ Na dúvida sobre se algo entra no ciclo: entra.
   sem ter buildado.
 
 - **Flakes só leem arquivos rastreados pelo git.** `vars/local.nix` e
-  `hosts/*/hardware-configuration.nix` estão no `.gitignore` e precisam de
+  `machines/*/hardware-configuration.nix` estão no `.gitignore` e precisam de
   `git add -f` para o flake enxergá-los. Se algo "sumiu" na avaliação, essa é
   a primeira suspeita.
 
-- **Hosts são auto-descobertos.** Todo diretório em `hosts/` vira um
-  `nixosConfiguration`, exceto `common` e `template`. Não há registro manual em
+- **Máquinas são auto-descobertas.** Todo diretório em `machines/` vira um
+  `nixosConfiguration`, exceto `template`. Não há registro manual em
   `flake.nix`.
 
-- **Módulos são opt-in.** `modules/default.nix` importa todos; cada um só
-  liga via `lcars.<nome>.enable` no arquivo do host.
+- **A hierarquia é por papel:** `machines/` (o que a máquina é) escolhe um
+  `profiles/` (preset de flags, sempre com `mkDefault`), que liga módulos de
+  `system/`; `user/` são os módulos do Home Manager. Módulos de `system/` são
+  todos importados sempre e opt-in por `lcars.<caminho>.enable`.
 
 - **Alvo é o nixos-unstable.** Opções do NixOS mudam de nome com frequência
   (`sound.enable`, `hardware.pulseaudio`, `hardware.tlp` e

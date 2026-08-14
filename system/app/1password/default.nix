@@ -3,11 +3,11 @@
 with lib;
 
 let
-  cfg = config.lcars.onePassword;
+  cfg = config.lcars.apps.onePassword;
 in
 {
   # --- Options ---------------------------------------------------------
-  options.lcars.onePassword = {
+  options.lcars.apps.onePassword = {
     enable = mkOption {
       type = types.bool;
       default = true;

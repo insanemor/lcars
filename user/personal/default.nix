@@ -1,4 +1,4 @@
-# home/modules/personal — escape hatch.
+# user/personal — escape hatch.
 #
 # Caso algum dia você queira manter dotfiles pessoais FORA do repo público
 # sem criar um segundo repositório git, o Home Manager já suporta um
