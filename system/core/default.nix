@@ -126,11 +126,9 @@ in
       };
     };
 
-    console = {
-      font = "Lat2-Terminus16";
-      keyMap = "us-acentos";
-      packages = with pkgs; [ terminus_font ];
-    };
+    # O teclado NÃO mora aqui. Layout parece assunto de idioma, mas é do
+    # teclado físico e muda de máquina para máquina — está em
+    # system/hardware/keyboard.nix, com a fonte e o layout do console.
 
     # --- boot ----------------------------------------------------------
     boot.loader = mkMerge [

@@ -7,7 +7,7 @@ let
 in
 {
   options.lcars.system.wm.plasma = {
-    enable = mkEnableOption "Ambiente desktop KDE Plasma 6 (+ SDDM, pipewire e fontes).";
+    enable = mkEnableOption "Ambiente desktop KDE Plasma 6 (+ SDDM e fontes). O áudio é lcars.system.hardware.audio.";
 
     wayland = mkOption {
       type = types.bool;
@@ -51,16 +51,9 @@ in
     environment.plasma6.excludePackages =
       map (p: pkgs.kdePackages.${p}) cfg.excludePackages;
 
-    # Áudio: pipewire falando ALSA/Pulse/JACK. Não é específico de nenhum
-    # ambiente gráfico em particular.
-    services.pulseaudio.enable = false;
-    security.rtkit.enable = true;
-    services.pipewire = {
-      enable = true;
-      alsa.enable = true;
-      alsa.support32Bit = true;
-      pulse.enable = true;
-    };
+    # O áudio NÃO mora aqui: é system/hardware/audio.nix, ligado por
+    # `lcars.system.hardware.audio.enable`. Um desktop quer os dois, mas o
+    # profile liga cada um explicitamente — este módulo não o faz por trás.
 
     # Fontes vão em fonts.packages, não em systemPackages — só assim o
     # fontconfig do sistema as enxerga.

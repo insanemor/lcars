@@ -13,7 +13,9 @@ O repo vem com `personal`.
 |---|---|---|---|
 | Base do sistema (`system/core`) | `lcars.system.core.enable` | sim | sim |
 | ssh e firewall (`system/security`) | `lcars.system.security.enable` | sim | sim |
-| Plasma + áudio + fontes (`system/wm`) | `lcars.system.wm.plasma.enable` | — | sim |
+| Plasma + SDDM + fontes (`system/wm`) | `lcars.system.wm.plasma.enable` | — | sim |
+| Áudio PipeWire (`system/hardware`) | `lcars.system.hardware.audio.enable` | — | sim |
+| Teclado, console e gráfico (`system/hardware`) | `lcars.system.hardware.keyboard.enable` | sim | sim |
 | 1Password CLI e GUI (`system/app`) | `lcars.system.app.onePassword.enable` | — | sim |
 | `ripgrep`, `fd`, `bat`, `eza` | `lcars.system.core.userPackages` | — | sim |
 | zsh (`user/shell`) | `lcars.user.zsh.enable` | sim | sim |
@@ -51,11 +53,11 @@ num notebook ou numa VM, mude para `true` e rode o rebuild.
 - Coleta de lixo automática, semanal, apagando gerações com mais de 30 dias
 - `system.stateVersion = "24.05"`
 
-**Locale e console**
+**Locale**
 - Fuso horário e locale vindos de `settings.nix` (default `America/Sao_Paulo`, `pt_BR.UTF-8`)
 - Locales gerados: `pt_BR.UTF-8`, `en_US.UTF-8`, `C.UTF-8`
 - `LC_MESSAGES` fixo em `pt_BR.UTF-8`
-- Console: fonte `Lat2-Terminus16`, teclado `us-acentos`, pacote `terminus_font`
+- O teclado e a fonte do console **não** ficam aqui — são `system/hardware/keyboard.nix`
 
 **Boot** — o hardware-config declara os sistemas de arquivos; aqui só o carregador
 - `systemd-boot` (UEFI), limitado a 10 gerações no menu, ou `grub` (BIOS legado)
@@ -108,8 +110,6 @@ não fica aberta na rede.
 
 - **KDE Plasma 6** com **SDDM**, sessão padrão Wayland (a sessão X11 continua
   disponível na tela de login; `lcars.system.wm.plasma.wayland = false` inverte isso)
-- **PipeWire** com compatibilidade ALSA (inclusive 32 bits) e PulseAudio; `rtkit` para prioridade de tempo real
-- PulseAudio desligado explicitamente — hoje quem faz o trabalho é o PipeWire
 - **Fontes**: `noto-fonts`, `noto-fonts-emoji`, `liberation_ttf`, `dejavu_fonts`, mais o conjunto padrão do NixOS
 - **Aplicativos**: só o que o módulo `plasma6` do NixOS traz. Nada é
   acrescentado por este repo — **nem navegador**. Remova o que não quiser com
@@ -131,6 +131,53 @@ não fica aberta na rede.
 O agente SSH em si é um recurso do aplicativo, ligado em **Settings →
 Developer**. Não existe módulo NixOS para ele; o que o repo faz é apontar o ssh
 para o socket que o app cria.
+
+---
+
+## Áudio — flag própria
+
+`system/hardware/audio.nix` · option `lcars.system.hardware.audio`
+
+- **PipeWire** falando ALSA, PulseAudio e (opcionalmente) JACK
+- `security.rtkit` para prioridade de tempo real — sem isso há falhas audíveis sob carga
+- PulseAudio desligado explicitamente: os dois disputam o mesmo socket
+- `support32Bit` ligado por padrão (jogos, binários proprietários antigos);
+  `jack` desligado, para quem não usa Ardour ou Carla
+
+Ligado no profile `personal`. Morava dentro de `system/wm/plasma.nix`, o que
+tornava impossível ter som sem KDE — um servidor de mídia precisaria ligar o
+desktop inteiro. Agora são flags independentes, e é o profile que junta as
+duas: o módulo do Plasma **não** liga o áudio por trás.
+
+---
+
+## Teclado — console e sessão gráfica, de uma fonte só
+
+`system/hardware/keyboard.nix` · option `lcars.system.hardware.keyboard`
+
+- `layout` (default `"us"`) e `variant` (default `"intl"`) — US internacional,
+  com acentuação por dead keys
+- `consoleFont` (default `Lat2-Terminus16`), com o pacote `terminus_font`
+- Ligado nos **dois** profiles: mesmo numa máquina headless alguém acaba no TTY
+
+Os dois contextos saem da mesma declaração. O console fala keymaps do kernel
+(`us-acentos`, `br-abnt2`) e o X/Wayland fala XKB (`us`+`intl`, `br`+`abnt2`);
+declarar ambos à mão convida a divergirem — e era o que acontecia: o TTY tinha
+`us-acentos` e a sessão gráfica, sem nenhuma configuração no repo, subia em
+`us` puro, **sem acentuação**. Agora só o XKB é declarado, e
+`console.useXkbConfig` compila o keymap do console a partir dele com `ckbcomp`.
+Isso não exige o xserver habilitado.
+
+Num teclado ABNT2, na máquina:
+
+```nix
+lcars.system.hardware.keyboard.layout  = "br";
+lcars.system.hardware.keyboard.variant = "abnt2";
+```
+
+Para `model` e `options` (trocar layout por atalho, por exemplo), declare
+`services.xserver.xkb.model` / `.options` direto — são casos raros e não valem
+um espelho de option.
 
 ---
 

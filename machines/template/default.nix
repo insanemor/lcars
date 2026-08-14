@@ -32,6 +32,14 @@
   lcars.system.hardware.vm.enable     = false;
   lcars.system.hardware.laptop.enable = false;
 
+  # Áudio e teclado vêm do profile. O layout é o único que costuma variar de
+  # máquina para máquina — o default é US internacional, com acentuação:
+  #
+  #   lcars.system.hardware.keyboard.layout  = "br";
+  #   lcars.system.hardware.keyboard.variant = "abnt2";
+  #
+  # Ele vale nos dois contextos de uma vez, console e sessão gráfica.
+
   # --- overrides do profile e do settings.nix -----------------------
   # O profile e o settings aplicam tudo com mkDefault, então basta declarar
   # aqui o que você quer diferente NESTA máquina. Vale para os dois lados:
@@ -42,6 +50,7 @@
   #   lcars.system.core.grubDevice    = "/dev/sda";
   #   lcars.system.core.swapFileSize  = 8192;
   #   lcars.system.wm.plasma.enable   = false;
+  #   lcars.system.hardware.audio.enable = true;   # som sem desktop
   #   lcars.system.security.sshKeys   = [ "ssh-ed25519 AAAA..." ];
   #
   #   lcars.user.starship.enable      = false;     # ambiente do usuário

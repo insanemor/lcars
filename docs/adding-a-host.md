@@ -26,6 +26,7 @@ caminho do arquivo:
 |---|---|
 | `lcars.system.wm.plasma.enable` | `system/wm/plasma.nix` |
 | `lcars.system.hardware.laptop.enable` | `system/hardware/laptop.nix` |
+| `lcars.system.hardware.audio.enable` | `system/hardware/audio.nix` |
 | `lcars.user.starship.enable` | `user/shell/starship.nix` |
 | `lcars.user.dotfiles.enable` | `user/app/dotfiles.nix` |
 
@@ -138,6 +139,17 @@ lcars.system.hardware.vm.enable     = false;  # true numa VM: virtio, qemu-guest
 lcars.system.hardware.laptop.enable = false;  # true num notebook: tlp, tampa, bateria
 ```
 
+Áudio e teclado também vivem em `system/hardware/`, mas quem os liga é o
+profile — eles não dependem da máquina física ser isto ou aquilo. O que muda de
+máquina para máquina é o **layout**, e esse você declara aqui:
+
+```nix
+lcars.system.hardware.keyboard.layout  = "br";     # default: "us"
+lcars.system.hardware.keyboard.variant = "abnt2";  # default: "intl"
+```
+
+Vale de uma vez no console e na sessão gráfica.
+
 E os overrides, quando o mesmo repo serve mais de uma máquina — tudo que vem do
 settings é aplicado com `mkDefault`, então declarar aqui vence:
 
@@ -161,6 +173,8 @@ Outras opções úteis:
 | `lcars.system.core.extraPackages` | nomes de pacotes nixpkgs, a nível de sistema |
 | `lcars.system.core.userPackages` | idem, no usuário — **somado** a `userSettings.packages` |
 | `lcars.system.hardware.laptop.powerManager` | `"tlp"` ou `"ppd"` |
+| `lcars.system.hardware.keyboard.layout` / `.variant` | layout XKB, valendo no console e no gráfico |
+| `lcars.system.hardware.audio.jack` | emulação JACK, para software de áudio profissional |
 
 ### 4. Gere a configuração de hardware
 
