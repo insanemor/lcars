@@ -3,13 +3,11 @@
 with lib;
 
 {
-  # Ajustes para convidado QEMU/KVM.
-  options.lcars.vm.enable = mkEnableOption "Ajustes para convidado QEMU/KVM.";
+  options.lcars.hardware.vm.enable = mkEnableOption "Ajustes para convidado QEMU/KVM.";
 
-  config = mkIf config.lcars.vm.enable {
+  config = mkIf config.lcars.hardware.vm.enable {
 
     # Estes são NOMES DE MÓDULOS DO KERNEL (strings), não pacotes nixpkgs.
-    # O `with pkgs;` que estava aqui fazia a avaliação falhar.
     boot.initrd.availableKernelModules = [
       "virtio_balloon"
       "virtio_blk"

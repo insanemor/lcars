@@ -11,12 +11,12 @@ Este repo deliberadamente não guarda nenhum secret em texto plano na árvore p�
 
 ## 1Password CLI/GUI
 
-Módulo `modules/onePassword/default.nix`:
+Módulo `system/app/1password/default.nix`:
 
 - `programs._1password.enable` — CLI (`op`)
 - `programs._1password-gui.enable` — Aplicativo desktop, com `polkitPolicyOwners`
 
-Controle pelas opções `lcars.onePassword.*` (`enableCli`, `enableGui`,
+Controle pelas opções `lcars.apps.onePassword.*` (`enableCli`, `enableGui`,
 `enableSshAgent`, `polkitOwner`), cujos defaults vêm de `vars/local.nix`.
 
 **Não existe `services._1password` no NixOS.** O agente SSH não é um serviço do
@@ -73,7 +73,7 @@ Se algum pedaço pessoal se recusar a morar no 1Password (por exemplo, scripts l
 ~/.config/home-manager/private.nix
 ```
 
-O Home Manager carrega esse arquivo automaticamente depois de `home/common`. Ele NÃO fica neste repo e NÃO é rastreado em lugar nenhum por padrão.
+O Home Manager carrega esse arquivo automaticamente depois de `user/`. Ele NÃO fica neste repo e NÃO é rastreado em lugar nenhum por padrão.
 
 ## Por que não um repo privado?
 

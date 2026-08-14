@@ -37,7 +37,7 @@ O prefixo é usado depois pela skill `entrega`.
 ## 3. Escreva a issue
 
 Corpo obrigatório, nesta ordem. Seja concreto: cite arquivo e linha
-(`modules/common/default.nix:20`), cole a mensagem de erro real.
+(`system/core/default.nix:20`), cole a mensagem de erro real.
 
 ```markdown
 ## Contexto

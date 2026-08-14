@@ -9,12 +9,12 @@ vars/local.nix
 # A configuração de hardware por máquina pode vazar números de série;
 # mantenha local por padrão. Adicione com `git add -f` (o flake só lê arquivos
 # rastreados) e revise antes de commitar.
-hosts/*/hardware-configuration.nix
+machines/*/hardware-configuration.nix
 
 # ...menos o do template, que é só um placeholder. Sem esta exceção,
-# `cp -r hosts/template hosts/<novo>` produz um host cujo import aponta para
+# `cp -r machines/template machines/<novo>` produz um host cujo import aponta para
 # um arquivo que não existe no clone.
-!hosts/template/hardware-configuration.nix
+!machines/template/hardware-configuration.nix
 
 # Artefatos comuns de build
 result
@@ -28,7 +28,7 @@ result-*
 secrets/*.key
 secrets/*.asc
 
-# Overrides privados do home-manager (escape hatch — veja home/modules/personal/)
+# Overrides privados do home-manager (escape hatch — veja user/personal/)
 .config/home-manager/private/
 
 # Nix

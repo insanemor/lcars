@@ -46,19 +46,21 @@
         else
           import ./vars/example.nix { inherit lib; };
 
-      # Fábrica genérica de host. Junta TODOS os módulos lcars + o diretório do
-      # host + extras. Os módulos são opt-in via `lcars.<nome>.enable`, então
-      # importá-los sempre não liga nada por conta própria — quem decide é o
-      # arquivo do host.
-      mkHost = hostName: extras:
+      # Fábrica de máquina. A hierarquia entra toda aqui:
+      #
+      #   system/    módulos NixOS, opt-in por lcars.<x>.enable
+      #   profiles/  presets que ligam essas flags com mkDefault
+      #   machines/  a máquina em si: escolhe o profile e sobrescreve o resto
+      #   user/      módulos do Home Manager
+      mkMachine = hostName: extras:
         nixpkgs.lib.nixosSystem {
           inherit system;
           specialArgs = { inherit inputs vars hostName; };
 
           modules = [
-            ./modules
-            ./hosts/common
-            ./hosts/${hostName}
+            ./system
+            ./profiles
+            ./machines/${hostName}
 
             home-manager.nixosModules.home-manager
 
@@ -69,14 +71,8 @@
                 useGlobalPkgs = true;
                 useUserPackages = true;
                 extraSpecialArgs = { inherit vars; };
-                sharedModules = [ ./home/modules/personal ];
-                users.${vars.username}.imports = [
-                  ./home/common/zsh.nix
-                  ./home/common/git.nix
-                  ./home/common/starship.nix
-                  ./home/common/direnv.nix
-                  ./home/common/dotfiles.nix
-                ];
+                sharedModules = [ ./user/personal ];
+                users.${vars.username}.imports = [ ./user ];
                 users.${vars.username}.home = {
                   username = vars.username;
                   homeDirectory = "/home/${vars.username}";
@@ -89,17 +85,17 @@
           ] ++ extras;
         };
 
-      # Auto-descoberta: todo diretório em hosts/ (exceto `common`, que é
-      # compartilhado, e `template`, que é o modelo a copiar) vira uma entrada
-      # em nixosConfigurations. Adicionar uma máquina = criar o diretório.
-      hostDirs =
-        let entries = builtins.readDir ./hosts;
+      # Auto-descoberta: todo diretório em machines/ vira uma entrada em
+      # nixosConfigurations. Adicionar uma máquina = criar o diretório.
+      # `template` fica de fora por ser só o modelo a copiar.
+      machineDirs =
+        let entries = builtins.readDir ./machines;
         in lib.filter
-          (name: entries.${name} == "directory" && !(lib.elem name [ "common" "template" ]))
+          (name: entries.${name} == "directory" && name != "template")
           (builtins.attrNames entries);
 
-      discoveredHosts =
-        lib.genAttrs hostDirs (name: mkHost name [ ]);
+      discoveredMachines =
+        lib.genAttrs machineDirs (name: mkMachine name [ ]);
 
       # Helper empacotado de `nix run` para preencher as vars locais.
       bootstrap = pkgs.writeShellApplication {
@@ -109,11 +105,11 @@
       };
     in
     {
-      # `mkHost` fica exposto para quem quiser registrar um host à mão com
-      # módulos extras:  meu-pc = self.mkHost "meu-pc" [ ./algo-extra.nix ];
-      inherit mkHost;
+      # Exposto para quem quiser registrar uma máquina à mão com módulos
+      # extras:  meu-pc = self.mkMachine "meu-pc" [ ./algo-extra.nix ];
+      inherit mkMachine;
 
-      nixosConfigurations = discoveredHosts;
+      nixosConfigurations = discoveredMachines;
 
       apps.${system}.bootstrap = {
         type = "app";

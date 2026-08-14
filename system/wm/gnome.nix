@@ -3,11 +3,11 @@
 with lib;
 
 let
-  cfg = config.lcars.desktop;
+  cfg = config.lcars.wm.gnome;
 in
 {
-  options.lcars.desktop = {
-    enable = mkEnableOption "Ambiente desktop base (GNOME + fontes + áudio).";
+  options.lcars.wm.gnome = {
+    enable = mkEnableOption "Ambiente desktop GNOME (+ pipewire e fontes).";
     gdm = mkOption { type = types.bool; default = true; };
   };
 
@@ -16,8 +16,7 @@ in
     services.xserver.enable = true;
 
     # As opções de display/desktop manager saíram de services.xserver.* nas
-    # versões recentes do nixpkgs — hoje moram em services.displayManager.* e
-    # services.desktopManager.*.
+    # versões recentes do nixpkgs.
     services.displayManager.gdm.enable = cfg.gdm;
     services.displayManager.defaultSession = "gnome";
     services.desktopManager.gnome.enable = true;

@@ -1,12 +1,17 @@
+# system/core — o que toda máquina tem: identidade, locale, boot, usuário.
+#
+# O que NÃO mora aqui: fileSystems, swapDevices e boot.initrd vêm do
+# machines/<host>/hardware-configuration.nix; ssh e firewall vivem em
+# system/security.
 { config, lib, pkgs, vars, ... }:
 
 with lib;
 
 let
-  cfg = config.lcars.common;
+  cfg = config.lcars.core;
 in
 {
-  options.lcars.common = {
+  options.lcars.core = {
     enable = mkOption { type = types.bool; default = true; };
     locale  = mkOption { type = types.str;   default = vars.locale; };
     timezone = mkOption { type = types.str;  default = vars.timezone; };
@@ -14,18 +19,17 @@ in
     extraPackages = mkOption {
       type = types.listOf types.str;
       default = vars.systemPackages;
+      description = "Nomes de pacotes nixpkgs a instalar no sistema.";
     };
 
-    # `hardware-configuration.nix` é quem declara fileSystems e boot.initrd.
-    # Este módulo só escolhe qual bootloader instalar, porque isso depende de
-    # a máquina ter bootado em UEFI ou em BIOS legado — algo que o
-    # nixos-generate-config não decide por você.
+    # Isto depende de a máquina ter bootado em UEFI ou em BIOS legado — algo
+    # que o nixos-generate-config não decide por você.
     bootLoader = mkOption {
       type = types.enum [ "systemd-boot" "grub" "none" ];
       default = "systemd-boot";
       description = ''
         "systemd-boot" para UEFI, "grub" para BIOS legado (usa grubDevice),
-        "none" quando o host já configura o bootloader por conta própria.
+        "none" quando a máquina configura o bootloader por conta própria.
       '';
     };
 
@@ -35,16 +39,16 @@ in
       description = "Disco onde instalar o GRUB quando bootLoader = \"grub\".";
     };
 
-    # Um swapfile só é criado se você pedir. Antes isto era incondicional e
-    # colidia com o swap que o hardware-configuration.nix já tivesse detectado.
+    # Um swapfile só é criado se você pedir, para não colidir com o swap que o
+    # hardware-configuration.nix já tenha detectado.
     swapFileSize = mkOption {
       type = types.nullOr types.int;
       default = null;
       description = "Tamanho em MiB de /swapfile. null = não criar swapfile.";
     };
 
-    # Sem isto, uma instalação nova fica sem nenhuma forma de login: o sshd
-    # abaixo aceita apenas chaves, e users.users.<u> não define senha alguma.
+    # Sem isto, uma instalação nova fica sem nenhuma forma de login: o sshd de
+    # system/security aceita apenas chave.
     initialPassword = mkOption {
       type = types.nullOr types.str;
       default = "lcars";
@@ -54,16 +58,19 @@ in
       '';
     };
 
-    sshKeys = mkOption {
+    userPackages = mkOption {
       type = types.listOf types.str;
       default = [ ];
-      description = "Chaves públicas SSH autorizadas para o usuário.";
+      description = ''
+        Nomes de pacotes nixpkgs a instalar no usuário. Esta lista é SOMADA a
+        vars.userPackages, não a substitui — assim um profile pode acrescentar
+        ferramentas sem apagar o que você pôs em vars/local.nix.
+      '';
     };
   };
 
   config = mkIf cfg.enable {
 
-    # --- identidade do sistema ------------------------------------------
     system.stateVersion = "24.05";
 
     # --- flakes ---------------------------------------------------------
@@ -89,7 +96,6 @@ in
       };
     };
 
-    # --- console -------------------------------------------------------
     console = {
       font = "Lat2-Terminus16";
       keyMap = "us-acentos";
@@ -97,7 +103,6 @@ in
     };
 
     # --- boot ----------------------------------------------------------
-    # fileSystems e swapDevices vêm de hosts/<host>/hardware-configuration.nix.
     boot.loader = mkMerge [
       (mkIf (cfg.bootLoader == "systemd-boot") {
         systemd-boot.enable = true;
@@ -117,7 +122,7 @@ in
     # --- rede ----------------------------------------------------------
     networking.networkmanager.enable = mkDefault true;
 
-    # --- usuários -----------------------------------------------------
+    # --- usuário -------------------------------------------------------
     users.mutableUsers = true;
     programs.zsh.enable = true;
     users.users.${vars.username} = {
@@ -127,7 +132,7 @@ in
       shell        = pkgs.zsh;
       extraGroups  = [ "networkmanager" "wheel" "video" "audio" ];
       initialPassword = mkIf (cfg.initialPassword != null) cfg.initialPassword;
-      openssh.authorizedKeys.keys = cfg.sshKeys;
+      packages = map (p: pkgs.${p}) (vars.userPackages ++ cfg.userPackages);
     };
 
     # --- pacotes base --------------------------------------------------
@@ -143,24 +148,5 @@ in
       gnugrep
       python3
     ] ++ map (p: pkgs.${p}) cfg.extraPackages;
-
-    # --- integração com 1Password (sempre) -----------------------------
-    lcars.onePassword.enable = mkDefault true;
-
-    # --- firewall ------------------------------------------------------
-    networking.firewall.enable = true;
-
-    # --- ssh -----------------------------------------------------------
-    # Só chaves. O login local por senha (console/GDM) continua funcionando
-    # via initialPassword acima.
-    services.openssh = {
-      enable = true;
-      openFirewall = true;
-      settings = {
-        PermitRootLogin = "no";
-        PasswordAuthentication = false;
-        KbdInteractiveAuthentication = false;
-      };
-    };
   };
 }
