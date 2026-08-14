@@ -1,28 +1,29 @@
 #!/usr/bin/env bash
 # =====================================================================
-# lcars-public — instalador one-shot
+# lcars — instalador one-shot
 #
 # Uso:
-#   curl -fsSL https://raw.githubusercontent.com/insanemor/lcars-public/main/scripts/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/insanemor/lcars/main/scripts/install.sh | bash
 #
 # Variáveis reconhecidas no ambiente:
 #   LCARS_HOST  — nome do host a registrar (ex.: minha-vm)
-#   LCARS_REPO  — URL do repo (default: github.com/insanemor/lcars-public)
+#   LCARS_REPO  — URL do repo (default: github.com/insanemor/lcars)
 #   LCARS_BRANCH — branch (default: main)
 #   LCARS_NIXOS — "yes" para rodar nixos-rebuild após bootstrap
 #
 # O script:
-#   1. Detecta se Nix / NixOS estão disponíveis.
-#   2. clona o repo em ~/lcars (ou caminho passado).
-#   3. roda `nix run .#bootstrap` para preencher vars/local.nix.
-#   4. opcionalmente ativa uma config NixOS existente.
+#   1. Garante que git esteja disponível (instala via apt/pacman/dnf/apk).
+#   2. Detecta se Nix / NixOS estão disponíveis.
+#   3. clona o repo em ~/lcars (ou caminho passado).
+#   4. roda `nix run .#bootstrap` para preencher vars/local.nix.
+#   5. opcionalmente ativa uma config NixOS existente.
 # =====================================================================
 
 set -euo pipefail
 
-REPO="${LCARS_REPO:-github.com/insanemor/lcars-public}"
+REPO="${LCARS_REPO:-github.com/insanemor/lcars}"
 BRANCH="${LCARS_BRANCH:-main}"
-DEST="${LCARS_DEST:-$HOME/lcars-public}"
+DEST="${LCARS_DEST:-$HOME/lcars}"
 HOST="${LCARS_HOST:-}"
 ACTIVATE="${LCARS_NIXOS:-no}"
 
@@ -30,8 +31,17 @@ log()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m!! \033[0m%s\n' "$*"; }
 die()  { printf '\033[1;31mxx \033[0m%s\n' "$*" >&2; exit 1; }
 
-# --- pré-requisitos --------------------------------------------------
-command -v git >/dev/null || die "git não encontrado. instale-o antes."
+# --- garantir git ------------------------------------------------------
+if ! command -v git >/dev/null 2>&1; then
+  warn "git não encontrado — tentando instalar"
+  if   command -v apt-get >/dev/null 2>&1; then sudo apt-get update && sudo apt-get install -y git
+  elif command -v dnf     >/dev/null 2>&1; then sudo dnf install -y git
+  elif command -v pacman  >/dev/null 2>&1; then sudo pacman -Sy --noconfirm git
+  elif command -v apk     >/dev/null 2>&1; then sudo apk add git
+  else die "git ausente e não consegui detectar um package manager. instale-o manualmente."
+  fi
+fi
+command -v git >/dev/null || die "git ainda indisponível após tentativa de instalação."
 
 if [[ "$REPO" == github.com/* ]] && command -v nix >/dev/null; then
   # caminho via nix flake

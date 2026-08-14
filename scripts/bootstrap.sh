@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =====================================================================
-# lcars-public — script de bootstrap
+# lcars — script de bootstrap
 #
 # Gera `vars/local.nix` a partir de perguntas interativas, para que um
 # repo recém-clonado funcione sem commitar dados específicos do usuário.
