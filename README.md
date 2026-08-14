@@ -50,6 +50,27 @@ O instalador é **idempotente**: rodar de novo não sobrescreve nada que você j
 
 Para você não commitá-los por acidente, o instalador também instala um hook `pre-commit` que aborta se algum deles entrar num commit.
 
+## O que vem instalado
+
+Resumo. O inventário completo, com o arquivo que define cada item, está em
+[docs/features.md](./docs/features.md).
+
+**Em toda máquina** — flakes habilitados e coleta de lixo semanal, locale
+`pt_BR.UTF-8`, NetworkManager, usuário com `zsh`, sshd **somente por chave** com
+firewall ligado, e a base de linha de comando (`git`, `vim`, `htop`, `curl`,
+`wget`, `jq`, `rsync`, `python3`).
+
+**No ambiente do usuário** (Home Manager, no mesmo rebuild) — zsh com
+autosuggestion, syntax highlighting e histórico compartilhado; prompt starship;
+git com aliases e `pull.rebase`; direnv com nix-direnv; e o gancho para puxar
+dotfiles de itens Document do 1Password.
+
+**No profile `personal`** — GNOME com GDM, PipeWire, fontes Noto/Liberation/DejaVu,
+Firefox, 1Password (CLI + GUI + agente SSH), e `ripgrep`, `fd`, `bat`, `eza`.
+
+**Conforme o hardware** — em notebook, `tlp` com limite de carga 80–90% e
+suspensão ao fechar a tampa; em VM, virtio, `qemu-guest-agent` e `spice-vdagent`.
+
 ## Como o repo é organizado
 
 A árvore é dividida por **papel**, não por mecanismo do Nix:
@@ -125,8 +146,12 @@ Não existe módulo NixOS para esse agente — ele é um recurso do próprio app
 
 ## Documentação
 
-- [docs/adding-a-host.md](./docs/adding-a-host.md) — como adicionar outra máquina e criar profiles.
-- [docs/secrets.md](./docs/secrets.md) — integração de secrets com 1Password e SOPS.
+Índice completo em [docs/](./docs/README.md).
+
+- [docs/features.md](./docs/features.md) — inventário do que vem instalado.
+- [docs/adding-a-host.md](./docs/adding-a-host.md) — adicionar outra máquina e criar profiles.
+- [docs/secrets.md](./docs/secrets.md) — 1Password, dotfiles e opnix.
+- [docs/workflow.md](./docs/workflow.md) — como mudanças entram no repo.
 
 ## Licença
 
