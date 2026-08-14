@@ -1,4 +1,4 @@
-# lcars-public
+# lcars
 
 Um flake NixOS multi-host, pensado para ser **forkável** — sem dados pessoais no repositório, mas pronto para lidar com identidade, secrets e dotfiles por máquina via **1Password** e Home Manager.
 
@@ -40,8 +40,8 @@ Você não deveria precisar remover usuário, hostnames e dicas de SSH antes de 
 
 ```bash
 # 1. clona
-git clone https://github.com/insanemor/lcars-public ~/lcars-public
-cd ~/lcars-public
+git clone https://github.com/insanemor/lcars ~/lcars
+cd ~/lcars
 
 # 2. preenche suas variáveis (interativo)
 nix run .#bootstrap
@@ -65,19 +65,19 @@ sudo nixos-rebuild switch --flake .#meu-laptop
 Se quiser pular o clone manual em uma VM fresca (que já tenha NixOS mínimo + curl):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/insanemor/lcars-public/main/scripts/install.sh | LCARS_HOST=meu-laptop LCARS_NIXOS=yes bash
+curl -fsSL https://raw.githubusercontent.com/insanemor/lcars/main/scripts/install.sh | LCARS_HOST=meu-laptop LCARS_NIXOS=yes bash
 ```
 
 Variáveis reconhecidas:
 
 | Var | Default | Efeito |
 |---|---|---|
-| `LCARS_REPO` | `github.com/insanemor/lcars-public` | URL ou `git+https://...` |
+| `LCARS_REPO` | `github.com/insanemor/lcars` | URL ou `git+https://...` |
 | `LCARS_BRANCH` | `main` | branch |
 | `LCARS_HOST` | `""` | nome do host a ativar (vazio = só bootstrapa vars) |
 | `LCARS_NIXOS` | `no` | `yes` para `nixos-rebuild switch` no fim |
 | `LCARS_BATCH` | `no` | `yes` para pular o prompt interativo |
-| `LCARS_DEST` | `~/lcars-public` | onde clonar |
+| `LCARS_DEST` | `~/lcars` | onde clonar |
 
 O instalador cobre: detecção de ambiente, clone, bootstrap de vars e ativação da config. Use-o na **primeira** máquina para validar o fluxo; depois siga o `quick start` padrão.
 

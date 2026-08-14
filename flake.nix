@@ -1,5 +1,5 @@
 {
-  description = "lcars-public — flake NixOS forkável, multi-host, com dotfiles e secrets integrados ao 1Password";
+  description = "lcars — flake NixOS forkável, multi-host, com dotfiles e secrets integrados ao 1Password";
 
   inputs = {
     # Núcleo
