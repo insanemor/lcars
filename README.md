@@ -20,7 +20,7 @@ curl -fsSL https://raw.githubusercontent.com/insanemor/lcars/main/scripts/instal
 6. registra os arquivos no index do git (flakes só leem arquivos rastreados);
 7. roda `nixos-rebuild switch --flake .#<hostname>`.
 
-A primeira build de um desktop é longa — ela compila/baixa GNOME, 1Password e o mundo todo.
+A primeira build de um desktop é longa — ela compila/baixa o Plasma, o 1Password e o mundo todo.
 
 Ao final, o usuário fica com a senha inicial `lcars`. **Troque com `passwd` no primeiro login** — o sshd deste flake só aceita chave, mas o login local aceita senha.
 
@@ -67,8 +67,10 @@ autosuggestion, syntax highlighting e histórico compartilhado; prompt starship;
 git com aliases e `pull.rebase`; direnv com nix-direnv; e o gancho para puxar
 dotfiles de itens Document do 1Password.
 
-**No profile `personal`** — GNOME com GDM, PipeWire, fontes Noto/Liberation/DejaVu,
-Firefox, 1Password (CLI + GUI + agente SSH), e `ripgrep`, `fd`, `bat`, `eza`.
+**No profile `personal`** — KDE Plasma 6 com SDDM, PipeWire, fontes
+Noto/Liberation/DejaVu, 1Password (CLI + GUI + agente SSH), e `ripgrep`, `fd`,
+`bat`, `eza`. O Plasma vem "puro", sem aplicativos extras — **inclusive sem
+navegador**; acrescente o seu em `userSettings.packages`.
 
 **Conforme o hardware** — em notebook, `tlp` com limite de carga 80–90% e
 suspensão ao fechar a tampa; em VM, virtio, `qemu-guest-agent` e `spice-vdagent`.
@@ -86,13 +88,13 @@ A árvore é dividida por **papel**, não por mecanismo do Nix:
 │
 ├── profiles/       # presets: conjuntos nomeados de flags
 │   ├── basic/      # headless: base + ssh
-│   └── personal/   # desktop completo: GNOME + 1Password + ferramentas
+│   └── personal/   # desktop completo: Plasma + 1Password + ferramentas
 │
 ├── system/         # módulos NixOS, opt-in via lcars.<caminho>.enable
 │   ├── core/       # identidade, locale, boot, usuário
 │   ├── security/   # sshd e firewall
 │   ├── hardware/   # laptop.nix, vm.nix
-│   ├── wm/         # gnome.nix
+│   ├── wm/         # plasma.nix
 │   └── app/        # 1password/
 │
 ├── user/           # módulos do Home Manager
@@ -111,7 +113,7 @@ O encadeamento é: **a máquina escolhe um profile, o profile liga flags, as fla
 ```nix
 # machines/meu-pc/default.nix
 lcars.profile = "personal";      # desktop completo
-lcars.wm.gnome.enable = false;   # …exceto o GNOME
+lcars.wm.plasma.enable = false;  # …exceto o Plasma
 ```
 
 Os profiles definem as flags com `mkDefault`, então a máquina tem prioridade e pode sobrescrever qualquer uma **individualmente**, sem copiar o profile inteiro.

@@ -11,7 +11,7 @@ in
 
     # tlp e power-profiles-daemon disputam o mesmo controle de energia e o
     # NixOS aborta a avaliação se os dois estiverem ligados. Escolha um.
-    # O GNOME integra com "ppd"; "tlp" dá mais controle fino de bateria.
+    # O Plasma integra com "ppd"; "tlp" dá mais controle fino de bateria.
     powerManager = mkOption {
       type = types.enum [ "tlp" "ppd" ];
       default = "tlp";

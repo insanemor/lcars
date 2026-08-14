@@ -4,7 +4,7 @@
 #
 #   # machines/meu-pc/default.nix
 #   lcars.profile = "personal";
-#   lcars.wm.gnome.enable = false;   # override pontual, se quiser
+#   lcars.wm.plasma.enable = false;  # override pontual, se quiser
 #
 # Todos os profiles são importados sempre; cada um só aplica suas flags quando
 # `lcars.profile` casa com o seu nome. As flags são definidas com `mkDefault`,

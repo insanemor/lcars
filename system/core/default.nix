@@ -9,6 +9,17 @@ with lib;
 
 let
   cfg = config.lcars.core;
+
+  # Resolve um nome de pacote vindo do settings.nix. Aceita caminho aninhado
+  # ("kdePackages.kate"), o que `pkgs.${name}` não faz — interpolação de
+  # atributo procura uma chave chamada literalmente "kdePackages.kate".
+  # Erra com uma mensagem que diz qual nome está errado, em vez do
+  # "attribute missing" cru do Nix.
+  pkgByName = name:
+    let path = lib.splitString "." name;
+    in lib.attrByPath path
+         (throw "lcars: pacote '${name}' não existe em nixpkgs — confira o nome no settings.nix")
+         pkgs;
 in
 {
   options.lcars.core = {
@@ -19,7 +30,10 @@ in
     extraPackages = mkOption {
       type = types.listOf types.str;
       default = sys.extraPackages;
-      description = "Nomes de pacotes nixpkgs a instalar no sistema.";
+      description = ''
+        Nomes de pacotes nixpkgs a instalar no sistema. Aceita caminho
+        aninhado, como "kdePackages.kate".
+      '';
     };
 
     # Isto depende de a máquina ter bootado em UEFI ou em BIOS legado — algo
@@ -65,7 +79,8 @@ in
       type = types.listOf types.str;
       default = [ ];
       description = ''
-        Nomes de pacotes nixpkgs a instalar no usuário. Esta lista é SOMADA a
+        Nomes de pacotes nixpkgs a instalar no usuário, aceitando caminho
+        aninhado ("kdePackages.kate"). Esta lista é SOMADA a
         userSettings.packages, não a substitui — assim um profile pode
         acrescentar ferramentas sem apagar o que você pôs no settings.nix.
       '';
@@ -158,7 +173,7 @@ in
       shell        = pkgs.zsh;
       extraGroups  = [ "networkmanager" "wheel" "video" "audio" ];
       initialPassword = mkIf (cfg.initialPassword != null) cfg.initialPassword;
-      packages = map (p: pkgs.${p}) (user.packages ++ cfg.userPackages);
+      packages = map pkgByName (user.packages ++ cfg.userPackages);
     };
 
     # --- pacotes base --------------------------------------------------
@@ -173,6 +188,6 @@ in
       gnused
       gnugrep
       python3
-    ] ++ map (p: pkgs.${p}) cfg.extraPackages;
+    ] ++ map pkgByName cfg.extraPackages;
   };
 }

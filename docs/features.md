@@ -13,7 +13,7 @@ escolhe, e o instalador escolhe por você: `basic` em VM, `personal` fora dela.
 | Base do sistema (`system/core`) | sim | sim |
 | ssh e firewall (`system/security`) | sim | sim |
 | Ambiente do usuário (`user/`) | sim | sim |
-| GNOME + áudio + fontes (`system/wm`) | — | sim |
+| Plasma + áudio + fontes (`system/wm`) | — | sim |
 | 1Password CLI e GUI (`system/app`) | — | sim |
 | `ripgrep`, `fd`, `bat`, `eza` | — | sim |
 
@@ -73,20 +73,23 @@ Acrescente os seus em `systemSettings.extraPackages` ou `lcars.core.extraPackage
 - Chaves autorizadas em `lcars.security.sshKeys` — **vazio por padrão**
 
 Enquanto `sshKeys` estiver vazio não há como entrar por ssh. O acesso é local,
-por senha, no console ou no GDM. Isso é proposital: uma máquina recém-instalada
+por senha, no console ou no SDDM. Isso é proposital: uma máquina recém-instalada
 não fica aberta na rede.
 
 ---
 
 ## Ambiente gráfico — só no profile `personal`
 
-`system/wm/gnome.nix` · option `lcars.wm.gnome`
+`system/wm/plasma.nix` · option `lcars.wm.plasma`
 
-- **GNOME** com **GDM**, sessão padrão `gnome`
+- **KDE Plasma 6** com **SDDM**, sessão padrão Wayland (a sessão X11 continua
+  disponível na tela de login; `lcars.wm.plasma.wayland = false` inverte isso)
 - **PipeWire** com compatibilidade ALSA (inclusive 32 bits) e PulseAudio; `rtkit` para prioridade de tempo real
 - PulseAudio desligado explicitamente — hoje quem faz o trabalho é o PipeWire
 - **Fontes**: `noto-fonts`, `noto-fonts-emoji`, `liberation_ttf`, `dejavu_fonts`, mais o conjunto padrão do NixOS
-- **Aplicativos**: `gnome-tweaks`, `dconf-editor`, `firefox`
+- **Aplicativos**: só o que o módulo `plasma6` do NixOS traz. Nada é
+  acrescentado por este repo — **nem navegador**. Remova o que não quiser com
+  `lcars.wm.plasma.excludePackages`
 - `dconf` habilitado
 
 ---
@@ -117,7 +120,7 @@ para o socket que o app cria.
 - Tampa fechada: suspende na bateria, ignora na tomada
 - Gerenciamento de energia à sua escolha (`powerManager`):
   - **`tlp`** (padrão) — carga limitada a 80–90% para preservar a bateria, governor `performance` na tomada e `powersave` na bateria
-  - **`ppd`** — power-profiles-daemon, que integra melhor com o GNOME
+  - **`ppd`** — power-profiles-daemon, que integra melhor com o Plasma
 
 Os dois nunca ficam ligados juntos: o NixOS aborta a avaliação se isso acontecer.
 
@@ -187,6 +190,15 @@ Para não haver surpresa:
 - **Nenhum profile além de `basic` e `personal`.**
 - **Nenhum container, VPN, impressora ou bluetooth** configurado.
 - **Nenhum editor além do `vim`**, e nenhuma IDE.
+- **Nenhum navegador.** O Plasma vem puro, e nada é acrescentado. `browser` no
+  `settings.nix` só define `$BROWSER` — não instala nada. Ponha o seu em
+  `userSettings.packages`:
+
+  ```nix
+  userSettings.packages = [ "firefox" ];
+  ```
+- **Nenhum aplicativo KDE além dos que o módulo `plasma6` traz.** Kate, Okular,
+  Ark e Spectacle são `kdePackages.<nome>` em `userSettings.packages`.
 
 ## Nota sobre `userSettings.packages`
 

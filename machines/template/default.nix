@@ -37,6 +37,6 @@
   #   lcars.core.bootLoader  = "grub";
   #   lcars.core.grubDevice  = "/dev/sda";
   #   lcars.core.swapFileSize = 8192;
-  #   lcars.wm.gnome.enable  = false;
+  #   lcars.wm.plasma.enable = false;
   #   lcars.security.sshKeys = [ "ssh-ed25519 AAAA..." ];
 }

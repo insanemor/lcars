@@ -70,7 +70,7 @@ if [[ "$default_boot" == "bios" ]]; then
   [[ -n "$pk" ]] && default_grubdev="/dev/$pk"
 fi
 
-# VM headless não ganha nada com GNOME.
+# VM headless não ganha nada com um ambiente gráfico.
 if command -v systemd-detect-virt >/dev/null 2>&1 && systemd-detect-virt --quiet --vm; then
   default_profile="basic"
 else
