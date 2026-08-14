@@ -40,17 +40,17 @@ if [[ "$(id -u)" -ne 0 ]]; then
 fi
 
 # --- garantir git ------------------------------------------------------
+# Distros suportadas: Debian/Ubuntu, Fedora, Arch, Alpine, openSUSE, Void.
+# NixOS e outros não-NixOS-minimal: trate git como pré-requisito.
 if ! command -v git >/dev/null 2>&1; then
   warn "git não encontrado — tentando instalar"
   if   command -v apt-get     >/dev/null 2>&1; then $SUDO apt-get update && $SUDO apt-get install -y git
   elif command -v dnf         >/dev/null 2>&1; then $SUDO dnf install -y git
-  elif command -v yum         >/dev/null 2>&1; then $SUDO yum install -y git
   elif command -v pacman      >/dev/null 2>&1; then $SUDO pacman -Sy --noconfirm git
   elif command -v apk         >/dev/null 2>&1; then $SUDO apk add git
   elif command -v zypper      >/dev/null 2>&1; then $SUDO zypper install -y git
   elif command -v xbps-install >/dev/null 2>&1; then $SUDO xbps-install -Sy git
-  elif command -v nix         >/dev/null 2>&1; then nix profile install nixpkgs#git
-  else die "git ausente e nenhum package manager conhecido encontrado (apt/dnf/yum/pacman/apk/zypper/xbps/nix). instale git manualmente."
+  else die "git ausente. instale-o antes de prosseguir (sudo apt/dnf/pacman/apk/zypper/xbps install git)."
   fi
 fi
 command -v git >/dev/null || die "git ainda indisponível após tentativa de instalação."
