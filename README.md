@@ -40,7 +40,7 @@ Você não deveria precisar remover usuário, hostnames e dicas de SSH antes de 
 
 ```bash
 # 1. clona
-git clone https://github.com/<dono>/lcars-public ~/lcars-public
+git clone https://github.com/insanemor/lcars-public ~/lcars-public
 cd ~/lcars-public
 
 # 2. preenche suas variáveis (interativo)
@@ -65,14 +65,14 @@ sudo nixos-rebuild switch --flake .#meu-laptop
 Se quiser pular o clone manual em uma VM fresca (que já tenha NixOS mínimo + curl):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/<dono>/lcars-public/main/scripts/install.sh | LCARS_HOST=meu-laptop LCARS_NIXOS=yes bash
+curl -fsSL https://raw.githubusercontent.com/insanemor/lcars-public/main/scripts/install.sh | LCARS_HOST=meu-laptop LCARS_NIXOS=yes bash
 ```
 
 Variáveis reconhecidas:
 
 | Var | Default | Efeito |
 |---|---|---|
-| `LCARS_REPO` | `github.com/<dono>/lcars-public` | URL ou `git+https://...` |
+| `LCARS_REPO` | `github.com/insanemor/lcars-public` | URL ou `git+https://...` |
 | `LCARS_BRANCH` | `main` | branch |
 | `LCARS_HOST` | `""` | nome do host a ativar (vazio = só bootstrapa vars) |
 | `LCARS_NIXOS` | `no` | `yes` para `nixos-rebuild switch` no fim |

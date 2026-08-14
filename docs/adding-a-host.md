@@ -5,7 +5,7 @@ Este documento explica o fluxo para adicionar uma nova máquina ao flake.
 ## 1. Clone o repo
 
 ```bash
-git clone https://github.com/<dono>/lcars-public ~/lcars-public
+git clone https://github.com/insanemor/lcars-public ~/lcars-public
 cd ~/lcars-public
 ```
 

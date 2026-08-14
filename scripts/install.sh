@@ -3,11 +3,11 @@
 # lcars-public — instalador one-shot
 #
 # Uso:
-#   curl -fsSL https://raw.githubusercontent.com/<dono>/lcars-public/main/scripts/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/insanemor/lcars-public/main/scripts/install.sh | bash
 #
 # Variáveis reconhecidas no ambiente:
 #   LCARS_HOST  — nome do host a registrar (ex.: minha-vm)
-#   LCARS_REPO  — URL do repo (default: github.com/<dono>/lcars-public)
+#   LCARS_REPO  — URL do repo (default: github.com/insanemor/lcars-public)
 #   LCARS_BRANCH — branch (default: main)
 #   LCARS_NIXOS — "yes" para rodar nixos-rebuild após bootstrap
 #
@@ -20,7 +20,7 @@
 
 set -euo pipefail
 
-REPO="${LCARS_REPO:-github.com/<dono>/lcars-public}"
+REPO="${LCARS_REPO:-github.com/insanemor/lcars-public}"
 BRANCH="${LCARS_BRANCH:-main}"
 DEST="${LCARS_DEST:-$HOME/lcars-public}"
 HOST="${LCARS_HOST:-}"
