@@ -1,0 +1,34 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Auto-update Nix flake inputs and NixOS module dependencies.",
+
+  "schedule": ["before 6am on monday"],
+  "timezone": "UTC",
+
+  "labels": ["dependencies", "nix"],
+  "automerge": false,
+  "rebaseWhen": "behind-base-branch",
+
+  "nix": {
+    "enabled": true
+  },
+
+  "packageRules": [
+    {
+      "description": "Keep flake inputs (nixpkgs, home-manager, opnix, sops-nix) up to date.",
+      "matchManagers": ["nix"],
+      "groupName": "flake inputs"
+    },
+    {
+      "description": "Pin GitHub Action commits with digest.",
+      "matchManagers": ["github-actions"],
+      "pinDigests": true
+    }
+  ],
+
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on monday"],
+    "recreateWhen": "always"
+  }
+}

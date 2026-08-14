@@ -1,0 +1,30 @@
+# =====================================================================
+# lcars-public — gitignore
+# Arquivos que contêm dados pessoais vivem aqui. Nunca faça commit deles.
+# =====================================================================
+
+# Variáveis específicas do usuário, preenchidas pelo bootstrap.sh
+vars/local.nix
+
+# A configuração de hardware por máquina pode vazar números de série;
+# mantenha local por padrão. Faça commit só depois de revisar.
+hosts/*/hardware-configuration.nix
+
+# Artefatos comuns de build
+result
+result-*
+.direnv
+.envrc
+
+# Secrets — nunca commite secrets em texto plano
+*.age
+*.agebackup
+secrets/*.key
+secrets/*.asc
+
+# Overrides privados do home-manager (escape hatch — veja home/modules/personal/)
+.config/home-manager/private/
+
+# Nix
+*.swp
+*~

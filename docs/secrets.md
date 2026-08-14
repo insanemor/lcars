@@ -1,0 +1,81 @@
+# Secrets e integração com 1Password
+
+Este repo deliberadamente não guarda nenhum secret em texto plano na árvore pública.
+
+## Dois padrões lado a lado
+
+| Caso de uso | Abordagem |
+|---|---|
+| **Credenciais de serviços systemd** (senha de banco, token de API, certificado TLS) | `services.onepassword-secrets` (opnix) |
+| **Dotfiles** (`.zshrc`, `.gitconfig`, `.inputrc`) | Itens do tipo *Document* no seu vault do 1Password |
+
+## 1Password CLI/GUI
+
+Módulo `modules/onePassword/default.nix`:
+
+- `programs._1password.enable` — CLI (`op`)
+- `programs._1password-gui.enable` — Aplicativo desktop
+- `services._1password.sshAgent.enable` — Agente SSH em `~/.1password/agent.sock`
+
+Depois de instalar, abra a GUI e faça pareamento com o app mobile via QR code (o 1Password 8 suporta isso sem conta de email). Depois de pareado, desbloqueie qualquer sessão da área de trabalho em que confia e o agente SSH expõe as chaves do host.
+
+## OpNix
+
+Para serviços que precisam de um secret em disco:
+
+```nix
+services.onepassword-secrets = {
+  enable = true;
+  tokenFile = "/etc/opnix-token";
+  secrets.db-password = {
+    reference = "op://Homelab/Postgres/password";
+    services = [ "postgresql" ];
+  };
+};
+```
+
+`/etc/opnix-token` precisa conter um token de conta de serviço (`ops_...`), criado em 1Password → Developer Settings. Trate esse token como um secret normal — rotação trimestral é recomendada.
+
+## Dotfiles vindos do 1Password
+
+Para `.zshrc`/`.gitconfig` e similares, guarde-os como um item **Document** num vault pessoal. Depois liste-os em `vars/local.nix`:
+
+```nix
+dotfilesFrom1Password = [ "./zshrc" "./gitconfig" ];
+```
+
+Durante `nixos-rebuild switch`, o Home Manager lê os itens Document correspondentes e popula `~/.config/dotfiles/`. Como cada máquina tem seu próprio vault ou referência única por dotfile, os secrets ficam isolados por escopo.
+
+## Escape hatch
+
+Se algum pedaço pessoal se recusar a morar no 1Password (por exemplo, scripts locais referenciando `$HOME/<caminho-secreto>`), coloque em:
+
+```bash
+~/.config/home-manager/private.nix
+```
+
+O Home Manager carrega esse arquivo automaticamente depois de `home/common`. Ele NÃO fica neste repo e NÃO é rastreado em lugar nenhum por padrão.
+
+## Por que não um repo privado?
+
+Manter tudo em 1Password + arquivos locais em `~/.config/home-manager` significa:
+
+1. O repo pode continuar **público** sem vazar bits de identidade.
+2. Ainda existe uma fonte única da verdade (seu vault).
+3. Adicionar um segundo repo adiciona atrito (overrides de input, sincronização, deploy keys) sem benefício proporcional.
+4. Quando chegar a hora de crescer um repo privado, o input `lcars-private` já está cabeado e comentado em `flake.nix` — basta ligar o interruptor.
+
+## Quando migrar para um repo privado
+
+Adicione `lcars-private` se:
+- Você quiser histórico pessoal em git (não só o estado atual)
+- Colaborar com outras pessoas numa infra compartilhada
+- Ultrapassar o modelo um-usuário-por-máquina
+- Hostnames/layouts de rede merecerem uma camada extra
+
+Descomente no `flake.nix`, faça push do repo e rode:
+
+```bash
+nixos-rebuild switch --flake .#<host> \
+  --override-input lcars-private "git+ssh://git@github.com/<voce>/lcars-private.git"
+```
