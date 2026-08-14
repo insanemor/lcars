@@ -6,21 +6,6 @@
 #   $EDITOR settings.nix
 #   sudo nixos-rebuild switch --flake .#<máquina>
 #
-# É versionado, então editá-lo deixa o clone sujo — é o esperado. O que está
-# aqui é o mínimo que o flake precisa. Os campos avançados são opcionais: sem
-# eles, cada módulo usa o próprio default.
-#
-#   systemSettings.extraPackages   [ ]        pacotes nixpkgs no sistema
-#   systemSettings.grubDevice      ""         disco do GRUB, quando bootMode = "bios"
-#   systemSettings.swapFileSize    null       MiB de /swapfile
-#   userSettings.packages          [ ]        pacotes só para o seu usuário
-#   userSettings.sshKeys           [ ]        chaves autorizadas (o sshd só aceita chave)
-#   userSettings.initialPassword   "lcars"    senha da primeira criação da conta
-#   userSettings.gpgKey            null       chave SSH para assinar commits
-#
-# A máquina em si NÃO se configura aqui: quem define networking.hostName e o
-# alvo do rebuild é o nome do diretório em machines/ (veja flake.nix), e as
-# flags de hardware ficam em machines/<máquina>/default.nix.
 # =====================================================================
 
 {
