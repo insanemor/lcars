@@ -4,10 +4,16 @@ Este repo deliberadamente não guarda nenhum secret em texto plano na árvore p�
 
 ## Dois padrões lado a lado
 
-| Caso de uso | Abordagem |
-|---|---|
-| **Credenciais de serviços systemd** (senha de banco, token de API, certificado TLS) | `services.onepassword-secrets` (opnix) |
-| **Dotfiles** (`.zshrc`, `.gitconfig`, `.inputrc`) | Itens do tipo *Document* no seu vault do 1Password |
+| Caso de uso | Abordagem | Estado hoje |
+|---|---|---|
+| **Credenciais de serviços systemd** (senha de banco, token de API, certificado TLS) | `services.onepassword-secrets` (opnix) | **disponível, nada declarado** |
+| **Dotfiles** (`.zshrc`, `.gitconfig`, `.inputrc`) | Itens do tipo *Document* no seu vault | funciona; lista vazia por padrão |
+
+Sobre a coluna da direita: o input `opnix` está em `flake.nix` e o módulo é
+carregado em toda máquina, mas **este repo não declara secret nenhum com ele**.
+A seção [OpNix](#opnix) abaixo é o que você precisa escrever, não algo que já
+está no ar. O mesmo vale para os dotfiles: a fiação existe e funciona, mas
+`vars.dotfilesFrom1Password` vem vazio.
 
 ## 1Password CLI/GUI
 
@@ -35,6 +41,10 @@ O 1Password é software proprietário. O módulo libera exatamente esses pacotes
 via `nixpkgs.config.allowUnfreePredicate`, sem ligar `allowUnfree` global.
 
 ## OpNix
+
+> **Nada disto está declarado no repo.** O módulo está carregado e pronto; o
+> exemplo abaixo é o que você acrescenta na sua máquina quando tiver um serviço
+> que precise de secret.
 
 Para serviços que precisam de um secret em disco:
 
