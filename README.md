@@ -100,32 +100,36 @@ A árvore é dividida por **papel**, não por mecanismo do Nix:
 │   ├── basic/      # headless: base + ssh
 │   └── personal/   # desktop completo: Plasma + 1Password + ferramentas
 │
-├── system/         # módulos NixOS, opt-in via lcars.<caminho>.enable
+├── system/         # módulos NixOS, opt-in via lcars.system.<caminho>.enable
 │   ├── core/       # identidade, locale, boot, usuário
 │   ├── security/   # sshd e firewall
 │   ├── hardware/   # laptop.nix, vm.nix
 │   ├── wm/         # plasma.nix
 │   └── app/        # 1password/
 │
-├── user/           # módulos do Home Manager
+├── user/           # módulos do Home Manager, opt-in via lcars.user.<módulo>.enable
+│   ├── options.nix # as flags acima — declaradas do lado NixOS, veja abaixo
 │   ├── shell/      # zsh.nix, starship.nix
 │   ├── app/        # git.nix, direnv.nix, dotfiles.nix
-│   └── personal/   # escape hatch via private.nix em $HOME
+│   └── personal/   # escape hatch via private.nix em $HOME (sem flag)
 │
 ├── settings.nix    # SUA configuração — o único arquivo que você edita
 ├── scripts/        # install.sh — clona o repo e instala a máquina
 └── docs/
 ```
 
-O encadeamento é: **a máquina escolhe um profile, o profile liga flags, as flags ativam módulos de `system/`.**
+O encadeamento é: **a máquina escolhe um profile, o profile liga flags, as flags ativam módulos.** Vale para os dois lados — `lcars.system.*` para `system/`, `lcars.user.*` para `user/` — e em ambos o caminho da flag espelha o caminho do arquivo.
 
 ```nix
 # machines/meu-pc/default.nix
-lcars.profile = "personal";      # desktop completo
-lcars.wm.plasma.enable = false;  # …exceto o Plasma
+lcars.profile = "personal";             # desktop completo
+lcars.system.wm.plasma.enable = false;  # …exceto o Plasma
+lcars.user.dotfiles.enable = false;     # …e sem puxar dotfiles do 1Password
 ```
 
 Os profiles definem as flags com `mkDefault`, então a máquina tem prioridade e pode sobrescrever qualquer uma **individualmente**, sem copiar o profile inteiro.
+
+As flags de `user/` são declaradas em `user/options.nix`, do lado NixOS, e lidas pelos módulos do Home Manager via `osConfig`. Isso não é capricho: as duas árvores de módulos são separadas, e um profile — que é módulo NixOS — não alcançaria uma option declarada dentro do Home Manager. O detalhe está em [docs/adding-a-host.md](./docs/adding-a-host.md#por-que-lcarsuser-é-declarada-do-lado-nixos).
 
 ## Adicionando outra máquina
 

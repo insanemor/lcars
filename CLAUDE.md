@@ -74,8 +74,17 @@ Na dúvida sobre se algo entra no ciclo: entra.
 
 - **A hierarquia é por papel:** `machines/` (o que a máquina é) escolhe um
   `profiles/` (preset de flags, sempre com `mkDefault`), que liga módulos de
-  `system/`; `user/` são os módulos do Home Manager. Módulos de `system/` são
-  todos importados sempre e opt-in por `lcars.<caminho>.enable`.
+  `system/` (NixOS) e de `user/` (Home Manager). Nos dois lados tudo é
+  importado sempre e nada liga sozinho: opt-in por `lcars.system.<caminho>` e
+  `lcars.user.<módulo>`, e o caminho da flag espelha o do arquivo.
+  `lcars.profile` fica na raiz.
+
+- **As flags de `user/` moram no config do NixOS.** São declaradas em
+  `user/options.nix` (importado no `nixosSystem`) e lidas pelos módulos do
+  Home Manager via `osConfig`. As duas árvores de módulos são separadas: em
+  `user/`, `config` é o do Home Manager, onde `lcars.*` não existe — um profile
+  não conseguiria escrever lá. Ao criar um módulo em `user/`, declare a flag,
+  importe em `user/default.nix`, envolva o corpo em `mkIf` e ligue nos profiles.
 
 - **Alvo é o nixos-unstable.** Opções do NixOS mudam de nome com frequência
   (`sound.enable`, `hardware.pulseaudio`, `hardware.tlp` e

@@ -1,10 +1,13 @@
-# zsh.nix — setup genérico e público de shell.
+# zsh.nix — setup genérico e público de shell. Opt-in por
+# `lcars.user.zsh.enable`, ligado no profile; a flag vem do config do NixOS,
+# não do Home Manager (veja user/options.nix).
+#
 # Bits sensíveis (seu nome em prompt customizado etc.) pertencem ao
 # 1Password (userSettings.dotfilesFrom1Password) ou ao escape hatch
 # `user/personal/default.nix`.
-{ pkgs, ... }:
+{ osConfig, lib, pkgs, ... }:
 
-{
+lib.mkIf osConfig.lcars.user.zsh.enable {
   programs.zsh = {
     enable = true;
 

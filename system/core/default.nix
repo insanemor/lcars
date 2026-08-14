@@ -8,7 +8,7 @@
 with lib;
 
 let
-  cfg = config.lcars.core;
+  cfg = config.lcars.system.core;
 
   # Resolve um nome de pacote vindo do settings.nix. Aceita caminho aninhado
   # ("kdePackages.kate"), o que `pkgs.${name}` não faz — interpolação de
@@ -22,7 +22,7 @@ let
          pkgs;
 in
 {
-  options.lcars.core = {
+  options.lcars.system.core = {
     enable = mkOption { type = types.bool; default = true; };
     locale  = mkOption { type = types.str;   default = sys.locale; };
     timezone = mkOption { type = types.str;  default = sys.timezone; };

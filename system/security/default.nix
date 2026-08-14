@@ -8,10 +8,10 @@
 with lib;
 
 let
-  cfg = config.lcars.security;
+  cfg = config.lcars.system.security;
 in
 {
-  options.lcars.security = {
+  options.lcars.system.security = {
     enable = mkOption { type = types.bool; default = true; };
 
     sshKeys = mkOption {
@@ -20,7 +20,7 @@ in
       description = ''
         Chaves públicas SSH autorizadas para o usuário. Enquanto esta lista
         estiver vazia não há como entrar por ssh — o login local por senha
-        (lcars.core.initialPassword) continua sendo o caminho.
+        (lcars.system.core.initialPassword) continua sendo o caminho.
       '';
     };
 

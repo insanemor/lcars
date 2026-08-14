@@ -54,7 +54,7 @@
       #   system/        módulos NixOS, opt-in por lcars.<x>.enable
       #   profiles/      presets que ligam essas flags (mkDefault)
       #   machines/      hardware da máquina, e overrides se você tiver várias
-      #   user/          módulos do Home Manager
+      #   user/          módulos do Home Manager, opt-in por lcars.user.<x>
       mkMachine = hostName: extras:
         nixpkgs.lib.nixosSystem {
           inherit system;
@@ -62,6 +62,10 @@
 
           modules = [
             ./system
+            # As flags lcars.user.* moram no config do NixOS, não no do Home
+            # Manager — é o que permite ao profile ligar os dois lados no
+            # mesmo lugar. Veja o cabeçalho do arquivo.
+            ./user/options.nix
             ./profiles
             ./machines/${hostName}
 
@@ -75,7 +79,7 @@
 
               lcars.profile = lib.mkDefault sys.profile;
 
-              lcars.core.bootLoader =
+              lcars.system.core.bootLoader =
                 lib.mkDefault (if sys.bootMode == "uefi" then "systemd-boot" else "grub");
 
               home-manager = {
