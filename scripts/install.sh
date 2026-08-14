@@ -12,8 +12,8 @@
 #   LCARS_NIXOS — "yes" para rodar nixos-rebuild após bootstrap
 #
 # O script:
-#   1. Garante que git esteja disponível (instala via apt/pacman/dnf/apk).
-#   2. Detecta se Nix / NixOS estão disponíveis.
+#   1. Verifica que está em NixOS e que git está disponível.
+#   2. Detecta se o nix CLI está disponível.
 #   3. clona o repo em ~/lcars (ou caminho passado).
 #   4. roda `nix run .#bootstrap` para preencher vars/local.nix.
 #   5. opcionalmente ativa uma config NixOS existente.
@@ -31,6 +31,9 @@ log()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m!! \033[0m%s\n' "$*"; }
 die()  { printf '\033[1;31mxx \033[0m%s\n' "$*" >&2; exit 1; }
 
+# Este instalador assume NixOS. Nada de tentar instalar git via apt/dnf/etc.
+[[ -e /etc/NIXOS ]] || die "este instalador só roda em NixOS (/etc/NIXOS ausente)."
+
 # `sudo` pode não existir (NixOS minimal já roda como root).
 SUDO=""
 if [[ "$(id -u)" -ne 0 ]]; then
@@ -39,21 +42,9 @@ if [[ "$(id -u)" -ne 0 ]]; then
   fi
 fi
 
-# --- garantir git ------------------------------------------------------
-# Distros suportadas: Debian/Ubuntu, Fedora, Arch, Alpine, openSUSE, Void.
-# NixOS e outros não-NixOS-minimal: trate git como pré-requisito.
-if ! command -v git >/dev/null 2>&1; then
-  warn "git não encontrado — tentando instalar"
-  if   command -v apt-get     >/dev/null 2>&1; then $SUDO apt-get update && $SUDO apt-get install -y git
-  elif command -v dnf         >/dev/null 2>&1; then $SUDO dnf install -y git
-  elif command -v pacman      >/dev/null 2>&1; then $SUDO pacman -Sy --noconfirm git
-  elif command -v apk         >/dev/null 2>&1; then $SUDO apk add git
-  elif command -v zypper      >/dev/null 2>&1; then $SUDO zypper install -y git
-  elif command -v xbps-install >/dev/null 2>&1; then $SUDO xbps-install -Sy git
-  else die "git ausente. instale-o antes de prosseguir (sudo apt/dnf/pacman/apk/zypper/xbps install git)."
-  fi
-fi
-command -v git >/dev/null || die "git ainda indisponível após tentativa de instalação."
+# --- pré-requisito: git -----------------------------------------------
+# Adicione pkgs.git ao seu configuration.nix se este erro disparar.
+command -v git >/dev/null || die "git não encontrado. adicione pkgs.git em environment.systemPackages e rode nixos-rebuild switch."
 
 if [[ "$REPO" == github.com/* ]] && command -v nix >/dev/null; then
   # caminho via nix flake
@@ -78,12 +69,8 @@ fi
 
 # --- ativação --------------------------------------------------------
 if [[ -n "$HOST" ]] && [[ "$ACTIVATE" == "yes" ]]; then
-  if [[ -e /etc/NIXOS ]]; then
-    log "ativando NixOS configuration #$HOST"
-    $SUDO nixos-rebuild switch --flake ".#$HOST"
-  else
-    warn "/etc/NIXOS ausente — não estamos em NixOS. pulando rebuild."
-  fi
+  log "ativando NixOS configuration #$HOST"
+  $SUDO nixos-rebuild switch --flake ".#$HOST"
 else
   log "ativação automática não solicitada."
   log "passos manuais estão em docs/adding-a-host.md"
