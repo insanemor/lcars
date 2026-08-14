@@ -43,7 +43,7 @@ in
 
     users.users.${user.username}.openssh.authorizedKeys.keys = cfg.sshKeys;
 
-    # Só chave. O login local por senha (console/GDM) segue funcionando.
+    # Só chave. O login local por senha (console/SDDM) segue funcionando.
     services.openssh = mkIf cfg.ssh.enable {
       enable = true;
       openFirewall = true;

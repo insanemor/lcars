@@ -26,7 +26,7 @@
 
     # Preset de flags. Veja profiles/ para o que cada um liga:
     #   "basic"    headless — base + ssh, sem interface gráfica
-    #   "personal" desktop  — GNOME, 1Password, ferramentas de linha de comando
+    #   "personal" desktop  — KDE Plasma, 1Password, ferramentas de linha de comando
     profile = "personal";
 
     timezone = "America/Sao_Paulo";
@@ -47,7 +47,8 @@
     system = "x86_64-linux";
 
     # Pacotes extras no sistema (visíveis a todos os usuários).
-    # Nomes de pacotes nixpkgs, como strings.
+    # Nomes de pacotes nixpkgs, como strings. Caminho aninhado funciona:
+    # "kdePackages.kate".
     extraPackages = [
       # "tcpdump"
       # "nmap"
@@ -83,13 +84,21 @@
     # Preferências. Viram variáveis de ambiente ($EDITOR, $BROWSER, $TERMINAL)
     # e são o que o instalador usa para abrir este arquivo.
     editor   = "vim";
-    terminal = "gnome-terminal";
+    terminal = "konsole";
     browser  = "firefox";
 
     # Pacotes extras só para você (não aparecem para outros usuários).
+    #
+    # ATENÇÃO: o repo instala o Plasma "puro" — o que o módulo plasma6 do NixOS
+    # traz, e mais nada. Não há navegador por padrão. Descomente o firefox
+    # abaixo (ou ponha o seu) para não ficar sem, e lembre que `browser` acima
+    # só define $BROWSER: ele não instala programa nenhum.
     packages = [
-      # "neovim"
-      # "vlc"
+      # "firefox"
+      # "kdePackages.kate"      # editor
+      # "kdePackages.okular"    # leitor de PDF
+      # "kdePackages.ark"       # compactador
+      # "kdePackages.spectacle" # captura de tela
     ];
 
     # ---------------------------------------------------------------

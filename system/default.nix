@@ -7,7 +7,7 @@
 #   core/       identidade, locale, boot, usuário
 #   security/   sshd e firewall
 #   hardware/   ajustes por tipo de máquina (notebook, VM)
-#   wm/         ambiente gráfico
+#   wm/         ambiente gráfico (KDE Plasma)
 #   app/        aplicativos de sistema
 { ... }:
 
@@ -17,7 +17,7 @@
     ./security
     ./hardware/laptop.nix
     ./hardware/vm.nix
-    ./wm/gnome.nix
+    ./wm/plasma.nix
     ./app/1password
   ];
 }

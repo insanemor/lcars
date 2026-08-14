@@ -290,7 +290,7 @@ else
   # O settings.nix é aplicado com mkDefault, então declare aqui o que quiser
   # diferente SÓ nesta máquina:
   #   lcars.profile         = "basic";
-  #   lcars.wm.gnome.enable = false;
+  #   lcars.wm.plasma.enable = false;
 }
 EOF
 fi

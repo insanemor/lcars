@@ -22,7 +22,7 @@ qualquer flag individualmente:
 
 ```nix
 lcars.profile = "personal";      # quero o preset de desktop
-lcars.wm.gnome.enable = false;   # …mas sem o GNOME nesta aqui
+lcars.wm.plasma.enable = false;  # …mas sem interface gráfica nesta aqui
 ```
 
 ## Caminho curto: rodar o instalador na máquina nova
@@ -74,7 +74,7 @@ settings é aplicado com `mkDefault`, então declarar aqui vence:
 
 ```nix
 lcars.profile         = "basic";   # esta máquina foge do settings
-lcars.wm.gnome.enable = false;
+lcars.wm.plasma.enable = false;
 ```
 
 O bootloader **não** vem do `nixos-generate-config` — ele depende de a máquina
@@ -134,7 +134,7 @@ sudo nixos-rebuild switch --flake .#<host>
      config = mkIf (config.lcars.profile == "devops") {
        lcars.core.enable     = mkDefault true;
        lcars.security.enable = mkDefault true;
-       lcars.wm.gnome.enable = mkDefault true;
+       lcars.wm.plasma.enable = mkDefault true;
      };
    }
    ```
