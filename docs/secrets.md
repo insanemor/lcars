@@ -13,7 +13,7 @@ Sobre a coluna da direita: o input `opnix` está em `flake.nix` e o módulo é
 carregado em toda máquina, mas **este repo não declara secret nenhum com ele**.
 A seção [OpNix](#opnix) abaixo é o que você precisa escrever, não algo que já
 está no ar. O mesmo vale para os dotfiles: a fiação existe e funciona, mas
-`vars.dotfilesFrom1Password` vem vazio.
+`userSettings.dotfilesFrom1Password` vem vazio.
 
 ## 1Password CLI/GUI
 
@@ -23,7 +23,7 @@ Módulo `system/app/1password/default.nix`:
 - `programs._1password-gui.enable` — Aplicativo desktop, com `polkitPolicyOwners`
 
 Controle pelas opções `lcars.apps.onePassword.*` (`enableCli`, `enableGui`,
-`enableSshAgent`, `polkitOwner`), cujos defaults vêm de `vars/local.nix`.
+`enableSshAgent`, `polkitOwner`), cujos defaults vêm de `settings.nix`.
 
 **Não existe `services._1password` no NixOS.** O agente SSH não é um serviço do
 sistema: é um recurso do próprio aplicativo, ligado em **Settings → Developer →
@@ -63,7 +63,7 @@ services.onepassword-secrets = {
 
 ## Dotfiles vindos do 1Password
 
-Para `.zshrc`/`.gitconfig` e similares, guarde-os como um item **Document** num vault pessoal. Depois liste-os em `vars/local.nix`:
+Para `.zshrc`/`.gitconfig` e similares, guarde-os como um item **Document** num vault pessoal. Depois liste-os em `settings.nix`:
 
 ```nix
 dotfilesFrom1Password = [ "zshrc" "gitconfig" ];

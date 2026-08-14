@@ -1,6 +1,6 @@
 # zsh.nix — setup genérico e público de shell.
 # Bits sensíveis (seu nome em prompt customizado etc.) pertencem ao
-# 1Password (vars.dotfilesFrom1Password) ou ao escape hatch
+# 1Password (userSettings.dotfilesFrom1Password) ou ao escape hatch
 # `user/personal/default.nix`.
 { pkgs, ... }:
 

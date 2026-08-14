@@ -14,9 +14,9 @@ curl -fsSL https://raw.githubusercontent.com/insanemor/lcars/main/scripts/instal
 
 1. habilita flakes só para esta execução (o sistema atual não precisa já tê-los);
 2. clona o repo em `~/lcars` do seu usuário — se `git` faltar, ele se reexecuta dentro de `nix shell nixpkgs#git`;
-3. gera `vars/local.nix` com defaults derivados da máquina;
-4. detecta o hardware — VM (`systemd-detect-virt`), notebook (`/sys/class/power_supply/BAT*`), UEFI vs BIOS legado — escolhe o profile e escreve `machines/<hostname>/default.nix`;
-5. gera o `hardware-configuration.nix` real com `nixos-generate-config`;
+3. detecta o hardware — VM (`systemd-detect-virt`), notebook (`/sys/class/power_supply/BAT*`), UEFI vs BIOS — e gera o **`settings.nix`** já preenchido;
+4. **abre o `settings.nix` no seu editor** para você revisar; ao salvar e fechar, é o que estiver no arquivo que vale — inclusive se você trocar o hostname ou o profile;
+5. gera `machines/<hostname>/` com o `hardware-configuration.nix` real;
 6. registra os arquivos no index do git (flakes só leem arquivos rastreados);
 7. roda `nixos-rebuild switch --flake .#<hostname>`.
 
@@ -32,12 +32,14 @@ Tudo por variável de ambiente, antes do `bash`:
 |---|---|---|
 | `LCARS_HOST` | `hostname -s` | nome da máquina / diretório em `machines/` |
 | `LCARS_USER` | `$SUDO_USER` | usuário Linux a configurar |
-| `LCARS_PROFILE` | `auto` | nome de um diretório de `profiles/`; `auto` usa `basic` em VM e `personal` fora dela |
+| `LCARS_PROFILE` | `auto` | valor inicial do profile no `settings.nix`; `auto` usa `basic` em VM |
+| `LCARS_EDIT` | `yes` | `no` pula a abertura do editor |
+| `LCARS_EDITOR` | — | editor a usar (default: o do `settings.nix`, senão `nano`/`vim`/`vi`) |
 | `LCARS_ACTION` | `switch` | `switch`, `boot`, `test`, `dry-activate` ou `none` |
 | `LCARS_DEST` | `~/lcars` | onde clonar |
 | `LCARS_REPO` | `github.com/insanemor/lcars` | repo (aceita URL completa) |
 | `LCARS_BRANCH` | `main` | branch |
-| `LCARS_FORCE` | `no` | `yes` reescreve `vars/local.nix` e `machines/<host>/` |
+| `LCARS_FORCE` | `no` | `yes` reescreve `settings.nix` e `machines/<host>/` |
 | `LCARS_UPDATE` | `no` | `yes` faz fast-forward se o repo já existir |
 
 Para inspecionar sem efeito colateral nenhum, use `LCARS_ACTION=none` — ele para antes do rebuild. (`dry-activate` **compila** o sistema inteiro; só não ativa.)
@@ -46,7 +48,7 @@ O instalador é **idempotente**: rodar de novo não sobrescreve nada que você j
 
 ### Sobre `git add -f`
 
-`vars/local.nix` e `machines/*/hardware-configuration.nix` estão no `.gitignore` — eles contêm dados da sua máquina. Mas um flake dentro de um repo git **só enxerga arquivos rastreados pelo git**, então o instalador os põe no *index* com `git add -f`. Isso não os commita.
+`settings.nix` e `machines/*/hardware-configuration.nix` estão no `.gitignore` — eles contêm dados da sua máquina. Mas um flake dentro de um repo git **só enxerga arquivos rastreados pelo git**, então o instalador os põe no *index* com `git add -f`. Isso não os commita.
 
 Para você não commitá-los por acidente, o instalador também instala um hook `pre-commit` que aborta se algum deles entrar num commit.
 
@@ -98,8 +100,9 @@ A árvore é dividida por **papel**, não por mecanismo do Nix:
 │   ├── app/        # git.nix, direnv.nix, dotfiles.nix
 │   └── personal/   # escape hatch via private.nix em $HOME
 │
-├── vars/           # example.nix (template) e local.nix (seu, fora do git)
-├── scripts/        # install.sh (one-shot) e bootstrap.sh (gera as vars)
+├── settings.nix         # SUA configuração — o único arquivo que você edita
+├── settings.example.nix # template versionado
+├── scripts/        # install.sh (one-shot) e bootstrap.sh (gera o settings)
 └── docs/
 ```
 
@@ -123,11 +126,11 @@ A forma mais curta é rodar o instalador na máquina nova — ele cria o diretó
 
 ```bash
 git clone https://github.com/insanemor/lcars ~/lcars && cd ~/lcars
-nix run .#bootstrap                                   # preenche vars/local.nix
+nix run .#bootstrap                                   # gera settings.nix
+$EDITOR settings.nix                                  # hostname, profile, usuário…
 cp -r machines/template machines/meu-laptop
-$EDITOR machines/meu-laptop/default.nix               # escolhe o profile
 sudo nixos-generate-config --show-hardware-config > machines/meu-laptop/hardware-configuration.nix
-git add -f vars/local.nix machines/meu-laptop         # flakes só leem o que o git rastreia
+git add -f settings.nix machines/meu-laptop           # flakes só leem o que o git rastreia
 sudo nixos-rebuild switch --flake .#meu-laptop
 ```
 

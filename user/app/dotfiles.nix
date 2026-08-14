@@ -1,11 +1,11 @@
 # dotfiles.nix — liga itens do tipo Document do 1Password a ~/.config/dotfiles/.
 #
-# Itens listados em vars.dotfilesFrom1Password viram arquivos em
+# Itens listados em userSettings.dotfilesFrom1Password viram arquivos em
 # ~/.config/dotfiles/<rel>. Você os aponta para o destino que quiser
 # (ex.: ~/.zshrc) com `xdg.configFile` ou `home.file` simples.
 #
 # A busca no 1Password acontece na ativação, via op.
-{ config, lib, pkgs, vars, ... }:
+{ config, lib, pkgs, sys, user, ... }:
 
 with lib;
 
@@ -17,8 +17,8 @@ let
     # Nome de atributo seguro: nada de "/" nem "." em chaves de xdg.configFile.
     key = builtins.replaceStrings [ "/" "." ] [ "-" "-" ] rel;
     cachePath = "${cacheDir}/${rel}";
-    opPath = "op://${vars.onePassword.vault}/dotfiles-${rel}/file";
-  }) vars.dotfilesFrom1Password;
+    opPath = "op://${user.onePassword.vault}/dotfiles-${rel}/file";
+  }) user.dotfilesFrom1Password;
 in
 {
   # Os arquivos são materializados em tempo de ATIVAÇÃO, não de build — então

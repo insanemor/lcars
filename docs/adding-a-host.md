@@ -43,14 +43,14 @@ git clone https://github.com/insanemor/lcars ~/lcars
 cd ~/lcars
 ```
 
-### 2. Gere suas vars privadas
+### 2. Gere o settings.nix
 
 ```bash
 nix run .#bootstrap
 # ou: ./scripts/bootstrap.sh
 ```
 
-Isso escreve `vars/local.nix`, que está no `.gitignore`. Contém seu usuário,
+Isso escreve `settings.nix`, que está no `.gitignore`. Contém seu usuário,
 nome completo, email, locale e preferências do 1Password.
 
 Para não responder nada: `LCARS_NONINTERACTIVE=yes ./scripts/bootstrap.sh`
@@ -61,21 +61,25 @@ Para não responder nada: `LCARS_NONINTERACTIVE=yes ./scripts/bootstrap.sh`
 cp -r machines/template machines/$(hostname -s)
 ```
 
-Em `machines/<host>/default.nix`, escolha o profile e ajuste o hardware:
+Profile, bootloader, locale e identidade vêm do `settings.nix`. Em
+`machines/<host>/default.nix` fica só o que é desta máquina:
 
 ```nix
-lcars.profile = "personal";            # ou "basic"
-
 lcars.hardware.vm.enable     = false;
 lcars.hardware.laptop.enable = false;
+```
 
-lcars.core.bootLoader = "systemd-boot"; # UEFI
-# lcars.core.bootLoader = "grub";       # BIOS legado
-# lcars.core.grubDevice = "/dev/sda";
+E os overrides, quando o mesmo repo serve mais de uma máquina — tudo que vem do
+settings é aplicado com `mkDefault`, então declarar aqui vence:
+
+```nix
+lcars.profile         = "basic";   # esta máquina foge do settings
+lcars.wm.gnome.enable = false;
 ```
 
 O bootloader **não** vem do `nixos-generate-config` — ele depende de a máquina
-ter bootado em UEFI ou BIOS, e é você quem informa.
+ter bootado em UEFI ou BIOS. É o campo `bootMode` do settings, e o instalador
+o detecta.
 
 Outras opções úteis:
 
@@ -85,7 +89,7 @@ Outras opções úteis:
 | `lcars.core.initialPassword` | senha inicial do usuário, default `"lcars"` |
 | `lcars.core.swapFileSize` | MiB de `/swapfile`, se o hardware-config não trouxer swap |
 | `lcars.core.extraPackages` | nomes de pacotes nixpkgs, a nível de sistema |
-| `lcars.core.userPackages` | idem, no usuário — **somado** a `vars.userPackages` |
+| `lcars.core.userPackages` | idem, no usuário — **somado** a `userSettings.packages` |
 | `lcars.hardware.laptop.powerManager` | `"tlp"` ou `"ppd"` |
 
 ### 4. Gere a configuração de hardware
@@ -102,12 +106,12 @@ disso é definido pelos módulos de `system/`.
 ### 5. Torne os arquivos visíveis para o flake
 
 ```bash
-git add -f vars/local.nix machines/<host>
+git add -f settings.nix machines/<host>
 ```
 
 Um flake dentro de um repo git só lê arquivos **rastreados**. Como
-`vars/local.nix` e `hardware-configuration.nix` estão no `.gitignore`, sem o
-`-f` o flake silenciosamente cai no `vars/example.nix` e falha ao achar o
+`settings.nix` e `hardware-configuration.nix` estão no `.gitignore`, sem o
+`-f` o flake silenciosamente cai no `settings.example.nix` e falha ao achar o
 hardware-config.
 
 `git add` não é `git commit` — revise antes de dar push. O instalador coloca um
@@ -155,7 +159,7 @@ nixosConfigurations.meu-pc = self.mkMachine "meu-pc" [ ./algo-extra.nix ];
 | Sintoma | Causa |
 |---|---|
 | `does not provide attribute nixosConfigurations.<host>` | `machines/<host>` não existe, ou não foi adicionado ao index do git |
-| Config sobe com usuário `your-username` | `vars/local.nix` não está rastreado — `git add -f vars/local.nix` |
+| Config sobe com usuário `your-username` | `settings.nix` não está rastreado — `git add -f settings.nix` |
 | `path ... does not exist` no hardware-config | Falta `git add -f machines/<host>/hardware-configuration.nix` |
 | `value is not a valid value of enum` em `lcars.profile` | Profile novo não foi acrescentado ao enum em `profiles/default.nix` |
 | A máquina ignora o que declarei | O profile definiu a mesma flag; ele usa `mkDefault`, então declarar na máquina deve vencer — confira se não escreveu `mkDefault` na máquina também |

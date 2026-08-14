@@ -1,4 +1,4 @@
-{ config, lib, pkgs, vars, inputs, ... }:
+{ config, lib, pkgs, sys, user, inputs, ... }:
 
 with lib;
 
@@ -14,19 +14,19 @@ in
       description = "Instala o 1Password e configura o agente SSH.";
     };
 
-    enableCli = mkOption { type = types.bool; default = vars.onePassword.enableCli; };
-    enableGui = mkOption { type = types.bool; default = vars.onePassword.enableGui; };
-    enableSshAgent = mkOption { type = types.bool; default = vars.onePassword.enableSshAgent; };
+    enableCli = mkOption { type = types.bool; default = user.onePassword.enableCli; };
+    enableGui = mkOption { type = types.bool; default = user.onePassword.enableGui; };
+    enableSshAgent = mkOption { type = types.bool; default = user.onePassword.enableSshAgent; };
 
     polkitOwner = mkOption {
       type = types.str;
-      default = vars.onePassword.polkitOwner;
+      default = user.username;
       description = "Usuário autorizado a usar a GUI do 1Password sem prompt de senha.";
     };
 
     user = mkOption {
       type = types.str;
-      default = vars.username;
+      default = user.username;
       description = "Usuário Linux dono do socket do agente SSH.";
     };
   };

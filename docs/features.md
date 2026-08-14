@@ -37,7 +37,7 @@ pela detecção na instalação, ou à mão em `machines/<host>/default.nix`.
 - `system.stateVersion = "24.05"`
 
 **Locale e console**
-- Fuso horário e locale vindos de `vars/local.nix` (default `America/Sao_Paulo`, `pt_BR.UTF-8`)
+- Fuso horário e locale vindos de `settings.nix` (default `America/Sao_Paulo`, `pt_BR.UTF-8`)
 - Locales gerados: `pt_BR.UTF-8`, `en_US.UTF-8`, `C.UTF-8`
 - `LC_MESSAGES` fixo em `pt_BR.UTF-8`
 - Console: fonte `Lat2-Terminus16`, teclado `us-acentos`, pacote `terminus_font`
@@ -50,7 +50,7 @@ pela detecção na instalação, ou à mão em `machines/<host>/default.nix`.
 - NetworkManager
 
 **Usuário**
-- Conta normal com o nome de `vars.username`, shell `zsh`
+- Conta normal com o nome de `userSettings.username`, shell `zsh`
 - Grupos: `networkmanager`, `wheel`, `video`, `audio`
 - Senha inicial `lcars` — **troque no primeiro login com `passwd`**
 - `programs.zsh` habilitado no sistema (necessário para o zsh ser shell de login válido)
@@ -59,7 +59,7 @@ pela detecção na instalação, ou à mão em `machines/<host>/default.nix`.
 
 `git`, `vim`, `htop`, `curl`, `wget`, `jq`, `rsync`, `gnused`, `gnugrep`, `python3`
 
-Acrescente os seus em `vars.systemPackages` ou `lcars.core.extraPackages`.
+Acrescente os seus em `systemSettings.extraPackages` ou `lcars.core.extraPackages`.
 
 ---
 
@@ -148,10 +148,10 @@ não há `source` manual no `.zshrc`.
 
 ### git · `user/app/git.nix`
 
-- Nome e email vindos de `vars/local.nix`
+- Nome e email vindos de `settings.nix`
 - `init.defaultBranch = main`, `pull.rebase`, `rerere`, `push.autoSetupRemote`
 - Aliases: `co`, `br`, `ci`, `st`, `lg`
-- Assinatura por chave SSH **apenas se** `vars.gpgKey` estiver preenchida
+- Assinatura por chave SSH **apenas se** `userSettings.gpgKey` estiver preenchida
 
 ### direnv · `user/app/direnv.nix`
 
@@ -159,7 +159,7 @@ não há `source` manual no `.zshrc`.
 
 ### dotfiles do 1Password · `user/app/dotfiles.nix`
 
-Arquivos listados em `vars.dotfilesFrom1Password` são puxados de itens
+Arquivos listados em `userSettings.dotfilesFrom1Password` são puxados de itens
 **Document** do seu vault na ativação, e aparecem em `~/.config/dotfiles/<nome>`.
 
 Vazio por padrão. Se o `op` não estiver no PATH ou não houver sessão aberta, a
@@ -188,9 +188,9 @@ Para não haver surpresa:
 - **Nenhum container, VPN, impressora ou bluetooth** configurado.
 - **Nenhum editor além do `vim`**, e nenhuma IDE.
 
-## Nota sobre `vars.userPackages`
+## Nota sobre `userSettings.packages`
 
-O `vars/example.nix` traz `userPackages = [ "zsh" "starship" ]`. Os dois já são
+O `settings.example.nix` traz `userPackages = [ "zsh" "starship" ]`. Os dois já são
 instalados pelo `programs.zsh` do sistema e pelo módulo starship do Home
 Manager, então a lista é redundante — inofensiva, mas você pode esvaziá-la.
 

@@ -3,7 +3,7 @@
 # Separado de system/core porque é a parte que decide quem entra na máquina, e
 # porque um servidor e um desktop querem políticas diferentes aqui sem mexer
 # no resto da base.
-{ config, lib, pkgs, vars, ... }:
+{ config, lib, pkgs, sys, user, ... }:
 
 with lib;
 
@@ -16,7 +16,7 @@ in
 
     sshKeys = mkOption {
       type = types.listOf types.str;
-      default = [ ];
+      default = user.sshKeys;
       description = ''
         Chaves públicas SSH autorizadas para o usuário. Enquanto esta lista
         estiver vazia não há como entrar por ssh — o login local por senha
@@ -41,7 +41,7 @@ in
 
   config = mkIf cfg.enable {
 
-    users.users.${vars.username}.openssh.authorizedKeys.keys = cfg.sshKeys;
+    users.users.${user.username}.openssh.authorizedKeys.keys = cfg.sshKeys;
 
     # Só chave. O login local por senha (console/GDM) segue funcionando.
     services.openssh = mkIf cfg.ssh.enable {

@@ -3,7 +3,7 @@
 # O que NÃO mora aqui: fileSystems, swapDevices e boot.initrd vêm do
 # machines/<host>/hardware-configuration.nix; ssh e firewall vivem em
 # system/security.
-{ config, lib, pkgs, vars, ... }:
+{ config, lib, pkgs, sys, user, ... }:
 
 with lib;
 
@@ -13,12 +13,12 @@ in
 {
   options.lcars.core = {
     enable = mkOption { type = types.bool; default = true; };
-    locale  = mkOption { type = types.str;   default = vars.locale; };
-    timezone = mkOption { type = types.str;  default = vars.timezone; };
+    locale  = mkOption { type = types.str;   default = sys.locale; };
+    timezone = mkOption { type = types.str;  default = sys.timezone; };
 
     extraPackages = mkOption {
       type = types.listOf types.str;
-      default = vars.systemPackages;
+      default = sys.extraPackages;
       description = "Nomes de pacotes nixpkgs a instalar no sistema.";
     };
 
@@ -35,15 +35,18 @@ in
 
     grubDevice = mkOption {
       type = types.str;
-      default = "/dev/sda";
-      description = "Disco onde instalar o GRUB quando bootLoader = \"grub\".";
+      default = sys.grubDevice;
+      description = ''
+        Disco onde instalar o GRUB quando bootLoader = "grub". O DISCO, não a
+        partição: "/dev/sda", não "/dev/sda1".
+      '';
     };
 
     # Um swapfile só é criado se você pedir, para não colidir com o swap que o
     # hardware-configuration.nix já tenha detectado.
     swapFileSize = mkOption {
       type = types.nullOr types.int;
-      default = null;
+      default = sys.swapFileSize;
       description = "Tamanho em MiB de /swapfile. null = não criar swapfile.";
     };
 
@@ -51,7 +54,7 @@ in
     # system/security aceita apenas chave.
     initialPassword = mkOption {
       type = types.nullOr types.str;
-      default = "lcars";
+      default = user.initialPassword;
       description = ''
         Senha inicial do usuário, aplicada só na primeira criação da conta.
         Troque com `passwd` no primeiro login. null = não definir senha.
@@ -63,13 +66,25 @@ in
       default = [ ];
       description = ''
         Nomes de pacotes nixpkgs a instalar no usuário. Esta lista é SOMADA a
-        vars.userPackages, não a substitui — assim um profile pode acrescentar
-        ferramentas sem apagar o que você pôs em vars/local.nix.
+        userSettings.packages, não a substitui — assim um profile pode
+        acrescentar ferramentas sem apagar o que você pôs no settings.nix.
       '';
     };
   };
 
   config = mkIf cfg.enable {
+
+    # bootMode = "bios" sem grubDevice gera um erro tardio e obscuro no
+    # instalador do GRUB. Melhor falhar já na avaliação, dizendo o que fazer.
+    assertions = [
+      {
+        assertion = cfg.bootLoader != "grub" || cfg.grubDevice != "";
+        message = ''
+          lcars: bootMode = "bios" exige systemSettings.grubDevice preenchido
+          no settings.nix (o disco, ex.: "/dev/sda" — não a partição).
+        '';
+      }
+    ];
 
     system.stateVersion = "24.05";
 
@@ -108,6 +123,7 @@ in
         systemd-boot.enable = true;
         systemd-boot.configurationLimit = mkDefault 10;
         efi.canTouchEfiVariables = true;
+        efi.efiSysMountPoint = sys.bootMountPath;
       })
       (mkIf (cfg.bootLoader == "grub") {
         grub.enable = true;
@@ -119,20 +135,30 @@ in
       { device = "/swapfile"; size = cfg.swapFileSize; }
     ];
 
+    # --- preferências do usuário ---------------------------------------
+    # Os programas em si precisam estar instalados (userSettings.packages ou
+    # systemSettings.extraPackages) — aqui só dizemos qual usar.
+    environment.variables = {
+      EDITOR = user.editor;
+      VISUAL = user.editor;
+      BROWSER = user.browser;
+      TERMINAL = user.terminal;
+    };
+
     # --- rede ----------------------------------------------------------
     networking.networkmanager.enable = mkDefault true;
 
     # --- usuário -------------------------------------------------------
     users.mutableUsers = true;
     programs.zsh.enable = true;
-    users.users.${vars.username} = {
+    users.users.${user.username} = {
       isNormalUser = true;
-      description  = vars.fullName;
-      home         = "/home/${vars.username}";
+      description  = user.fullName;
+      home         = "/home/${user.username}";
       shell        = pkgs.zsh;
       extraGroups  = [ "networkmanager" "wheel" "video" "audio" ];
       initialPassword = mkIf (cfg.initialPassword != null) cfg.initialPassword;
-      packages = map (p: pkgs.${p}) (vars.userPackages ++ cfg.userPackages);
+      packages = map (p: pkgs.${p}) (user.packages ++ cfg.userPackages);
     };
 
     # --- pacotes base --------------------------------------------------

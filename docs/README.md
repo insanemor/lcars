@@ -13,11 +13,12 @@ Para instalar, comece pelo [README](../README.md) da raiz.
 
 | Quero… | Vá em |
 |---|---|
-| Adicionar um pacote para todas as máquinas | `system/core/default.nix` |
-| Adicionar um pacote só para mim | `vars/local.nix` (`userPackages`) |
+| **Mudar qualquer coisa da minha instalação** | **`settings.nix`** |
+| Adicionar um pacote para todas as máquinas | `systemSettings.extraPackages` |
+| Adicionar um pacote só para mim | `userSettings.packages` |
 | Mudar o preset de um tipo de máquina | `profiles/<nome>/default.nix` |
 | Mudar algo só numa máquina | `machines/<host>/default.nix` |
 | Configurar zsh, git, starship, direnv | `user/` |
 | Trocar o ambiente gráfico | `system/wm/` |
-| Abrir uma porta no firewall | `lcars.security.firewall.allowedTCPPorts` |
-| Autorizar uma chave SSH | `lcars.security.sshKeys` |
+| Abrir uma porta no firewall | `lcars.security.firewall.allowedTCPPorts` (no profile ou na máquina) |
+| Autorizar uma chave SSH | `userSettings.sshKeys` |

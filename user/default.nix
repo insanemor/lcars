@@ -1,4 +1,4 @@
-# user/ — módulos do Home Manager, carregados para vars.username.
+# user/ — módulos do Home Manager, carregados para user.username.
 #
 # Diferente de system/, aqui não há options opt-in: o que está nesta lista é
 # aplicado. O que for específico da sua pessoa e não deve ir para o repo

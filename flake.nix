@@ -33,29 +33,33 @@
   outputs = { self, nixpkgs, home-manager, opnix, ... }@inputs:
     let
       lib = nixpkgs.lib;
-      system = "x86_64-linux";
+
+      # ---------------------------------------------------------------
+      # settings.nix é a fonte única de configuração desta instalação.
+      # Fica fora do git; sem ele caímos no exemplo, para que
+      # `nix flake check` rode num fork recém-clonado.
+      # ---------------------------------------------------------------
+      settings =
+        let local = ./settings.nix; in
+        if builtins.pathExists local then import local else import ./settings.example.nix;
+
+      sys  = settings.systemSettings;
+      user = settings.userSettings;
+
+      system = sys.system or "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
 
-      # Carrega variáveis específicas do usuário (ignoradas pelo git).
-      # Caso vars/local.nix não exista, cai no template — assim `nix flake check`
-      # roda mesmo em forks sem secrets.
-      vars =
-        let local = ./vars/local.nix; in
-        if builtins.pathExists local then
-          import local { inherit lib; }
-        else
-          import ./vars/example.nix { inherit lib; };
-
-      # Fábrica de máquina. A hierarquia entra toda aqui:
+      # Fábrica de máquina.
       #
-      #   system/    módulos NixOS, opt-in por lcars.<x>.enable
-      #   profiles/  presets que ligam essas flags com mkDefault
-      #   machines/  a máquina em si: escolhe o profile e sobrescreve o resto
-      #   user/      módulos do Home Manager
+      #   settings.nix   o que você editou — vale como default para tudo
+      #   system/        módulos NixOS, opt-in por lcars.<x>.enable
+      #   profiles/      presets que ligam essas flags (mkDefault)
+      #   machines/      hardware da máquina, e overrides se você tiver várias
+      #   user/          módulos do Home Manager
       mkMachine = hostName: extras:
         nixpkgs.lib.nixosSystem {
           inherit system;
-          specialArgs = { inherit inputs vars hostName; };
+          specialArgs = { inherit inputs settings sys user hostName; };
 
           modules = [
             ./system
@@ -64,18 +68,26 @@
 
             home-manager.nixosModules.home-manager
 
+            # O que vem do settings.nix. Tudo com mkDefault, para que
+            # machines/<host>/default.nix possa sobrescrever qualquer campo
+            # quando o repo servir mais de uma máquina.
             ({ ... }: {
               networking.hostName = lib.mkDefault hostName;
+
+              lcars.profile = lib.mkDefault sys.profile;
+
+              lcars.core.bootLoader =
+                lib.mkDefault (if sys.bootMode == "uefi" then "systemd-boot" else "grub");
 
               home-manager = {
                 useGlobalPkgs = true;
                 useUserPackages = true;
-                extraSpecialArgs = { inherit vars; };
+                extraSpecialArgs = { inherit settings sys user; };
                 sharedModules = [ ./user/personal ];
-                users.${vars.username}.imports = [ ./user ];
-                users.${vars.username}.home = {
-                  username = vars.username;
-                  homeDirectory = "/home/${vars.username}";
+                users.${user.username}.imports = [ ./user ];
+                users.${user.username}.home = {
+                  username = user.username;
+                  homeDirectory = "/home/${user.username}";
                   stateVersion = "24.05";
                 };
               };
@@ -86,8 +98,10 @@
         };
 
       # Auto-descoberta: todo diretório em machines/ vira uma entrada em
-      # nixosConfigurations. Adicionar uma máquina = criar o diretório.
-      # `template` fica de fora por ser só o modelo a copiar.
+      # nixosConfigurations. `template` fica de fora por ser só o modelo.
+      #
+      # Com uma máquina só, você nunca mexe aqui: o instalador cria
+      # machines/<hostname>/ e o settings.nix aponta para ele.
       machineDirs =
         let entries = builtins.readDir ./machines;
         in lib.filter
@@ -97,7 +111,7 @@
       discoveredMachines =
         lib.genAttrs machineDirs (name: mkMachine name [ ]);
 
-      # Helper empacotado de `nix run` para preencher as vars locais.
+      # Helper empacotado de `nix run` para gerar o settings.nix.
       bootstrap = pkgs.writeShellApplication {
         name = "lcars-bootstrap";
         runtimeInputs = with pkgs; [ gnused gnugrep ];
