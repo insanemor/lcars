@@ -68,7 +68,8 @@ Resumo. O inventário completo, com o arquivo que define cada item, está em
 [docs/features.md](./docs/features.md).
 
 **Em toda máquina** — flakes habilitados e coleta de lixo semanal, locale
-`pt_BR.UTF-8`, NetworkManager, usuário com `zsh`, sshd **somente por chave** com
+`pt_BR.UTF-8`, NetworkManager, usuário com `zsh` (ou `bash`, se você desligar
+`lcars.user.zsh.enable`), sshd **somente por chave** com
 firewall ligado, e a base de linha de comando (`git`, `vim`, `htop`, `curl`,
 `wget`, `jq`, `rsync`, `python3`).
 
