@@ -31,14 +31,26 @@ log()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m!! \033[0m%s\n' "$*"; }
 die()  { printf '\033[1;31mxx \033[0m%s\n' "$*" >&2; exit 1; }
 
+# `sudo` pode não existir (NixOS minimal já roda como root).
+SUDO=""
+if [[ "$(id -u)" -ne 0 ]]; then
+  if command -v sudo >/dev/null 2>&1; then SUDO="sudo"
+  else die "não sou root e sudo não está disponível. rode como root ou instale sudo."
+  fi
+fi
+
 # --- garantir git ------------------------------------------------------
 if ! command -v git >/dev/null 2>&1; then
   warn "git não encontrado — tentando instalar"
-  if   command -v apt-get >/dev/null 2>&1; then sudo apt-get update && sudo apt-get install -y git
-  elif command -v dnf     >/dev/null 2>&1; then sudo dnf install -y git
-  elif command -v pacman  >/dev/null 2>&1; then sudo pacman -Sy --noconfirm git
-  elif command -v apk     >/dev/null 2>&1; then sudo apk add git
-  else die "git ausente e não consegui detectar um package manager. instale-o manualmente."
+  if   command -v apt-get     >/dev/null 2>&1; then $SUDO apt-get update && $SUDO apt-get install -y git
+  elif command -v dnf         >/dev/null 2>&1; then $SUDO dnf install -y git
+  elif command -v yum         >/dev/null 2>&1; then $SUDO yum install -y git
+  elif command -v pacman      >/dev/null 2>&1; then $SUDO pacman -Sy --noconfirm git
+  elif command -v apk         >/dev/null 2>&1; then $SUDO apk add git
+  elif command -v zypper      >/dev/null 2>&1; then $SUDO zypper install -y git
+  elif command -v xbps-install >/dev/null 2>&1; then $SUDO xbps-install -Sy git
+  elif command -v nix         >/dev/null 2>&1; then nix profile install nixpkgs#git
+  else die "git ausente e nenhum package manager conhecido encontrado (apt/dnf/yum/pacman/apk/zypper/xbps/nix). instale git manualmente."
   fi
 fi
 command -v git >/dev/null || die "git ainda indisponível após tentativa de instalação."
@@ -68,7 +80,7 @@ fi
 if [[ -n "$HOST" ]] && [[ "$ACTIVATE" == "yes" ]]; then
   if [[ -e /etc/NIXOS ]]; then
     log "ativando NixOS configuration #$HOST"
-    sudo nixos-rebuild switch --flake ".#$HOST"
+    $SUDO nixos-rebuild switch --flake ".#$HOST"
   else
     warn "/etc/NIXOS ausente — não estamos em NixOS. pulando rebuild."
   fi
