@@ -78,10 +78,15 @@ autosuggestion, syntax highlighting e histórico compartilhado; prompt starship;
 git com aliases e `pull.rebase`; direnv com nix-direnv; e o gancho para puxar
 dotfiles de itens Document do 1Password.
 
-**No profile `personal`** — KDE Plasma 6 com SDDM, PipeWire, fontes
+**No profile `personal`** — KDE Plasma 6 com SDDM, áudio PipeWire, fontes
 Noto/Liberation/DejaVu, 1Password (CLI + GUI + agente SSH), e `ripgrep`, `fd`,
 `bat`, `eza`. O Plasma vem "puro", sem aplicativos extras — **inclusive sem
 navegador**; acrescente o seu em `userSettings.packages`.
+
+O áudio é flag separada (`lcars.system.hardware.audio.enable`), não parte do
+desktop: dá para ter som sem KDE. O teclado também é módulo próprio, ligado
+nos dois profiles — layout US internacional por padrão, valendo de uma vez no
+console e na sessão gráfica.
 
 **Conforme o hardware** — em notebook, `tlp` com limite de carga 80–90% e
 suspensão ao fechar a tampa; em VM, virtio, `qemu-guest-agent` e `spice-vdagent`.

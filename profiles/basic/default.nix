@@ -21,6 +21,12 @@ with lib;
     # ganha nada. Ligue explicitamente se quiser só o CLI aqui.
     lcars.system.app.onePassword.enable = mkDefault false;
 
+    # Teclado sim: mesmo headless, alguém acaba no TTY em algum momento.
+    # Áudio não: sem placa de som ou sem ninguém para ouvir, o PipeWire só
+    # acrescentaria um daemon.
+    lcars.system.hardware.keyboard.enable = mkDefault true;
+    lcars.system.hardware.audio.enable    = mkDefault false;
+
     # --- ambiente do usuário (user/) ----------------------------------
     # Só o que serve a quem entra por ssh para trabalhar. Ficam de fora:
     # starship (prompt bonito num terminal de manutenção não paga o custo),

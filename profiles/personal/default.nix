@@ -18,6 +18,12 @@ with lib;
     lcars.system.wm.plasma.enable       = mkDefault true;
     lcars.system.app.onePassword.enable = mkDefault true;
 
+    # Áudio é independente do desktop: o Plasma não o liga por trás, é aqui
+    # que os dois se encontram. O teclado vale em qualquer máquina; o layout
+    # em si vem do default do módulo, ou da máquina, se ela tiver outro.
+    lcars.system.hardware.audio.enable    = mkDefault true;
+    lcars.system.hardware.keyboard.enable = mkDefault true;
+
     # Estes pacotes não são do sistema, são do usuário — e qual conjunto
     # faz sentido depende do papel da máquina, então é o profile que decide.
     lcars.system.core.userPackages = mkDefault [

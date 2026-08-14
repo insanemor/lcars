@@ -10,15 +10,21 @@
 #
 #   core/       identidade, locale, boot, usuário
 #   security/   sshd e firewall
-#   hardware/   ajustes por tipo de máquina (notebook, VM)
+#   hardware/   o que depende do hardware: áudio, teclado, notebook, VM
 #   wm/         ambiente gráfico (KDE Plasma)
 #   app/        aplicativos de sistema
+#
+# A linha entre core/ e hardware/ é esta: em core/ está o que vale igual em
+# qualquer máquina sua (fuso, locale, bootloader); em hardware/, o que muda
+# com a máquina física — o teclado dela, se tem bateria, se é convidado QEMU.
 { ... }:
 
 {
   imports = [
     ./core
     ./security
+    ./hardware/audio.nix
+    ./hardware/keyboard.nix
     ./hardware/laptop.nix
     ./hardware/vm.nix
     ./wm/plasma.nix
