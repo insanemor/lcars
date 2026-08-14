@@ -3,10 +3,10 @@
 with lib;
 
 let
-  cfg = config.lcars.wm.plasma;
+  cfg = config.lcars.system.wm.plasma;
 in
 {
-  options.lcars.wm.plasma = {
+  options.lcars.system.wm.plasma = {
     enable = mkEnableOption "Ambiente desktop KDE Plasma 6 (+ SDDM, pipewire e fontes).";
 
     wayland = mkOption {

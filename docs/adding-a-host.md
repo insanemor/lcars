@@ -13,17 +13,56 @@ máquina pode sobrescrever se quiser.
 machines/<host>/   escolhe um profile e ajusta o que é só dela
       ↓
 profiles/<nome>/   liga um conjunto de flags (com mkDefault)
-      ↓
-system/<área>/     módulos NixOS, cada um opt-in por lcars.<caminho>.enable
+      ↓            ↓
+system/<área>/     user/<módulo>.nix
+lcars.system.…     lcars.user.…
+módulos NixOS      módulos do Home Manager
 ```
+
+O profile governa os **dois** lados, e em ambos o caminho da flag espelha o
+caminho do arquivo:
+
+| Flag | Módulo |
+|---|---|
+| `lcars.system.wm.plasma.enable` | `system/wm/plasma.nix` |
+| `lcars.system.hardware.laptop.enable` | `system/hardware/laptop.nix` |
+| `lcars.user.starship.enable` | `user/shell/starship.nix` |
+| `lcars.user.dotfiles.enable` | `user/app/dotfiles.nix` |
+
+`lcars.profile` fica na raiz, por não pertencer a nenhum dos dois lados.
 
 Como o profile usa `mkDefault`, a máquina tem prioridade normal e sobrescreve
 qualquer flag individualmente:
 
 ```nix
-lcars.profile = "personal";      # quero o preset de desktop
-lcars.wm.plasma.enable = false;  # …mas sem interface gráfica nesta aqui
+lcars.profile = "personal";             # quero o preset de desktop
+lcars.system.wm.plasma.enable = false;  # …mas sem interface gráfica nesta aqui
+lcars.user.dotfiles.enable = false;     # …e sem puxar dotfiles do 1Password
 ```
+
+### Por que `lcars.user.*` é declarada do lado NixOS
+
+`system/` e `user/` são avaliados em **árvores de módulos separadas**: em
+`user/`, `config` é o config do Home Manager, onde `lcars.*` não existe. Um
+profile é módulo NixOS, então não conseguiria escrever numa option declarada lá
+dentro.
+
+Por isso as cinco flags nascem em `user/options.nix`, que é importado no
+`nixosSystem` (`flake.nix`), e cada módulo de `user/` as lê por `osConfig` — o
+config do sistema, que o Home Manager expõe quando roda como módulo NixOS:
+
+```nix
+# user/shell/starship.nix
+{ osConfig, lib, ... }:
+
+lib.mkIf osConfig.lcars.user.starship.enable {
+  programs.starship.enable = true;
+}
+```
+
+Ao acrescentar um módulo em `user/`: declare a flag em `user/options.nix`,
+importe-o em `user/default.nix`, envolva o corpo no `mkIf` e ligue-o nos
+profiles que fizerem sentido. Sem a flag ligada, ele fica inerte.
 
 ## Caminho curto: rodar o instalador na máquina nova
 
@@ -95,8 +134,8 @@ você diz o que ela é fisicamente, porque **nada disso é detectado**: o
 template vem com as duas em `false`, tanto na mão quanto pelo instalador.
 
 ```nix
-lcars.hardware.vm.enable     = false;  # true numa VM: virtio, qemu-guest-agent
-lcars.hardware.laptop.enable = false;  # true num notebook: tlp, tampa, bateria
+lcars.system.hardware.vm.enable     = false;  # true numa VM: virtio, qemu-guest-agent
+lcars.system.hardware.laptop.enable = false;  # true num notebook: tlp, tampa, bateria
 ```
 
 E os overrides, quando o mesmo repo serve mais de uma máquina — tudo que vem do
@@ -104,7 +143,7 @@ settings é aplicado com `mkDefault`, então declarar aqui vence:
 
 ```nix
 lcars.profile         = "basic";   # esta máquina foge do settings
-lcars.wm.plasma.enable = false;
+lcars.system.wm.plasma.enable = false;
 ```
 
 O bootloader **não** vem do `nixos-generate-config` — ele depende de a máquina
@@ -116,12 +155,12 @@ Outras opções úteis:
 
 | Opção | Para quê |
 |---|---|
-| `lcars.security.sshKeys` | chaves públicas autorizadas (o sshd só aceita chave) |
-| `lcars.core.initialPassword` | senha inicial do usuário, default `"lcars"` |
-| `lcars.core.swapFileSize` | MiB de `/swapfile`, se o hardware-config não trouxer swap |
-| `lcars.core.extraPackages` | nomes de pacotes nixpkgs, a nível de sistema |
-| `lcars.core.userPackages` | idem, no usuário — **somado** a `userSettings.packages` |
-| `lcars.hardware.laptop.powerManager` | `"tlp"` ou `"ppd"` |
+| `lcars.system.security.sshKeys` | chaves públicas autorizadas (o sshd só aceita chave) |
+| `lcars.system.core.initialPassword` | senha inicial do usuário, default `"lcars"` |
+| `lcars.system.core.swapFileSize` | MiB de `/swapfile`, se o hardware-config não trouxer swap |
+| `lcars.system.core.extraPackages` | nomes de pacotes nixpkgs, a nível de sistema |
+| `lcars.system.core.userPackages` | idem, no usuário — **somado** a `userSettings.packages` |
+| `lcars.system.hardware.laptop.powerManager` | `"tlp"` ou `"ppd"` |
 
 ### 4. Gere a configuração de hardware
 
@@ -167,9 +206,17 @@ sudo nixos-rebuild switch --flake .#<host>
    with lib;
    {
      config = mkIf (config.lcars.profile == "devops") {
-       lcars.core.enable     = mkDefault true;
-       lcars.security.enable = mkDefault true;
-       lcars.wm.plasma.enable = mkDefault true;
+       # sistema
+       lcars.system.core.enable      = mkDefault true;
+       lcars.system.security.enable  = mkDefault true;
+       lcars.system.wm.plasma.enable = mkDefault true;
+
+       # ambiente do usuário
+       lcars.user.zsh.enable      = mkDefault true;
+       lcars.user.git.enable      = mkDefault true;
+       lcars.user.direnv.enable   = mkDefault true;
+       lcars.user.starship.enable = mkDefault false;
+       lcars.user.dotfiles.enable = mkDefault false;
      };
    }
    ```
@@ -177,8 +224,13 @@ sudo nixos-rebuild switch --flake .#<host>
 2. Importe-o em `profiles/default.nix` e **acrescente o nome ao enum** de
    `lcars.profile` — sem isso a avaliação falha com um erro de tipo.
 
-Use sempre `mkDefault` nas flags do profile. Sem ele, a máquina não consegue
-sobrescrever e os dois viram um conflito de definição.
+Declare **todas** as flags, inclusive as que ficam `false`. Como o default de
+cada uma já é `false`, omitir funcionaria — mas o valor do profile está em ser
+a lista completa: quem lê o arquivo vê o que a máquina tem e o que não tem, sem
+precisar cruzar com os defaults.
+
+Use sempre `mkDefault`. Sem ele, a máquina não consegue sobrescrever e os dois
+viram um conflito de definição.
 
 ## Registrando uma máquina com módulos extras
 
@@ -201,7 +253,7 @@ nixosConfigurations.meu-pc = self.mkMachine "meu-pc" [ ./algo-extra.nix ];
 | A máquina ignora o que declarei | O profile definiu a mesma flag; ele usa `mkDefault`, então declarar na máquina deve vencer — confira se não escreveu `mkDefault` na máquina também |
 | `detected dubious ownership in repository` | Rebuild como root num repo de outro dono: `sudo git config --global --add safe.directory ~/.dotfiles` |
 | `experimental Nix feature 'nix-command' is disabled` | `export NIX_CONFIG="experimental-features = nix-command flakes"` |
-| tlp e power-profiles-daemon em conflito | `lcars.hardware.laptop.powerManager = "tlp"` ou `"ppd"` |
+| tlp e power-profiles-daemon em conflito | `lcars.system.hardware.laptop.powerManager = "tlp"` ou `"ppd"` |
 | O repo em `~/.dotfiles` pertence ao root e você não consegue editá-lo | O instalador foi chamado com `sudo`. Ele deve rodar como você: `curl … \| bash`, sem sudo. Conserte com `sudo chown -R "$USER" ~/.dotfiles` |
 | A máquina virou `nixos` em vez do modelo | O DMI não expôs `product_name` (ARM, algumas VMs) e o instalador caiu no default. Renomeie `machines/nixos` para o nome que quiser e rode o rebuild apontando para ele |
 | `git clone` falha com "already exists" | O instalador é só para a primeira máquina. Com o clone já no disco, siga o caminho manual acima |

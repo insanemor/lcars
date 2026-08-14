@@ -4,12 +4,21 @@
 #
 #   # machines/meu-pc/default.nix
 #   lcars.profile = "personal";
-#   lcars.wm.plasma.enable = false;  # override pontual, se quiser
+#   lcars.system.wm.plasma.enable = false;  # override pontual, se quiser
 #
 # Todos os profiles são importados sempre; cada um só aplica suas flags quando
 # `lcars.profile` casa com o seu nome. As flags são definidas com `mkDefault`,
 # o que dá à máquina prioridade normal para sobrescrever qualquer uma delas
 # individualmente, sem precisar copiar o profile inteiro.
+#
+# O profile governa os DOIS lados da máquina:
+#
+#   lcars.system.<caminho>   módulos NixOS de system/
+#   lcars.user.<módulo>      módulos do Home Manager de user/
+#
+# Em ambos o caminho da flag espelha o do arquivo — `lcars.system.wm.plasma`
+# é system/wm/plasma.nix, `lcars.user.starship` é user/shell/starship.nix.
+# `lcars.profile` fica na raiz por não pertencer a nenhum dos dois.
 { lib, ... }:
 
 {

@@ -22,7 +22,7 @@ Módulo `system/app/1password/default.nix`:
 - `programs._1password.enable` — CLI (`op`)
 - `programs._1password-gui.enable` — Aplicativo desktop, com `polkitPolicyOwners`
 
-Controle pelas opções `lcars.apps.onePassword.*` (`enableCli`, `enableGui`,
+Controle pelas opções `lcars.system.app.onePassword.*` (`enableCli`, `enableGui`,
 `enableSshAgent`, `polkitOwner`), cujos defaults vêm de `settings.nix`.
 
 **Não existe `services._1password` no NixOS.** O agente SSH não é um serviço do

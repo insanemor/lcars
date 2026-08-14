@@ -10,8 +10,8 @@
 #        sudo nixos-generate-config --show-hardware-config \
 #          > machines/<nome>/hardware-configuration.nix
 #   3. Aponte systemSettings.hostname para <nome> no settings.nix
-#   4. `git add -f settings.nix machines/<nome>` — flakes só enxergam
-#      arquivos que o git rastreia.
+#   4. `git add -f machines/<nome>` — flakes só enxergam arquivos que o git
+#      rastreia, e o hardware-configuration.nix está no .gitignore.
 #
 # `machines/<dir>` vira uma entrada de nixosConfigurations automaticamente, e
 # é o nome do diretório que vira networking.hostName. `template` é ignorado
@@ -29,17 +29,21 @@
   # Ninguém detecta isto por você — nem o instalador. Ligue à mão o que
   # esta máquina for: vm traz virtio e qemu-guest-agent, laptop traz tlp,
   # limite de carga da bateria e suspensão ao fechar a tampa.
-  lcars.hardware.vm.enable     = false;
-  lcars.hardware.laptop.enable = false;
+  lcars.system.hardware.vm.enable     = false;
+  lcars.system.hardware.laptop.enable = false;
 
-  # --- overrides do settings.nix ------------------------------------
-  # Tudo que vem do settings é aplicado com mkDefault, então basta declarar
-  # aqui o que você quer diferente NESTA máquina:
+  # --- overrides do profile e do settings.nix -----------------------
+  # O profile e o settings aplicam tudo com mkDefault, então basta declarar
+  # aqui o que você quer diferente NESTA máquina. Vale para os dois lados:
   #
-  #   lcars.profile          = "basic";        # outro preset só aqui
-  #   lcars.core.bootLoader  = "grub";
-  #   lcars.core.grubDevice  = "/dev/sda";
-  #   lcars.core.swapFileSize = 8192;
-  #   lcars.wm.plasma.enable = false;
-  #   lcars.security.sshKeys = [ "ssh-ed25519 AAAA..." ];
+  #   lcars.profile                   = "basic";   # outro preset só aqui
+  #
+  #   lcars.system.core.bootLoader    = "grub";    # sistema
+  #   lcars.system.core.grubDevice    = "/dev/sda";
+  #   lcars.system.core.swapFileSize  = 8192;
+  #   lcars.system.wm.plasma.enable   = false;
+  #   lcars.system.security.sshKeys   = [ "ssh-ed25519 AAAA..." ];
+  #
+  #   lcars.user.starship.enable      = false;     # ambiente do usuário
+  #   lcars.user.dotfiles.enable      = false;
 }

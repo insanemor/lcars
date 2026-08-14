@@ -2,19 +2,35 @@
 #
 # Base do sistema, acesso por ssh, nada de gráfico. É o default: uma máquina
 # que não declara `lcars.profile` sobe assim.
+#
+# Este arquivo é o painel da máquina: o que não estiver ligado aqui (ou na
+# própria máquina) não sobe — vale para os dois lados, system/ e user/.
 { config, lib, ... }:
 
 with lib;
 
 {
   config = mkIf (config.lcars.profile == "basic") {
-    lcars.core.enable     = mkDefault true;
-    lcars.security.enable = mkDefault true;
+    # --- sistema (system/) --------------------------------------------
+    lcars.system.core.enable     = mkDefault true;
+    lcars.system.security.enable = mkDefault true;
 
-    lcars.wm.plasma.enable = mkDefault false;
+    lcars.system.wm.plasma.enable = mkDefault false;
 
     # 1Password é proprietário e puxa a GUI junto; numa máquina headless não
     # ganha nada. Ligue explicitamente se quiser só o CLI aqui.
-    lcars.apps.onePassword.enable = mkDefault false;
+    lcars.system.app.onePassword.enable = mkDefault false;
+
+    # --- ambiente do usuário (user/) ----------------------------------
+    # Só o que serve a quem entra por ssh para trabalhar. Ficam de fora:
+    # starship (prompt bonito num terminal de manutenção não paga o custo),
+    # direnv (não há projetos aqui) e dotfiles (dependem de sessão aberta no
+    # 1Password, que numa máquina headless normalmente não existe).
+    lcars.user.zsh.enable      = mkDefault true;
+    lcars.user.git.enable      = mkDefault true;
+
+    lcars.user.starship.enable = mkDefault false;
+    lcars.user.direnv.enable   = mkDefault false;
+    lcars.user.dotfiles.enable = mkDefault false;
   };
 }

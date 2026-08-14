@@ -1,7 +1,8 @@
-# git.nix — defaults públicos e forkáveis.
-{ lib, user, ... }:
+# git.nix — defaults públicos e forkáveis. Opt-in por `lcars.user.git.enable`,
+# ligado no profile; a flag vem do config do NixOS (veja user/options.nix).
+{ osConfig, lib, user, ... }:
 
-{
+lib.mkIf osConfig.lcars.user.git.enable {
   programs.git = {
     enable = true;
     userName  = user.fullName;

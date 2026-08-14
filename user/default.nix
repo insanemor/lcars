@@ -1,8 +1,16 @@
 # user/ — módulos do Home Manager, carregados para user.username.
 #
-# Diferente de system/, aqui não há options opt-in: o que está nesta lista é
-# aplicado. O que for específico da sua pessoa e não deve ir para o repo
-# público vive em user/personal/ (escape hatch) ou no 1Password.
+# Como em system/, todos são importados sempre e nenhum liga sozinho: cada um
+# é opt-in por `lcars.user.<módulo>.enable`, e quem decide é o profile.
+#
+# A diferença é onde a flag mora. Estes módulos são avaliados na árvore do
+# Home Manager, cujo `config` não conhece `lcars.*`; as options são declaradas
+# do lado NixOS, em user/options.nix, e lidas aqui por `osConfig`. É o que
+# permite a um profile — que é módulo NixOS — ligar os dois lados no mesmo
+# lugar.
+#
+# O que for específico da sua pessoa e não deve ir para o repo público vive em
+# user/personal/ (escape hatch, sem flag) ou no 1Password.
 { ... }:
 
 {

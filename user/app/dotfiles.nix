@@ -5,7 +5,10 @@
 # (ex.: ~/.zshrc) com `xdg.configFile` ou `home.file` simples.
 #
 # A busca no 1Password acontece na ativação, via op.
-{ config, lib, pkgs, sys, user, ... }:
+#
+# Opt-in por `lcars.user.dotfiles.enable`, ligado no profile; a flag vem do
+# config do NixOS (veja user/options.nix).
+{ config, osConfig, lib, pkgs, sys, user, ... }:
 
 with lib;
 
@@ -18,9 +21,9 @@ let
     key = builtins.replaceStrings [ "/" "." ] [ "-" "-" ] rel;
     cachePath = "${cacheDir}/${rel}";
     opPath = "op://${user.onePassword.vault}/dotfiles-${rel}/file";
-  }) user.dotfilesFrom1Password;
+  }) (user.dotfilesFrom1Password or [ ]);
 in
-{
+mkIf osConfig.lcars.user.dotfiles.enable {
   # Os arquivos são materializados em tempo de ATIVAÇÃO, não de build — então
   # precisam ser symlinks para fora do store. `source = <path>` faria o
   # home-manager tentar copiá-los para o store durante o build e falhar,

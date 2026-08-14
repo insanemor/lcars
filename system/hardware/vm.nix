@@ -3,9 +3,9 @@
 with lib;
 
 {
-  options.lcars.hardware.vm.enable = mkEnableOption "Ajustes para convidado QEMU/KVM.";
+  options.lcars.system.hardware.vm.enable = mkEnableOption "Ajustes para convidado QEMU/KVM.";
 
-  config = mkIf config.lcars.hardware.vm.enable {
+  config = mkIf config.lcars.system.hardware.vm.enable {
 
     # Estes são NOMES DE MÓDULOS DO KERNEL (strings), não pacotes nixpkgs.
     boot.initrd.availableKernelModules = [

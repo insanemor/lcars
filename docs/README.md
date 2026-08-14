@@ -20,6 +20,8 @@ Para instalar, comece pelo [README](../README.md) da raiz.
 | Mudar o preset de um tipo de máquina | `profiles/<nome>/default.nix` |
 | Mudar algo só numa máquina | `machines/<host>/default.nix` |
 | Configurar zsh, git, starship, direnv | `user/` |
+| **Ligar ou desligar** zsh, git, starship, direnv, dotfiles | `lcars.user.<módulo>.enable` (no profile ou na máquina) |
+| Ligar ou desligar um módulo de sistema | `lcars.system.<caminho>.enable` (idem) |
 | Trocar o ambiente gráfico | `system/wm/` |
-| Abrir uma porta no firewall | `lcars.security.firewall.allowedTCPPorts` (no profile ou na máquina) |
+| Abrir uma porta no firewall | `lcars.system.security.firewall.allowedTCPPorts` (no profile ou na máquina) |
 | Autorizar uma chave SSH | `userSettings.sshKeys` |
