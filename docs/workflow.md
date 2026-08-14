@@ -95,10 +95,10 @@ antes do último passo:
 ```bash
 git clone https://github.com/insanemor/lcars ~/.dotfiles && cd ~/.dotfiles
 git checkout <a-branch-em-teste>
-./scripts/bootstrap.sh                          # gera settings.nix
+$EDITOR settings.nix                            # já vem versionado
 cp -r machines/template machines/teste
 sudo nixos-generate-config --show-hardware-config > machines/teste/hardware-configuration.nix
-git add -f settings.nix machines/teste
+git add -f machines/teste
 
 nix flake check                                 # avalia todas as máquinas
 sudo nixos-rebuild dry-activate --flake .#teste # compila tudo, não ativa

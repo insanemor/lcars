@@ -6,8 +6,7 @@ define aquilo, para você ir direto à fonte quando quiser mudar.
 ## Como ler esta lista
 
 Nada em `system/` liga sozinho. O que decide é o **profile** que a máquina
-escolhe, e ele é escolhido por você em `settings.nix` — o `bootstrap.sh` só
-propõe um default: `basic` em VM, `personal` fora dela.
+escolhe, e quem escolhe é você, em `settings.nix`. O repo vem com `personal`.
 
 | | `basic` | `personal` |
 |---|---|---|
@@ -113,7 +112,7 @@ para o socket que o app cria.
 
 ---
 
-## Ajustes por hardware — por detecção
+## Ajustes por hardware — ligados à mão
 
 ### Notebook
 
@@ -205,9 +204,8 @@ Para não haver surpresa:
 
 ## Nota sobre `userSettings.packages`
 
-O `settings.example.nix` traz `userPackages = [ "zsh" "starship" ]`. Os dois já são
-instalados pelo `programs.zsh` do sistema e pelo módulo starship do Home
-Manager, então a lista é redundante — inofensiva, mas você pode esvaziá-la.
+O campo é **opcional**: o `settings.nix` versionado não o traz, e sem ele a
+lista é vazia. Acrescente-o quando quiser pacotes só no seu usuário.
 
-Essa lista é **somada** a `lcars.core.userPackages`, que é o que os profiles
-usam. Um não apaga o outro.
+Quando existe, é **somado** a `lcars.core.userPackages`, que é o que os
+profiles usam. Um não apaga o outro.

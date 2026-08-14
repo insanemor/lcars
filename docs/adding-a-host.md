@@ -52,19 +52,30 @@ git clone https://github.com/insanemor/lcars ~/.dotfiles
 cd ~/.dotfiles
 ```
 
-### 2. Gere o settings.nix
+### 2. Edite o settings.nix
 
 ```bash
-./scripts/bootstrap.sh
-# com o repo já clonado, `nix run .#bootstrap` é equivalente
+$EDITOR settings.nix
 ```
 
-Isso escreve `settings.nix`, que está no `.gitignore`. Contém seu usuário,
-nome completo, email, locale e preferências do 1Password.
+Ele **vem versionado** com o default básico — não há nada a gerar. Contém seu
+usuário, nome completo, email, locale, profile e preferências do 1Password.
+Editá-lo deixa o clone sujo; é o esperado.
 
-Ele pergunta cada campo, oferecendo um default detectado da máquina. Para não
-responder nada: `LCARS_NONINTERACTIVE=yes ./scripts/bootstrap.sh`. Para
-recomeçar um `settings.nix` que já existe: `LCARS_FORCE=yes`.
+O que está no arquivo é o mínimo que o flake precisa. Estes campos são
+**opcionais** — sem eles, cada módulo usa o próprio default:
+
+| Campo | Default | Para quê |
+|---|---|---|
+| `systemSettings.extraPackages` | `[ ]` | pacotes nixpkgs no sistema, por nome |
+| `systemSettings.grubDevice` | `""` | disco do GRUB, quando `bootMode = "bios"` |
+| `systemSettings.swapFileSize` | `null` | MiB de `/swapfile`, se o hardware-config não trouxer swap |
+| `userSettings.packages` | `[ ]` | pacotes só para o seu usuário |
+| `userSettings.sshKeys` | `[ ]` | chaves autorizadas — o sshd só aceita chave |
+| `userSettings.initialPassword` | `"lcars"` | senha da primeira criação da conta |
+| `userSettings.gpgKey` | `null` | chave SSH para assinar commits do git |
+
+Acrescente ao `settings.nix` só o que for usar.
 
 ### 3. Crie o diretório da máquina
 
@@ -97,9 +108,9 @@ lcars.wm.plasma.enable = false;
 ```
 
 O bootloader **não** vem do `nixos-generate-config` — ele depende de a máquina
-ter bootado em UEFI ou BIOS. É o campo `bootMode` do settings, e tanto o
-instalador quanto o `bootstrap.sh` o detectam, junto com o `grubDevice` quando
-o boot é BIOS legado.
+ter bootado em UEFI ou BIOS. É o campo `bootMode` do settings, que o instalador
+detecta — junto com o `grubDevice`, quando o boot é BIOS legado. Na mão, confira
+em qual dos dois a máquina bootou: `[ -d /sys/firmware/efi ]`.
 
 Outras opções úteis:
 
@@ -130,17 +141,16 @@ real. Sobrescrever é o esperado.
 ### 5. Torne os arquivos visíveis para o flake
 
 ```bash
-git add -f settings.nix machines/<host>
+git add -f machines/<host>
 ```
 
-Um flake dentro de um repo git só lê arquivos **rastreados**. Como
-`settings.nix` e `hardware-configuration.nix` estão no `.gitignore`, sem o
-`-f` o flake silenciosamente cai no `settings.example.nix` e falha ao achar o
-hardware-config.
+Um flake dentro de um repo git só lê arquivos **rastreados**. O `settings.nix`
+já é, mas `machines/<host>/hardware-configuration.nix` está no `.gitignore` —
+sem o `-f`, o flake falha ao achar o hardware-config.
 
-`git add` não é `git commit`. Mas o index é meio caminho: com os dois arquivos
-ali, um `git commit` distraído os leva junto. Confira o `git status` antes de
-commitar qualquer coisa neste repo.
+`git add` não é `git commit`. Mas o index é meio caminho: com o arquivo ali, um
+`git commit` distraído o leva junto. Confira o `git status` antes de commitar
+qualquer coisa neste repo.
 
 ### 6. Builde e ative
 
@@ -184,7 +194,8 @@ nixosConfigurations.meu-pc = self.mkMachine "meu-pc" [ ./algo-extra.nix ];
 | Sintoma | Causa |
 |---|---|
 | `does not provide attribute nixosConfigurations.<host>` | `machines/<host>` não existe, ou não foi adicionado ao index do git. Confira o nome exato com `ls machines/` — depois do instalador ele é o modelo do hardware, não o hostname antigo |
-| Config sobe com o usuário `ins` e hostname `nixos` | `settings.nix` não está rastreado, e o flake caiu no `settings.example.nix` — `git add -f settings.nix` |
+| `error: getting status of '/nix/store/…/settings.nix'` | O `settings.nix` foi apagado ou renomeado. Ele é obrigatório e versionado: recupere com `git checkout settings.nix` |
+| `attribute 'sshKeys' missing` (ou outro campo) | Um módulo passou a exigir um campo que o seu `settings.nix` não tem. Acrescente-o, ou dê um default ao módulo com `user.<campo> or <valor>` |
 | `path ... does not exist` no hardware-config | Falta `git add -f machines/<host>/hardware-configuration.nix` |
 | `value is not a valid value of enum` em `lcars.profile` | Profile novo não foi acrescentado ao enum em `profiles/default.nix` |
 | A máquina ignora o que declarei | O profile definiu a mesma flag; ele usa `mkDefault`, então declarar na máquina deve vencer — confira se não escreveu `mkDefault` na máquina também |

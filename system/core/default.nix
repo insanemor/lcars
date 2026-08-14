@@ -29,7 +29,7 @@ in
 
     extraPackages = mkOption {
       type = types.listOf types.str;
-      default = sys.extraPackages;
+      default = sys.extraPackages or [ ];
       description = ''
         Nomes de pacotes nixpkgs a instalar no sistema. Aceita caminho
         aninhado, como "kdePackages.kate".
@@ -49,7 +49,7 @@ in
 
     grubDevice = mkOption {
       type = types.str;
-      default = sys.grubDevice;
+      default = sys.grubDevice or "";
       description = ''
         Disco onde instalar o GRUB quando bootLoader = "grub". O DISCO, não a
         partição: "/dev/sda", não "/dev/sda1".
@@ -60,7 +60,7 @@ in
     # hardware-configuration.nix já tenha detectado.
     swapFileSize = mkOption {
       type = types.nullOr types.int;
-      default = sys.swapFileSize;
+      default = sys.swapFileSize or null;
       description = "Tamanho em MiB de /swapfile. null = não criar swapfile.";
     };
 
@@ -68,7 +68,7 @@ in
     # system/security aceita apenas chave.
     initialPassword = mkOption {
       type = types.nullOr types.str;
-      default = user.initialPassword;
+      default = user.initialPassword or "lcars";
       description = ''
         Senha inicial do usuário, aplicada só na primeira criação da conta.
         Troque com `passwd` no primeiro login. null = não definir senha.
@@ -173,7 +173,7 @@ in
       shell        = pkgs.zsh;
       extraGroups  = [ "networkmanager" "wheel" "video" "audio" ];
       initialPassword = mkIf (cfg.initialPassword != null) cfg.initialPassword;
-      packages = map pkgByName (user.packages ++ cfg.userPackages);
+      packages = map pkgByName ((user.packages or [ ]) ++ cfg.userPackages);
     };
 
     # --- pacotes base --------------------------------------------------

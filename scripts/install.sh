@@ -21,8 +21,8 @@ cp -r ~/.dotfiles/machines/template "$destination"
 sudo nixos-generate-config --show-hardware-config > "$destination/hardware-configuration.nix"
 echo "Configuração de hardware salva em: $destination/hardware-configuration.nix"
 
-# settings.nix é a fonte única desta instalação — sai do exemplo versionado
-cp ~/.dotfiles/settings.example.nix ~/.dotfiles/settings.nix
+# settings.nix vem versionado com o default básico — o script edita esse mesmo
+# arquivo, e o editor abaixo te dá a chance de revisar antes do build.
 
 # Check if uefi or bios
 if [ -d /sys/firmware/efi/efivars ]; then
@@ -44,9 +44,9 @@ if [ -z "$EDITOR" ]; then
 fi
 $EDITOR ~/.dotfiles/settings.nix;
 
-# Flakes só enxergam arquivos rastreados pelo git, e estes dois estão no
-# .gitignore. `add -f` os põe no index; não é commit.
-nix-shell -p git --command "git -C ~/.dotfiles add -f settings.nix machines/$model_name"
+# Flakes só enxergam arquivos rastreados pelo git, e o hardware-configuration
+# está no .gitignore. `add -f` o põe no index; não é commit.
+nix-shell -p git --command "git -C ~/.dotfiles add -f machines/$model_name"
 
 # Rebuild system (o home-manager entra como módulo neste mesmo rebuild)
 sudo nixos-rebuild switch --flake ~/.dotfiles#"$model_name";
