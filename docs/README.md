@@ -14,6 +14,7 @@ Para instalar, comece pelo [README](../README.md) da raiz.
 | Quero… | Vá em |
 |---|---|
 | **Mudar qualquer coisa da minha instalação** | **`settings.nix`** |
+| Renomear a máquina | renomear o diretório em `machines/` — é dele que vem o `networking.hostName` |
 | Adicionar um pacote para todas as máquinas | `systemSettings.extraPackages` |
 | Adicionar um pacote só para mim | `userSettings.packages` |
 | Mudar o preset de um tipo de máquina | `profiles/<nome>/default.nix` |

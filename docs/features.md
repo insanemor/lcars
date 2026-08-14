@@ -6,7 +6,8 @@ define aquilo, para você ir direto à fonte quando quiser mudar.
 ## Como ler esta lista
 
 Nada em `system/` liga sozinho. O que decide é o **profile** que a máquina
-escolhe, e o instalador escolhe por você: `basic` em VM, `personal` fora dela.
+escolhe, e ele é escolhido por você em `settings.nix` — o `bootstrap.sh` só
+propõe um default: `basic` em VM, `personal` fora dela.
 
 | | `basic` | `personal` |
 |---|---|---|
@@ -22,8 +23,10 @@ Os presets estão em `profiles/basic/default.nix` e
 então a máquina pode desligar qualquer item individualmente sem abandonar o
 resto do preset.
 
-Ajustes de hardware (`system/hardware`) não dependem do profile: são ligados
-pela detecção na instalação, ou à mão em `machines/<host>/default.nix`.
+Ajustes de hardware (`system/hardware`) não dependem do profile, e **não são
+detectados**: quem os liga é você, em `machines/<host>/default.nix`. O template
+traz `lcars.hardware.vm.enable` e `lcars.hardware.laptop.enable` em `false`;
+num notebook ou numa VM, mude para `true` e rode o rebuild.
 
 ---
 

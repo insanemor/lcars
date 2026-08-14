@@ -18,10 +18,13 @@
   # SISTEMA
   # -------------------------------------------------------------------
   systemSettings = {
-    # Nome desta máquina. Vira networking.hostName e o alvo do rebuild:
-    #   sudo nixos-rebuild switch --flake .#<hostname>
-    # Também é o diretório procurado em machines/<hostname>/ para o
-    # hardware-configuration.nix.
+    # Nome desta máquina — registro de qual diretório de machines/ é o seu.
+    #
+    # Quem define networking.hostName e o alvo do rebuild é o NOME DO DIRETÓRIO
+    # em machines/ (veja flake.nix), não este campo. O instalador escreve aqui
+    # o mesmo nome que deu ao diretório: o modelo do hardware.
+    # Para renomear a máquina, renomeie o diretório — e atualize isto aqui para
+    # os dois não divergirem.
     hostname = "nixos";
 
     # Preset de flags. Veja profiles/ para o que cada um liga:
