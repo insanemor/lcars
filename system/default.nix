@@ -11,7 +11,7 @@
 #   core/       identidade, locale, boot, usuário
 #   security/   sshd e firewall
 #   hardware/   o que depende do hardware: áudio, teclado, notebook, VM
-#   wm/         ambiente gráfico (KDE Plasma)
+#   wm/         ambientes gráficos (Plasma, Hyprland) e a tela de login
 #   app/        aplicativos de sistema
 #
 # A linha entre core/ e hardware/ é esta: em core/ está o que vale igual em
@@ -27,7 +27,7 @@
     ./hardware/keyboard.nix
     ./hardware/laptop.nix
     ./hardware/vm.nix
-    ./wm/plasma.nix
+    ./wm
     ./app/1password
   ];
 }

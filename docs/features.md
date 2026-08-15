@@ -13,7 +13,9 @@ O repo vem com `personal`.
 |---|---|---|---|
 | Base do sistema (`system/core`) | `lcars.system.core.enable` | sim | sim |
 | ssh e firewall (`system/security`) | `lcars.system.security.enable` | sim | sim |
-| Plasma + SDDM + fontes (`system/wm`) | `lcars.system.wm.plasma.enable` | — | sim |
+| Plasma + fontes (`system/wm`) | `lcars.system.wm.plasma.enable` | — | sim |
+| Hyprland, compositor (`system/wm`) | `lcars.system.wm.hyprland.enable` | — | sim |
+| Config do Hyprland (`user/wm`) | `lcars.user.hyprland.enable` | — | sim |
 | Áudio PipeWire (`system/hardware`) | `lcars.system.hardware.audio.enable` | — | sim |
 | Teclado, console e gráfico (`system/hardware`) | `lcars.system.hardware.keyboard.enable` | sim | sim |
 | 1Password CLI e GUI (`system/app`) | `lcars.system.app.onePassword.enable` | — | sim |
@@ -110,17 +112,65 @@ não fica aberta na rede.
 
 ---
 
-## Ambiente gráfico — só no profile `personal`
+## Ambientes gráficos — só no profile `personal`
 
-`system/wm/plasma.nix` · option `lcars.system.wm.plasma`
+**Os dois ficam ligados ao mesmo tempo** e aparecem lado a lado na tela de
+login. O Plasma abre por padrão; se o Hyprland não subir, há para onde voltar
+sem editar o repositório.
 
-- **KDE Plasma 6** com **SDDM**, sessão padrão Wayland (a sessão X11 continua
-  disponível na tela de login; `lcars.system.wm.plasma.wayland = false` inverte isso)
+### A tela de login · `system/wm/default.nix` · option `lcars.system.wm`
+
+O SDDM e a escolha da sessão não pertencem a nenhum ambiente — se morassem
+dentro de um deles, ligar o segundo daria conflito de definição, e uma máquina
+só com Hyprland ficaria sem tela de login.
+
+- `defaultSession` — vazio decide sozinho, preferindo o Plasma. Ponha
+  `"hyprland"` na máquina para inverter
+- `sddm.wayland` — se o próprio SDDM roda em Wayland (independe da sessão que
+  você escolhe depois)
+
+### KDE Plasma · `system/wm/plasma.nix` · option `lcars.system.wm.plasma`
+
+- **KDE Plasma 6**, sessão Wayland pré-selecionada
+  (`lcars.system.wm.plasma.wayland = false` troca para a X11; as duas
+  continuam na tela de login)
 - **Fontes**: `noto-fonts`, `noto-fonts-color-emoji`, `liberation_ttf`, `dejavu_fonts`, mais o conjunto padrão do NixOS
 - **Aplicativos**: só o que o módulo `plasma6` do NixOS traz. Nada é
   acrescentado por este repo — **nem navegador**. Remova o que não quiser com
   `lcars.system.wm.plasma.excludePackages`
 - `dconf` habilitado
+
+### Hyprland · `system/wm/hyprland.nix` + `user/wm/hyprland.nix`
+
+Compositor Wayland com tiling. Dividido nos dois lados do repo: o compositor é
+do sistema, o `hyprland.conf` é seu.
+
+**Sistema** (`lcars.system.wm.hyprland.enable`) — o compositor, XWayland,
+portais XDG (sem eles um "salvar como" de aplicativo GTK não abre) e o agente
+polkit (sem ele, pedidos de senha de programa gráfico falham em silêncio).
+
+Mais os utilitários que o Hyprland **não** traz e sem os quais a sessão sobe
+inutilizável: `wl-clipboard`, `brightnessctl`, `pamixer`, `playerctl`,
+`hyprpicker`, `grim`, `slurp`, `hyprpaper`.
+
+**Usuário** (`lcars.user.hyprland.enable`) — atalhos, regras de janela, o que
+sobe com a sessão, e os pacotes `kitty` e `rofi`. O layout do teclado vem de
+`lcars.system.hardware.keyboard`, o mesmo do console e do SDDM.
+
+| Atalho | O que faz |
+|---|---|
+| `SUPER+Enter` | terminal (kitty) |
+| `SUPER+D` | lançador (rofi) |
+| `SUPER+Q` | fecha a janela |
+| `SUPER+SHIFT+E` | sai da sessão |
+| `SUPER+F` / `SUPER+V` | tela cheia / flutuante |
+| `SUPER+setas` ou `hjkl` | move o foco |
+| `SUPER+1..9` | troca de workspace (com `SHIFT`, leva a janela) |
+| `SUPER+SHIFT+S` | captura de região para a área de transferência |
+| teclas de mídia | volume, brilho, play/pause |
+
+A aparência ainda é a padrão do Hyprland. Estrutura e atalhos inspirados em
+[Sly-Harvey/NixOS](https://github.com/Sly-Harvey/NixOS) (MIT).
 
 ---
 
