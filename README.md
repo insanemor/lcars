@@ -12,14 +12,14 @@ curl -fsSL https://raw.githubusercontent.com/insanemor/lcars/main/scripts/instal
 
 **Sem `sudo` na chamada.** O repositório fica no seu `$HOME` e precisa pertencer a você; o script pede sudo sozinho onde precisa dele.
 
-O que ele faz, em ordem — [`scripts/install.sh`](./scripts/install.sh) tem 50 linhas e dá para ler inteiro antes de rodar:
+O que ele faz, em ordem — [`scripts/install.sh`](./scripts/install.sh) é curto de propósito e dá para ler inteiro antes de rodar:
 
 1. **clona o repositório em `~/.dotfiles`**, usando `nix-shell -p git` — a máquina não precisa ter `git` instalado, e daqui em diante tudo acontece dentro do clone;
-2. lê o **modelo do hardware** em `/sys/devices/virtual/dmi/id/product_name` e troca espaços por hífens: esse é o nome da máquina;
+2. lê o **modelo do hardware** em `/sys/devices/virtual/dmi/id/product_name` e o reduz ao que um hostname aceita: esse é o nome da máquina;
 3. cria `machines/<modelo>/` copiando `machines/template/`, e grava ali o `hardware-configuration.nix` real (`nixos-generate-config`);
-4. preenche no **`settings.nix`** que veio no clone o que dá para descobrir: o nome da máquina, o seu usuário, o seu nome completo (do GECOS), e UEFI vs BIOS — com o disco do grub, quando for BIOS legado;
-5. **abre o `settings.nix` no seu editor** — é a sua chance de mexer em profile, chaves SSH, pacotes e 1Password antes de qualquer build;
-6. registra `settings.nix` e `machines/<modelo>/` no index do git (flakes só leem arquivos rastreados);
+4. preenche o que dá para descobrir, cada coisa no seu arquivo: **UEFI vs BIOS** e o disco do GRUB em `machines/<modelo>/default.nix`, e o **usuário** no `settings.nix`;
+5. **abre os dois no seu editor** — primeiro o da máquina, onde estão `vm` e `laptop`, que nenhuma detecção preenche; depois o `settings.nix`, para profile, nome, chaves SSH e pacotes;
+6. registra `machines/<modelo>/` no index do git (flakes só leem arquivos rastreados);
 7. roda `nixos-rebuild switch --flake ~/.dotfiles#<modelo>`.
 
 Não há passo separado para o Home Manager: ele entra como módulo NixOS no mesmo rebuild.
@@ -38,12 +38,11 @@ sudo nixos-rebuild switch --flake ~/.dotfiles#20BE0048BR
 
 O nome é reduzido ao que um hostname aceita: tudo que não for letra, número ou hífen vira hífen, e os repetidos colapsam. **Em máquina virtual isso costuma dar um nome feio** — uma VM QEMU/KVM se apresenta como `Standard PC (Q35 + ICH9, 2009)`, que sai como `Standard-PC-Q35-ICH9-2009`. É válido, mas você provavelmente vai querer trocar.
 
-Renomeie o diretório e ajuste o `hostname` no `settings.nix` para não divergirem:
+Renomeie o diretório — é só isso, não há campo de hostname em lugar nenhum:
 
 ```bash
 cd ~/.dotfiles
 git mv machines/Standard-PC-Q35-ICH9-2009 machines/vm-teste
-$EDITOR settings.nix        # hostname = "vm-teste";
 sudo nixos-rebuild switch --flake .#vm-teste
 ```
 
@@ -63,7 +62,23 @@ Para uma máquina nova a partir de um clone que já existe, siga o [caminho manu
 
 `settings.nix` vem no repo com o **default básico** — é o arquivo que você edita, e editá-lo deixa o clone sujo. Nada além dele é obrigatório: os campos avançados (`sshKeys`, `packages`, `swapFileSize`, `gpgKey`, `initialPassword`, `extraPackages`) podem simplesmente não estar lá, e cada módulo usa o próprio default. A lista completa está em [docs/adding-a-host.md](./docs/adding-a-host.md).
 
-Uma exceção: **`grubDevice` precisa existir no arquivo**, ainda que vazio. O instalador o escreve com `sed`, que só substitui linha já presente — sem ela, uma máquina BIOS ficaria sem disco de GRUB.
+### Dois arquivos, duas naturezas
+
+| Arquivo | O que descreve | Diverge entre máquinas? |
+|---|---|---|
+| `settings.nix` | **quem você é** — usuário, locale, profile, 1Password | não |
+| `machines/<nome>/default.nix` | **o que a máquina é** — bootloader, disco do GRUB, VM, notebook, teclado | sempre |
+
+A divisão existe para o `git pull` ser limpo. Se o bootloader morasse no `settings.nix`, todo clone divergiria do repositório e cada atualização daria conflito.
+
+Por isso, depois de instalar, o ciclo é só:
+
+```bash
+cd ~/.dotfiles && git pull
+sudo nixos-rebuild switch --flake .#<máquina>
+```
+
+As linhas de `machines/<nome>/default.nix` **existem descomentadas de propósito**: o instalador as reescreve com `sed`, que só substitui linha já presente. Apagá-las o faria falhar em silêncio.
 
 Já `machines/*/hardware-configuration.nix` está no `.gitignore` — ele pode vazar números de série. Mas um flake dentro de um repo git **só enxerga arquivos rastreados**, então o instalador o põe no *index* com `git add -f`. Isso não o commita, mas deixa o arquivo pronto para entrar num commit distraído: confira o `git status` antes de commitar.
 

@@ -76,6 +76,14 @@ Na dúvida sobre se algo entra no ciclo: entra.
   algo "sumiu" na avaliação, essa é a primeira suspeita. (`settings.nix` é
   versionado desde a #6, então não precisa disso.)
 
+- **`settings.nix` não descreve hardware, e não pode divergir.** Ele é
+  versionado e igual em todas as máquinas do usuário: quem você é, locale,
+  profile, 1Password. Tudo que muda de máquina para máquina — bootloader,
+  `grubDevice`, VM, notebook, teclado — vai em `machines/<host>/default.nix`.
+  Pôr um dado de máquina no `settings.nix` faz todo clone divergir do
+  repositório, e cada `git pull` do usuário conflita. Não há campo de hostname
+  em lugar nenhum: quem define `networking.hostName` é o nome do diretório.
+
 - **Máquinas são auto-descobertas.** Todo diretório em `machines/` vira um
   `nixosConfiguration`, exceto `template`. Não há registro manual em
   `flake.nix`.

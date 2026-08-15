@@ -28,21 +28,26 @@ cp -r ~/.dotfiles/machines/template "$destination"
 sudo nixos-generate-config --show-hardware-config > "$destination/hardware-configuration.nix"
 echo "Configuração de hardware salva em: $destination/hardware-configuration.nix"
 
-# settings.nix vem versionado com o default básico — o script edita esse mesmo
-# arquivo, e o editor abaixo te dá a chance de revisar antes do build.
-
-# Escreve um campo do settings.nix, e AVISA se não achou a linha.
+# Dois arquivos, duas naturezas:
 #
-# O sed só substitui o que já existe: se o campo tiver sido removido do
-# settings.nix, ele não faz nada e sai com status 0. Foi assim que grubDevice
-# ficou vazio numa VM BIOS e o build morreu numa assertion lá adiante, sem
-# nenhuma pista de onde tinha começado.
+#   settings.nix                    quem você é — igual em todas as máquinas
+#   machines/<nome>/default.nix     o que ESTA máquina é — boot, VM, notebook
+#
+# É por isso que o boot não vai para o settings.nix: assim ele nunca diverge
+# do repositório, e o `git pull` de quem já instalou não conflita.
 settings="$HOME/.dotfiles/settings.nix"
-set_field() {
-    local campo="$1" valor="$2" escapado
+machine="$destination/default.nix"
 
-    if ! grep -qE "^[[:space:]]*${campo}[[:space:]]*=" "$settings"; then
-        echo "AVISO: campo '$campo' não existe em settings.nix — não foi preenchido." >&2
+# Escreve um campo num dos dois arquivos, e AVISA se não achou a linha.
+#
+# O sed só substitui o que já existe: se o campo for removido do arquivo, ele
+# não faz nada e sai com status 0. Foi assim que grubDevice ficou vazio numa VM
+# BIOS e o build morreu numa assertion lá adiante, sem pista de onde começou.
+set_field() {
+    local arquivo="$1" campo="$2" valor="$3" escapado
+
+    if ! grep -qE "^[[:space:]]*${campo}[[:space:]]*=" "$arquivo"; then
+        echo "AVISO: campo '$campo' não existe em $(basename "$arquivo") — não foi preenchido." >&2
         echo "       acrescente '$campo = \"$valor\";' à mão antes do rebuild." >&2
         return
     fi
@@ -50,21 +55,22 @@ set_field() {
     # Barra, & e contrabarra têm significado na substituição do sed. Sem isto,
     # um valor como "/dev/sda" faz o sed abortar com "opção desconhecida".
     escapado=$(printf '%s' "$valor" | sed 's/[\/&\\]/\\&/g')
-    sed -i "0,/^\([[:space:]]*\)${campo}[[:space:]]*=.*/s//\1${campo} = \"${escapado}\";/" "$settings"
+    sed -i "0,/^\([[:space:]]*\)${campo}[[:space:]]*=.*/s//\1${campo} = \"${escapado}\";/" "$arquivo"
 
     # Conferir o resultado, não só a tentativa: é o que separa "o sed rodou" de
     # "o valor está lá". Qualquer forma de falha cai aqui.
-    if ! grep -qF "${campo} = \"${valor}\";" "$settings"; then
-        echo "AVISO: não consegui escrever '$campo' em settings.nix." >&2
+    if ! grep -qF "${campo} = \"${valor}\";" "$arquivo"; then
+        echo "AVISO: não consegui escrever '$campo' em $(basename "$arquivo")." >&2
         echo "       ajuste '$campo = \"$valor\";' à mão antes do rebuild." >&2
     fi
 }
 
+# --- o que ESTA máquina é: vai para machines/<nome>/default.nix -------
 # Check if uefi or bios
 if [ -d /sys/firmware/efi/efivars ]; then
-    set_field bootMode uefi
+    set_field "$machine" lcars.system.core.bootLoader systemd-boot
 else
-    set_field bootMode bios
+    set_field "$machine" lcars.system.core.bootLoader grub
     # O DISCO da raiz, não a partição: /dev/sda, não /dev/sda1.
     #
     # `findmnt -no SOURCE` devolve a partição direto, sem cabeçalho; o sed tira
@@ -76,23 +82,41 @@ else
     root_part=$(findmnt -no SOURCE / | sed 's/\[.*\]//')
     root_disk=$(lsblk -no pkname "$root_part" 2>/dev/null | head -n 1)
     if [ -n "$root_disk" ]; then
-        set_field grubDevice "/dev/$root_disk"
+        set_field "$machine" lcars.system.core.grubDevice "/dev/$root_disk"
     else
         echo "AVISO: não consegui descobrir o disco de '$root_part'." >&2
-        echo "       preencha grubDevice no settings.nix antes do rebuild." >&2
+        echo "       preencha lcars.system.core.grubDevice em $machine." >&2
     fi
 fi
 
-# Patch settings.nix com o nome da máquina, o usuário e o nome completo
-set_field hostname "$model_name"
-set_field username "$(whoami)"
-set_field fullName "$(getent passwd "$(whoami)" | cut -d ':' -f 5 | cut -d ',' -f 1)"
+# --- quem você é: vai para o settings.nix -----------------------------
+# Só o username, e por necessidade: é ele que decide de quem é a conta criada
+# pelo NixOS. Se o repo disser "ins" e quem instala for "maria", a maria fica
+# sem home configurada.
+#
+# fullName NÃO é escrito. O campo GECOS costuma vir vazio ou truncado num
+# NixOS recém-instalado, e sobrescrever um nome correto do settings.nix por um
+# pior é o oposto de ajudar — além de fazer o arquivo divergir do repositório
+# à toa. Quem preenche é você, no editor que abre logo abaixo.
+#
+# Não há hostname aqui: quem define networking.hostName é o nome do diretório
+# em machines/, e um campo separado só criaria chance de divergirem.
+set_field "$settings" username "$(whoami)"
 
-# Open up editor to manually edit settings.nix before install
+# Open up editor to manually edit both files before install.
+#
+# O arquivo da máquina vem primeiro de propósito: é lá que estão as duas flags
+# que NENHUMA detecção preenche — vm e laptop. Num notebook, deixá-las em false
+# significa subir sem tlp, sem limite de carga da bateria e sem suspender ao
+# fechar a tampa, tudo em silêncio.
 if [ -z "$EDITOR" ]; then
     EDITOR=nano;
 fi
-$EDITOR ~/.dotfiles/settings.nix;
+echo
+echo "Abrindo $machine — confira 'vm' e 'laptop', que ninguém detecta por você."
+$EDITOR "$machine";
+echo "Abrindo settings.nix — usuário, profile, chaves ssh, pacotes."
+$EDITOR "$settings";
 
 # Daqui para baixo tudo precisa do git, inclusive o rebuild — e numa máquina
 # recém-instalada ele ainda não existe: só chega DEPOIS deste build, por

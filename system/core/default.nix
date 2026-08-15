@@ -36,8 +36,9 @@ in
       '';
     };
 
-    # Isto depende de a máquina ter bootado em UEFI ou em BIOS legado — algo
-    # que o nixos-generate-config não decide por você.
+    # As três opções abaixo descrevem COMO ESTA MÁQUINA BOOTOU, então quem as
+    # declara é machines/<host>/default.nix, não o settings.nix. Nada aqui é
+    # detectável pelo nixos-generate-config.
     bootLoader = mkOption {
       type = types.enum [ "systemd-boot" "grub" "none" ];
       default = "systemd-boot";
@@ -49,10 +50,20 @@ in
 
     grubDevice = mkOption {
       type = types.str;
-      default = sys.grubDevice or "";
+      default = "";
       description = ''
         Disco onde instalar o GRUB quando bootLoader = "grub". O DISCO, não a
         partição: "/dev/sda", não "/dev/sda1".
+      '';
+    };
+
+    bootMountPath = mkOption {
+      type = types.str;
+      default = "/boot";
+      description = ''
+        Onde a partição EFI está montada. Só usado com bootLoader =
+        "systemd-boot"; confira no hardware-configuration.nix se a sua não for
+        a habitual /boot.
       '';
     };
 
@@ -89,14 +100,16 @@ in
 
   config = mkIf cfg.enable {
 
-    # bootMode = "bios" sem grubDevice gera um erro tardio e obscuro no
-    # instalador do GRUB. Melhor falhar já na avaliação, dizendo o que fazer.
+    # GRUB sem disco gera um erro tardio e obscuro no instalador do bootloader.
+    # Melhor falhar já na avaliação, dizendo onde arrumar.
     assertions = [
       {
         assertion = cfg.bootLoader != "grub" || cfg.grubDevice != "";
         message = ''
-          lcars: bootMode = "bios" exige systemSettings.grubDevice preenchido
-          no settings.nix (o disco, ex.: "/dev/sda" — não a partição).
+          lcars: lcars.system.core.bootLoader = "grub" exige
+          lcars.system.core.grubDevice preenchido em
+          machines/<host>/default.nix — o DISCO, ex. "/dev/sda", não a
+          partição "/dev/sda1".
         '';
       }
     ];
@@ -136,7 +149,7 @@ in
         systemd-boot.enable = true;
         systemd-boot.configurationLimit = mkDefault 10;
         efi.canTouchEfiVariables = true;
-        efi.efiSysMountPoint = sys.bootMountPath;
+        efi.efiSysMountPoint = cfg.bootMountPath;
       })
       (mkIf (cfg.bootLoader == "grub") {
         grub.enable = true;

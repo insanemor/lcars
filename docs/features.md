@@ -61,6 +61,13 @@ num notebook ou numa VM, mude para `true` e rode o rebuild.
 
 **Boot** — o hardware-config declara os sistemas de arquivos; aqui só o carregador
 - `systemd-boot` (UEFI), limitado a 10 gerações no menu, ou `grub` (BIOS legado)
+- Quem escolhe é a **máquina**, em `machines/<host>/default.nix`:
+  `lcars.system.core.bootLoader`, mais `grubDevice` em BIOS e `bootMountPath`
+  se a partição EFI não for `/boot`. Não está no `settings.nix` de propósito —
+  é fato de hardware, e mantê-lo fora é o que faz o `settings.nix` nunca
+  divergir entre clones
+- Com `grub` e `grubDevice` vazio, a avaliação para numa assertion dizendo o
+  que preencher — antes de o instalador do GRUB falhar de forma mais obscura
 - Swapfile opcional via `lcars.system.core.swapFileSize` (desligado por padrão, para não colidir com o swap que o `hardware-configuration.nix` já traga)
 
 **Rede**
