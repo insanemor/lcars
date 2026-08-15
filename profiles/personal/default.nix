@@ -18,6 +18,12 @@ with lib;
     lcars.system.wm.plasma.enable       = mkDefault true;
     lcars.system.app.onePassword.enable = mkDefault true;
 
+    # Os dois ambientes ligados de propósito: aparecem lado a lado na tela de
+    # login e você escolhe na hora. O Plasma abre por padrão — se o Hyprland
+    # não subir, há para onde voltar sem editar o repositório.
+    # Para inverter: lcars.system.wm.defaultSession = "hyprland";
+    lcars.system.wm.hyprland.enable = mkDefault true;
+
     # Áudio é independente do desktop: o Plasma não o liga por trás, é aqui
     # que os dois se encontram. O teclado vale em qualquer máquina; o layout
     # em si vem do default do módulo, ou da máquina, se ela tiver outro.
@@ -40,5 +46,6 @@ with lib;
     lcars.user.git.enable      = mkDefault true;
     lcars.user.direnv.enable   = mkDefault true;
     lcars.user.dotfiles.enable = mkDefault true;
+    lcars.user.hyprland.enable = mkDefault true;
   };
 }

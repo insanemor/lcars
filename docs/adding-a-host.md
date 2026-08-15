@@ -27,6 +27,8 @@ caminho do arquivo:
 | `lcars.system.wm.plasma.enable` | `system/wm/plasma.nix` |
 | `lcars.system.hardware.laptop.enable` | `system/hardware/laptop.nix` |
 | `lcars.system.hardware.audio.enable` | `system/hardware/audio.nix` |
+| `lcars.system.wm.hyprland.enable` | `system/wm/hyprland.nix` |
+| `lcars.user.hyprland.enable` | `user/wm/hyprland.nix` |
 | `lcars.user.direnv.enable` | `user/app/direnv.nix` |
 | `lcars.user.dotfiles.enable` | `user/app/dotfiles.nix` |
 
@@ -192,6 +194,7 @@ Outras opções úteis:
 | `lcars.system.core.extraPackages` | nomes de pacotes nixpkgs, a nível de sistema |
 | `lcars.system.core.userPackages` | idem, no usuário — **somado** a `userSettings.packages` |
 | `lcars.system.hardware.laptop.powerManager` | `"tlp"` ou `"ppd"` |
+| `lcars.system.wm.defaultSession` | qual sessão abre por padrão: `"plasma"`, `"hyprland"`… |
 | `lcars.system.hardware.keyboard.layout` / `.variant` | layout XKB, valendo no console e no gráfico |
 | `lcars.system.hardware.audio.jack` | emulação JACK, para software de áudio profissional |
 

@@ -58,7 +58,8 @@
   #   lcars.profile                          = "basic";   # outro preset só aqui
   #   lcars.system.core.bootMountPath        = "/efi";    # se a ESP não é /boot
   #   lcars.system.core.swapFileSize         = 8192;
-  #   lcars.system.wm.plasma.enable          = false;
+  #   lcars.system.wm.plasma.enable          = false;   # só Hyprland
+  #   lcars.system.wm.defaultSession         = "hyprland";
   #   lcars.system.hardware.audio.enable     = true;      # som sem desktop
   #   lcars.system.hardware.keyboard.layout  = "br";      # teclado ABNT2
   #   lcars.system.hardware.keyboard.variant = "abnt2";

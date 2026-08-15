@@ -15,7 +15,8 @@ with lib;
     lcars.system.core.enable     = mkDefault true;
     lcars.system.security.enable = mkDefault true;
 
-    lcars.system.wm.plasma.enable = mkDefault false;
+    lcars.system.wm.plasma.enable   = mkDefault false;
+    lcars.system.wm.hyprland.enable = mkDefault false;
 
     # 1Password é proprietário e puxa a GUI junto; numa máquina headless não
     # ganha nada. Ligue explicitamente se quiser só o CLI aqui.
@@ -36,5 +37,6 @@ with lib;
 
     lcars.user.direnv.enable   = mkDefault false;
     lcars.user.dotfiles.enable = mkDefault false;
+    lcars.user.hyprland.enable = mkDefault false;
   };
 }

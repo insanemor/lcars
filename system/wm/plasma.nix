@@ -13,8 +13,11 @@ in
       type = types.bool;
       default = true;
       description = ''
-        Sessão padrão em Wayland. A sessão X11 continua disponível na tela de
-        login em qualquer caso — isto só decide qual vem pré-selecionada.
+        Qual das duas sessões do Plasma vem pré-selecionada: a Wayland
+        ("plasma") ou a X11 ("plasmax11"). As duas continuam disponíveis na
+        tela de login.
+
+        Quem lê isto é system/wm/default.nix, ao decidir a sessão padrão.
       '';
     };
 
@@ -35,18 +38,14 @@ in
     # XWayland dos aplicativos que ainda não falam Wayland.
     services.xserver.enable = true;
 
-    # SDDM é o display manager do Plasma. Nas versões recentes do nixpkgs as
-    # opções de display/desktop manager vivem em services.displayManager.* e
+    # Nas versões recentes do nixpkgs as opções de desktop manager vivem em
     # services.desktopManager.*, não mais dentro de services.xserver.
-    services.displayManager.sddm = {
-      enable = true;
-      wayland.enable = cfg.wayland;
-    };
-
     services.desktopManager.plasma6.enable = true;
 
-    services.displayManager.defaultSession =
-      if cfg.wayland then "plasma" else "plasmax11";
+    # O SDDM e a escolha da sessão padrão NÃO ficam aqui: são de
+    # system/wm/default.nix. Declará-los neste módulo daria conflito de
+    # definição assim que um segundo ambiente fosse ligado junto — e é
+    # justamente conviver com outro que torna seguro experimentar.
 
     environment.plasma6.excludePackages =
       map (p: pkgs.kdePackages.${p}) cfg.excludePackages;

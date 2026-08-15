@@ -40,5 +40,8 @@
 
     dotfiles.enable = lib.mkEnableOption
       "os dotfiles puxados de itens Document do 1Password na ativação";
+
+    hyprland.enable = lib.mkEnableOption
+      "a configuração do Hyprland — atalhos, regras de janela e o que sobe com a sessão (o compositor é lcars.system.wm.hyprland)";
   };
 }

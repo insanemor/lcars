@@ -23,6 +23,6 @@ Para instalar, comece pelo [README](../README.md) da raiz.
 | Configurar zsh, git, direnv | `user/` |
 | **Ligar ou desligar** zsh, git, direnv, dotfiles | `lcars.user.<módulo>.enable` (no profile ou na máquina) |
 | Ligar ou desligar um módulo de sistema | `lcars.system.<caminho>.enable` (idem) |
-| Trocar o ambiente gráfico | `system/wm/` |
+| Trocar o ambiente gráfico | `system/wm/` — Plasma e Hyprland convivem; `lcars.system.wm.defaultSession` escolhe qual abre |
 | Abrir uma porta no firewall | `lcars.system.security.firewall.allowedTCPPorts` (no profile ou na máquina) |
 | Autorizar uma chave SSH | `userSettings.sshKeys` |

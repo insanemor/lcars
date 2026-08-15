@@ -19,5 +19,6 @@
     ./app/git.nix
     ./app/direnv.nix
     ./app/dotfiles.nix
+    ./wm/hyprland.nix
   ];
 }
