@@ -32,9 +32,6 @@
     zsh.enable = lib.mkEnableOption
       "o shell zsh do usuário — autosuggestion, syntax highlighting, histórico compartilhado e aliases";
 
-    starship.enable = lib.mkEnableOption
-      "o prompt starship, com integração zsh e bash";
-
     git.enable = lib.mkEnableOption
       "a configuração do git — identidade vinda do settings.nix, aliases e assinatura por chave SSH";
 

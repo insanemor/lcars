@@ -16,7 +16,6 @@
 {
   imports = [
     ./shell/zsh.nix
-    ./shell/starship.nix
     ./app/git.nix
     ./app/direnv.nix
     ./app/dotfiles.nix
