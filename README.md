@@ -36,12 +36,15 @@ O diretório criado em `machines/` recebe o modelo relatado pelo DMI — `20BE00
 sudo nixos-rebuild switch --flake ~/.dotfiles#20BE0048BR
 ```
 
-Não gostou? Renomeie o diretório e ajuste o `hostname` no `settings.nix` para não divergirem:
+O nome é reduzido ao que um hostname aceita: tudo que não for letra, número ou hífen vira hífen, e os repetidos colapsam. **Em máquina virtual isso costuma dar um nome feio** — uma VM QEMU/KVM se apresenta como `Standard PC (Q35 + ICH9, 2009)`, que sai como `Standard-PC-Q35-ICH9-2009`. É válido, mas você provavelmente vai querer trocar.
+
+Renomeie o diretório e ajuste o `hostname` no `settings.nix` para não divergirem:
 
 ```bash
 cd ~/.dotfiles
-git mv machines/20BE0048BR machines/thinkpad
-sudo nixos-rebuild switch --flake .#thinkpad
+git mv machines/Standard-PC-Q35-ICH9-2009 machines/vm-teste
+$EDITOR settings.nix        # hostname = "vm-teste";
+sudo nixos-rebuild switch --flake .#vm-teste
 ```
 
 ### O instalador é para a primeira vez
