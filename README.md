@@ -94,9 +94,9 @@ firewall ligado, e a base de linha de comando (`git`, `vim`, `htop`, `curl`,
 `wget`, `jq`, `rsync`, `python3`).
 
 **No ambiente do usuário** (Home Manager, no mesmo rebuild) — zsh com
-autosuggestion, syntax highlighting e histórico compartilhado; prompt starship;
-git com aliases e `pull.rebase`; direnv com nix-direnv; e o gancho para puxar
-dotfiles de itens Document do 1Password.
+autosuggestion, syntax highlighting e histórico compartilhado; git com aliases
+e `pull.rebase`; direnv com nix-direnv; e o gancho para puxar dotfiles de itens
+Document do 1Password.
 
 **No profile `personal`** — KDE Plasma 6 com SDDM, áudio PipeWire, fontes
 Noto/Liberation/DejaVu, 1Password (CLI + GUI + agente SSH), e `ripgrep`, `fd`,
@@ -135,7 +135,7 @@ A árvore é dividida por **papel**, não por mecanismo do Nix:
 │
 ├── user/           # módulos do Home Manager, opt-in via lcars.user.<módulo>.enable
 │   ├── options.nix # as flags acima — declaradas do lado NixOS, veja abaixo
-│   ├── shell/      # zsh.nix, starship.nix
+│   ├── shell/      # zsh.nix
 │   ├── app/        # git.nix, direnv.nix, dotfiles.nix
 │   └── personal/   # escape hatch via private.nix em $HOME (sem flag)
 │

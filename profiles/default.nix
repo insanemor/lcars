@@ -17,7 +17,7 @@
 #   lcars.user.<módulo>      módulos do Home Manager de user/
 #
 # Em ambos o caminho da flag espelha o do arquivo — `lcars.system.wm.plasma`
-# é system/wm/plasma.nix, `lcars.user.starship` é user/shell/starship.nix.
+# é system/wm/plasma.nix, `lcars.user.direnv` é user/app/direnv.nix.
 # `lcars.profile` fica na raiz por não pertencer a nenhum dos dois.
 { lib, ... }:
 
