@@ -29,13 +29,11 @@ with lib;
 
     # --- ambiente do usuário (user/) ----------------------------------
     # Só o que serve a quem entra por ssh para trabalhar. Ficam de fora:
-    # starship (prompt bonito num terminal de manutenção não paga o custo),
     # direnv (não há projetos aqui) e dotfiles (dependem de sessão aberta no
     # 1Password, que numa máquina headless normalmente não existe).
     lcars.user.zsh.enable      = mkDefault true;
     lcars.user.git.enable      = mkDefault true;
 
-    lcars.user.starship.enable = mkDefault false;
     lcars.user.direnv.enable   = mkDefault false;
     lcars.user.dotfiles.enable = mkDefault false;
   };

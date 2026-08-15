@@ -27,7 +27,7 @@ caminho do arquivo:
 | `lcars.system.wm.plasma.enable` | `system/wm/plasma.nix` |
 | `lcars.system.hardware.laptop.enable` | `system/hardware/laptop.nix` |
 | `lcars.system.hardware.audio.enable` | `system/hardware/audio.nix` |
-| `lcars.user.starship.enable` | `user/shell/starship.nix` |
+| `lcars.user.direnv.enable` | `user/app/direnv.nix` |
 | `lcars.user.dotfiles.enable` | `user/app/dotfiles.nix` |
 
 `lcars.profile` fica na raiz, por não pertencer a nenhum dos dois lados.
@@ -53,11 +53,11 @@ Por isso as cinco flags nascem em `user/options.nix`, que é importado no
 config do sistema, que o Home Manager expõe quando roda como módulo NixOS:
 
 ```nix
-# user/shell/starship.nix
+# user/app/direnv.nix
 { osConfig, lib, ... }:
 
-lib.mkIf osConfig.lcars.user.starship.enable {
-  programs.starship.enable = true;
+lib.mkIf osConfig.lcars.user.direnv.enable {
+  programs.direnv.enable = true;
 }
 ```
 
@@ -248,7 +248,6 @@ sudo nixos-rebuild switch --flake .#<host>
        lcars.user.zsh.enable      = mkDefault true;
        lcars.user.git.enable      = mkDefault true;
        lcars.user.direnv.enable   = mkDefault true;
-       lcars.user.starship.enable = mkDefault false;
        lcars.user.dotfiles.enable = mkDefault false;
      };
    }

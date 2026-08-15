@@ -20,7 +20,6 @@ O repo vem com `personal`.
 | `ripgrep`, `fd`, `bat`, `eza` | `lcars.system.core.userPackages` | — | sim |
 | zsh (`user/shell`) | `lcars.user.zsh.enable` | sim | sim |
 | git (`user/app`) | `lcars.user.git.enable` | sim | sim |
-| starship (`user/shell`) | `lcars.user.starship.enable` | — | sim |
 | direnv (`user/app`) | `lcars.user.direnv.enable` | — | sim |
 | dotfiles do 1Password (`user/app`) | `lcars.user.dotfiles.enable` | — | sim |
 
@@ -31,7 +30,7 @@ ali (ou na própria máquina) não sobe. Um profile define suas flags com
 abandonar o resto do preset.
 
 O caminho da flag espelha o caminho do arquivo: `lcars.system.wm.plasma` é
-`system/wm/plasma.nix`, `lcars.user.starship` é `user/shell/starship.nix`. A
+`system/wm/plasma.nix`, `lcars.user.direnv` é `user/app/direnv.nix`. A
 diferença entre os dois prefixos não é cosmética — `system/` e `user/` são
 avaliados em árvores de módulos separadas, e é por isso que as flags de `user/`
 são declaradas do lado NixOS, em `user/options.nix`, e lidas por `osConfig`.
@@ -226,11 +225,6 @@ profile — os títulos abaixo trazem a flag de cada um.
 
 Esta flag é a única de `user/` que mexe também no sistema: ela decide o shell
 de login da conta (`bash` quando desligada). Veja "Base do sistema" acima.
-
-### starship · `user/shell/starship.nix` · `lcars.user.starship.enable` · só personal
-
-Prompt com integração zsh e bash. A integração é injetada pelo próprio módulo —
-não há `source` manual no `.zshrc`.
 
 ### git · `user/app/git.nix` · `lcars.user.git.enable` · basic + personal
 

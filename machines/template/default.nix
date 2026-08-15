@@ -64,6 +64,6 @@
   #   lcars.system.hardware.keyboard.variant = "abnt2";
   #   lcars.system.security.sshKeys          = [ "ssh-ed25519 AAAA..." ];
   #
-  #   lcars.user.starship.enable             = false;     # ambiente do usuário
+  #   lcars.user.direnv.enable               = false;     # ambiente do usuário
   #   lcars.user.dotfiles.enable             = false;
 }
