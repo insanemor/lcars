@@ -59,9 +59,13 @@ in
       polkitPolicyOwners = [ cfg.polkitOwner ];
     };
 
-    # Hosts do GitHub conhecidos — evita prompts MITM na primeira vez
+    # Hosts do GitHub conhecidos — evita prompts MITM na primeira vez.
+    #
+    # As aspas em "github.com" não são estilo: sem elas o ponto é lido como
+    # caminho de atributo, e o Nix procura a option
+    # `programs.ssh.knownHosts.github.com` (github → com), que não existe.
     programs.ssh.knownHosts = {
-      github.com = {
+      "github.com" = {
         hostNames = [ "github.com" ];
         publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLvab/yH7LoQwSAvAfvxl0g0";
       };

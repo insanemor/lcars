@@ -61,7 +61,9 @@ in
       enableDefaultPackages = true;
       packages = with pkgs; [
         noto-fonts
-        noto-fonts-emoji
+        # noto-fonts-emoji foi renomeado para noto-fonts-color-emoji no
+        # nixpkgs; o nome antigo aborta a avaliação com um throw.
+        noto-fonts-color-emoji
         liberation_ttf
         dejavu_fonts
       ];
