@@ -56,17 +56,25 @@ Na dúvida sobre se algo entra no ciclo: entra.
 
 ## Este repositório
 
-- **Sem `nix` na máquina de desenvolvimento.** O ambiente local é Garuda
-  (Arch), não NixOS. Não é possível rodar `nix flake check` nem avaliar os
-  módulos aqui. Ao mexer em `.nix`, valide o que der (sintaxe, balanceamento,
-  nomes de opção contra a documentação do nixpkgs) e **diga explicitamente ao
-  usuário o que não pôde ser verificado**. Nunca afirme que um módulo builda
-  sem ter buildado.
+- **Rode `./scripts/check.sh` ao mexer em `.nix`, antes de commitar.** Ele
+  verifica formato (`nixfmt`), anti-padrões (`statix`) e — o que importa —
+  **avalia os dois profiles**, pegando nome de option que não existe, atributo
+  mal aninhado e módulo que não avalia. Roda num container `nixos/nix`, sem
+  instalar nada na máquina; a primeira execução baixa ~250MB, as seguintes
+  levam segundos. `--fmt` pula a avaliação; `--fix` corrige formato e
+  anti-padrões.
 
-- **Flakes só leem arquivos rastreados pelo git.** `settings.nix` e
-  `machines/*/hardware-configuration.nix` estão no `.gitignore` e precisam de
-  `git add -f` para o flake enxergá-los. Se algo "sumiu" na avaliação, essa é
-  a primeira suspeita.
+- **Avaliar não é buildar.** O check para no `drvPath`: nenhum pacote é
+  compilado, e ele não prova que o sistema sobe — só que o código está
+  correto. Continue dizendo explicitamente o que não foi verificado, e **nunca
+  afirme que um módulo builda sem ter buildado**. A máquina local é Garuda
+  (Arch), não NixOS: `nixos-rebuild` e o boot real só acontecem na máquina do
+  usuário.
+
+- **Flakes só leem arquivos rastreados pelo git.** `machines/*/hardware-configuration.nix`
+  está no `.gitignore` e precisa de `git add -f` para o flake enxergá-lo. Se
+  algo "sumiu" na avaliação, essa é a primeira suspeita. (`settings.nix` é
+  versionado desde a #6, então não precisa disso.)
 
 - **Máquinas são auto-descobertas.** Todo diretório em `machines/` vira um
   `nixosConfiguration`, exceto `template`. Não há registro manual em

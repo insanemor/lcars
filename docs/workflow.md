@@ -79,18 +79,37 @@ que não houve é pior do que um comentário sem a seção.
 Responder perguntas, ler e explicar código, investigar sem alterar nada, e
 mexer em arquivos fora do controle de versão.
 
-## Uma restrição deste repo
+## Verificando os `.nix` antes de commitar
 
-A máquina de desenvolvimento **não tem `nix`**. Não é possível rodar
-`nix flake check` nem avaliar os módulos localmente. O que dá para verificar são
-sintaxe, estrutura e consistência entre options declaradas e usadas — e o que
-não foi verificado precisa ser dito explicitamente, tanto no relato quanto no
-comentário de fechamento da issue.
+```bash
+./scripts/check.sh          # formato, anti-padrões e avaliação dos dois profiles
+./scripts/check.sh --fmt    # só formato e anti-padrões, sem avaliar
+./scripts/check.sh --fix    # corrige formato e anti-padrões no lugar
+```
 
-Na prática: a primeira coisa a fazer com uma máquina NixOS à mão é avaliar o
-flake de verdade. O instalador não tem modo de simulação — ele vai até o
-`switch` —, então para validar sem ativar, monte os arquivos na mão e pare
-antes do último passo:
+Roda num container `nixos/nix`, então **não é preciso ter `nix` instalado** —
+a máquina de desenvolvimento é Garuda (Arch), não NixOS. A primeira execução
+baixa o nixpkgs (~250MB num volume Docker); as seguintes levam segundos.
+
+A etapa que importa é a avaliação: ela pega nome de option que não existe,
+atributo mal aninhado e módulo que não avalia — a classe de erro que nenhuma
+verificação de sintaxe alcança. Os dois profiles são avaliados, porque cada um
+liga um conjunto diferente de módulos.
+
+Para isso o script monta, numa cópia temporária do repo, uma máquina
+descartável a partir do `template`, com um `hardware-configuration.nix`
+fictício. Sua árvore de trabalho não é tocada.
+
+### O que o check **não** faz
+
+Ele avalia, não builda: para no `drvPath`, sem compilar pacote nenhum. Passar
+no check significa que o código está correto, **não** que o sistema sobe. O que
+não foi verificado precisa continuar sendo dito explicitamente, tanto no relato
+quanto no comentário de fechamento da issue.
+
+Com uma máquina NixOS à mão, o passo seguinte é compilar de verdade. O
+instalador não tem modo de simulação — ele vai até o `switch` —, então monte os
+arquivos na mão e pare antes do último passo:
 
 ```bash
 git clone https://github.com/insanemor/lcars ~/.dotfiles && cd ~/.dotfiles
@@ -104,6 +123,5 @@ nix flake check                                 # avalia todas as máquinas
 sudo nixos-rebuild dry-activate --flake .#teste # compila tudo, não ativa
 ```
 
-`dry-activate` **compila o sistema inteiro** — é lento, mas é o que prova que a
-mudança builda. `nix flake check` é mais rápido e já pega erro de avaliação:
-nome de option errado, enum inválido, arquivo faltando no index.
+`dry-activate` **compila o sistema inteiro** — é lento, mas é o que o
+`scripts/check.sh` não cobre: prova que a mudança builda, não só que avalia.
