@@ -87,11 +87,20 @@
                 useUserPackages = true;
                 extraSpecialArgs = { inherit settings sys user; };
                 sharedModules = [ ./user/personal ];
-                users.${user.username}.imports = [ ./user ];
-                users.${user.username}.home = {
-                  username = user.username;
-                  homeDirectory = "/home/${user.username}";
-                  stateVersion = "24.05";
+
+                # Tudo do usuário num atributo só. Separar em
+                # `users.${x}.imports` e `users.${x}.home` não compila: o Nix
+                # funde caminhos ESTÁTICOS ({ a.b = 1; a.c = 2; }), mas não
+                # sabe em tempo de parse que duas chaves interpoladas serão
+                # iguais — constrói cada uma e acusa
+                # "dynamic attribute already defined".
+                users.${user.username} = {
+                  imports = [ ./user ];
+                  home = {
+                    username = user.username;
+                    homeDirectory = "/home/${user.username}";
+                    stateVersion = "24.05";
+                  };
                 };
               };
             })
