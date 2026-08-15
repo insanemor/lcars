@@ -108,7 +108,7 @@ O que está no arquivo é o mínimo que o flake precisa. Estes campos são
 | Campo | Default | Para quê |
 |---|---|---|
 | `systemSettings.extraPackages` | `[ ]` | pacotes nixpkgs no sistema, por nome |
-| `systemSettings.grubDevice` | `""` | disco do GRUB, quando `bootMode = "bios"` |
+| `systemSettings.grubDevice`\* | `""` | disco do GRUB, quando `bootMode = "bios"` |
 | `systemSettings.swapFileSize` | `null` | MiB de `/swapfile`, se o hardware-config não trouxer swap |
 | `userSettings.packages` | `[ ]` | pacotes só para o seu usuário |
 | `userSettings.sshKeys` | `[ ]` | chaves autorizadas — o sshd só aceita chave |
@@ -116,6 +116,8 @@ O que está no arquivo é o mínimo que o flake precisa. Estes campos são
 | `userSettings.gpgKey` | `null` | chave SSH para assinar commits do git |
 
 Acrescente ao `settings.nix` só o que for usar.
+
+\* `grubDevice` é a exceção: ele **já vem** no arquivo, vazio, e deve continuar lá. O instalador o preenche com `sed`, que só substitui linha existente — se você apagar a linha, uma instalação em BIOS falha na assertion de `system/core`.
 
 ### 3. Crie o diretório da máquina
 

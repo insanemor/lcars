@@ -61,7 +61,9 @@ Para uma máquina nova a partir de um clone que já existe, siga o [caminho manu
 
 ### O `settings.nix` é versionado; o hardware-config não
 
-`settings.nix` vem no repo com o **default básico** — é o arquivo que você edita, e editá-lo deixa o clone sujo. Nada além dele é obrigatório: os campos avançados (`sshKeys`, `packages`, `grubDevice`, `swapFileSize`, `gpgKey`, `initialPassword`, `extraPackages`) podem simplesmente não estar lá, e cada módulo usa o próprio default. A lista completa está no cabeçalho do arquivo.
+`settings.nix` vem no repo com o **default básico** — é o arquivo que você edita, e editá-lo deixa o clone sujo. Nada além dele é obrigatório: os campos avançados (`sshKeys`, `packages`, `swapFileSize`, `gpgKey`, `initialPassword`, `extraPackages`) podem simplesmente não estar lá, e cada módulo usa o próprio default. A lista completa está em [docs/adding-a-host.md](./docs/adding-a-host.md).
+
+Uma exceção: **`grubDevice` precisa existir no arquivo**, ainda que vazio. O instalador o escreve com `sed`, que só substitui linha já presente — sem ela, uma máquina BIOS ficaria sem disco de GRUB.
 
 Já `machines/*/hardware-configuration.nix` está no `.gitignore` — ele pode vazar números de série. Mas um flake dentro de um repo git **só enxerga arquivos rastreados**, então o instalador o põe no *index* com `git add -f`. Isso não o commita, mas deixa o arquivo pronto para entrar num commit distraído: confira o `git status` antes de commitar.
 
