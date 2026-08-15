@@ -4,6 +4,7 @@
 #
 #   ./scripts/check.sh            verifica tudo
 #   ./scripts/check.sh --fmt      só formato e anti-padrões (rápido)
+#   ./scripts/check.sh --eval     só a avaliação (é o que o nupdate usa)
 #   ./scripts/check.sh --fix      corrige formato e anti-padrões no lugar
 #
 # Usa o `nix` da máquina quando ele existe; senão, um container `nixos/nix`
@@ -41,10 +42,11 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 MODE="all"
 case "${1:-}" in
-  --fmt) MODE="fmt" ;;
-  --fix) MODE="fix" ;;
-  "")    ;;
-  *)     printf 'uso: %s [--fmt|--fix]\n' "$0" >&2; exit 2 ;;
+  --fmt)  MODE="fmt" ;;
+  --fix)  MODE="fix" ;;
+  --eval) MODE="eval" ;;
+  "")     ;;
+  *)      printf 'uso: %s [--fmt|--fix|--eval]\n' "$0" >&2; exit 2 ;;
 esac
 
 bold=$'\033[1m'; red=$'\033[1;31m'; green=$'\033[1;32m'
@@ -171,6 +173,10 @@ fi
 falhas=0
 
 # --- 1. formato -------------------------------------------------------
+# `--eval` pula formato e anti-padrões: quem chama assim quer saber se o código
+# avalia, não se está bem-arrumado. É o caso do nupdate, onde reprovar um
+# rebuild por causa de indentação seria absurdo.
+if [[ "$MODE" != "eval" ]]; then
 step "formato (nixfmt)"
 if out="$(run_tools "$FIND_NIX -exec nixfmt --check {} + 2>&1" 2>&1)"; then
   ok "formatação consistente"
@@ -197,6 +203,7 @@ if [[ "$MODE" == "fmt" ]]; then
   printf '\n%s--fmt: parando antes da avaliação%s\n' "$yellow" "$off"
   exit "$((falhas > 0 ? 1 : 0))"
 fi
+fi  # fim do bloco pulado por --eval
 
 # --- 3. avaliação -----------------------------------------------------
 # O que pega erro de verdade. Os dois profiles, porque cada um liga um
@@ -223,6 +230,7 @@ for profile in basic personal; do
 done
 
 # --- 4. código morto (informativo) ------------------------------------
+if [[ "$MODE" != "eval" ]]; then
 # Não reprova: módulos NixOS convencionalmente recebem { config, lib, pkgs,
 # ... } mesmo sem usar tudo, e isso é idioma da linguagem, não defeito.
 step "código morto (deadnix) — informativo"
@@ -233,6 +241,7 @@ else
     | sed 's/^/    /' | head -20
   note "informativo — não reprova o check"
 fi
+fi  # fim do bloco pulado por --eval
 
 # --- veredito ---------------------------------------------------------
 printf '\n'

@@ -84,12 +84,15 @@ mexer em arquivos fora do controle de versão.
 ```bash
 ./scripts/check.sh          # formato, anti-padrões e avaliação dos dois profiles
 ./scripts/check.sh --fmt    # só formato e anti-padrões, sem avaliar
+./scripts/check.sh --eval   # só a avaliação — é o que o nupdate usa
 ./scripts/check.sh --fix    # corrige formato e anti-padrões no lugar
 ```
 
-Roda num container `nixos/nix`, então **não é preciso ter `nix` instalado** —
-a máquina de desenvolvimento é Garuda (Arch), não NixOS. A primeira execução
-baixa o nixpkgs (~250MB num volume Docker); as seguintes levam segundos.
+Usa o `nix` da máquina quando ele existe; senão, um container `nixos/nix`.
+Assim ele serve tanto aqui — Garuda (Arch), sem nix — quanto na máquina NixOS,
+onde exigir Docker o tornaria inútil. O cabeçalho da saída diz qual está
+usando. Via Docker, a primeira execução baixa o nixpkgs (~250MB num volume);
+as seguintes levam segundos.
 
 A etapa que importa é a avaliação: ela pega nome de option que não existe,
 atributo mal aninhado e módulo que não avalia — a classe de erro que nenhuma
