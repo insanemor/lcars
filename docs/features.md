@@ -221,6 +221,10 @@ profile — os títulos abaixo trazem a flag de cada um.
 - Autosuggestion, syntax highlighting e completion
 - Histórico de 50 000 linhas, compartilhado entre sessões, sem duplicatas
 - Aliases: `ll`, `la`, `l`, `gs` (git status), `gp` (push), `gpl` (pull)
+- **`nupdate`** — sincroniza `~/.dotfiles` com o repositório, avalia e aplica
+  (`scripts/update.sh`). Aceita `--inputs` para atualizar o nixpkgs junto e
+  `--no-check` para pular a avaliação. Em conflito, o repositório vence e o
+  que você editou vai para um `git stash`; `machines/<host>/` nunca é tocado
 - `zsh-completions`
 
 Esta flag é a única de `user/` que mexe também no sistema: ela decide o shell

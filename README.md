@@ -48,15 +48,41 @@ sudo nixos-rebuild switch --flake .#vm-teste
 
 ### O instalador é para a primeira vez
 
-Ele não foi feito para rodar duas vezes: o `git clone` falha se `~/.dotfiles` já existir, e um segundo `settings.nix` sobrescreveria o que você editou. Depois da instalação o ciclo é outro — editar `settings.nix` e rodar `nixos-rebuild`:
+Ele não foi feito para rodar duas vezes: o `git clone` falha se `~/.dotfiles` já existir. Para uma máquina nova a partir de um clone que já existe, siga o [caminho manual](./docs/adding-a-host.md#caminho-manual).
+
+## Depois de instalado: `nupdate`
+
+```bash
+nupdate               # traz o que mudou no repositório e aplica
+nupdate --inputs      # …e também atualiza o nixpkgs (build longo)
+nupdate --no-check    # pula a avaliação, vai direto ao rebuild
+```
+
+O alias vem do próprio repo (`user/shell/zsh.nix`) e chama [`scripts/update.sh`](./scripts/update.sh). Ele descobre a máquina pelo `hostname`, então não há nome para decorar, e roda de qualquer diretório.
+
+A sequência: sincroniza → (opcional) atualiza inputs → **avalia** → `nixos-rebuild switch`. A avaliação leva segundos e evita descobrir um erro de código depois de meio sistema compilado; se ela falhar, o rebuild não roda.
+
+Para editar a configuração antes de aplicar, o caminho continua o de sempre:
 
 ```bash
 cd ~/.dotfiles
-$EDITOR settings.nix
-sudo nixos-rebuild switch --flake .#<modelo>
+$EDITOR settings.nix                          # quem você é
+$EDITOR machines/<máquina>/default.nix        # o que a máquina é
+sudo nixos-rebuild switch --flake .#<máquina>
 ```
 
-Para uma máquina nova a partir de um clone que já existe, siga o [caminho manual](./docs/adding-a-host.md#caminho-manual).
+### O `nupdate` descarta o que você editou
+
+Em caso de conflito, **o repositório sempre vence** — sem perguntar, sem parar. É deliberado: o comando existe para rodar sem exigir atenção.
+
+Nada some para sempre. O que estava fora de um commit vai para um `git stash` nomeado (`git stash list`), e commits locais descartados ficam no `git reflog`. Mas são rede de segurança, não confirmação: o comando não espera você olhar.
+
+Duas coisas nunca são tocadas:
+
+- **`machines/<máquina>/`** — a configuração desta máquina, que não existe no repositório. É copiada para fora do git antes da sincronização e devolvida depois, esteja ela commitada, no index ou solta no disco.
+- O que você editou **e o repositório não** — isso nem chega a ser conflito, e sobrevive normalmente.
+
+Se você mantém edições em `settings.nix` que quer preservar, vale movê-las para `machines/<máquina>/default.nix`, que o `nupdate` respeita.
 
 ### O `settings.nix` é versionado; o hardware-config não
 
@@ -140,7 +166,7 @@ A árvore é dividida por **papel**, não por mecanismo do Nix:
 │   └── personal/   # escape hatch via private.nix em $HOME (sem flag)
 │
 ├── settings.nix    # SUA configuração — o único arquivo que você edita
-├── scripts/        # install.sh (instala) e check.sh (verifica os .nix)
+├── scripts/        # install.sh (instala), update.sh (nupdate), check.sh (verifica)
 └── docs/
 ```
 

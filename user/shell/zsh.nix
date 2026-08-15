@@ -31,6 +31,14 @@ lib.mkIf osConfig.lcars.user.zsh.enable {
       gs  = "git status";
       gp  = "git push";
       gpl = "git pull";
+
+      # Atualiza o repo e aplica no sistema. Aceita --inputs (atualiza o
+      # nixpkgs junto) e --no-check (pula a avaliação).
+      #
+      # Caminho fixo porque o instalador clona em ~/.dotfiles e é de lá que o
+      # flake é aplicado; se um dia o caminho virar configurável, esta linha
+      # acompanha.
+      nupdate = "$HOME/.dotfiles/scripts/update.sh";
     };
 
     # A integração do direnv com o zsh já é injetada pelo próprio módulo
