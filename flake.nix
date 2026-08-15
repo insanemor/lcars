@@ -35,11 +35,13 @@
       lib = nixpkgs.lib;
 
       # ---------------------------------------------------------------
-      # settings.nix é a fonte única de configuração desta instalação.
-      # É versionado: o que vem no repo é o default básico, que um fork
-      # edita no lugar. Campos avançados (sshKeys, packages, grubDevice,
-      # swapFileSize, gpgKey, initialPassword, extraPackages) são opcionais —
-      # os módulos que os leem trazem o próprio default.
+      # settings.nix — quem você é e o que você gosta. Versionado, e igual em
+      # todas as suas máquinas: o que muda de uma para outra (bootloader,
+      # disco do GRUB, VM, notebook) mora em machines/<host>/default.nix.
+      #
+      # Campos avançados (sshKeys, packages, swapFileSize, gpgKey,
+      # initialPassword, extraPackages) são opcionais — os módulos que os leem
+      # trazem o próprio default.
       # ---------------------------------------------------------------
       settings = import ./settings.nix;
 
@@ -79,8 +81,10 @@
 
               lcars.profile = lib.mkDefault sys.profile;
 
-              lcars.system.core.bootLoader =
-                lib.mkDefault (if sys.bootMode == "uefi" then "systemd-boot" else "grub");
+              # O bootloader NÃO é decidido aqui. Ele depende de a máquina ter
+              # bootado em UEFI ou BIOS, então quem o declara é
+              # machines/<host>/default.nix. O default da option é
+              # "systemd-boot" (veja system/core).
 
               home-manager = {
                 useGlobalPkgs = true;

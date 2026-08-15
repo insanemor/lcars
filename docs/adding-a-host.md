@@ -108,7 +108,6 @@ O que está no arquivo é o mínimo que o flake precisa. Estes campos são
 | Campo | Default | Para quê |
 |---|---|---|
 | `systemSettings.extraPackages` | `[ ]` | pacotes nixpkgs no sistema, por nome |
-| `systemSettings.grubDevice`\* | `""` | disco do GRUB, quando `bootMode = "bios"` |
 | `systemSettings.swapFileSize` | `null` | MiB de `/swapfile`, se o hardware-config não trouxer swap |
 | `userSettings.packages` | `[ ]` | pacotes só para o seu usuário |
 | `userSettings.sshKeys` | `[ ]` | chaves autorizadas — o sshd só aceita chave |
@@ -117,7 +116,11 @@ O que está no arquivo é o mínimo que o flake precisa. Estes campos são
 
 Acrescente ao `settings.nix` só o que for usar.
 
-\* `grubDevice` é a exceção: ele **já vem** no arquivo, vazio, e deve continuar lá. O instalador o preenche com `sed`, que só substitui linha existente — se você apagar a linha, uma instalação em BIOS falha na assertion de `system/core`.
+**O que NÃO fica aqui:** nada que descreva hardware. Bootloader, disco do GRUB,
+VM, notebook e teclado moram em `machines/<host>/default.nix` — é o passo
+seguinte. A divisão existe para o `settings.nix` nunca divergir entre clones:
+se ele tivesse o que muda de máquina para máquina, todo `git pull` daria
+conflito.
 
 ### 3. Crie o diretório da máquina
 
@@ -126,10 +129,9 @@ cp -r machines/template machines/meu-laptop
 ```
 
 O nome do diretório é livre — só precisa ser um hostname válido (letras,
-números e hífen). Ele vira `networking.hostName` e o alvo do rebuild. O
-instalador usa o modelo do DMI; na mão, use o que fizer sentido para você. Vale
-apontar `systemSettings.hostname` para o mesmo nome, para os dois não
-divergirem.
+números e hífen). Ele vira `networking.hostName` e o alvo do rebuild, e é a
+**única** fonte desse nome: não existe campo de hostname em lugar nenhum. O
+instalador usa o modelo do DMI; na mão, use o que fizer sentido para você.
 
 Profile, bootloader, locale e identidade vêm do `settings.nix`. Em
 `machines/<host>/default.nix` fica só o que é desta máquina — e é aqui que
@@ -160,10 +162,25 @@ lcars.profile         = "basic";   # esta máquina foge do settings
 lcars.system.wm.plasma.enable = false;
 ```
 
-O bootloader **não** vem do `nixos-generate-config` — ele depende de a máquina
-ter bootado em UEFI ou BIOS. É o campo `bootMode` do settings, que o instalador
-detecta — junto com o `grubDevice`, quando o boot é BIOS legado. Na mão, confira
-em qual dos dois a máquina bootou: `[ -d /sys/firmware/efi ]`.
+### O boot também é declarado aqui
+
+O bootloader **não** vem do `nixos-generate-config`: ele depende de a máquina
+ter bootado em UEFI ou BIOS legado. O instalador detecta e preenche; na mão,
+confira com `[ -d /sys/firmware/efi ] && echo uefi || echo bios`.
+
+```nix
+lcars.system.core.bootLoader = "systemd-boot";  # UEFI
+# lcars.system.core.bootLoader = "grub";        # BIOS legado
+# lcars.system.core.grubDevice = "/dev/sda";    # …e o DISCO, não a partição
+```
+
+O disco você descobre com `lsblk -no pkname "$(findmnt -no SOURCE /)"`. Com
+`bootLoader = "grub"` e `grubDevice` vazio, a avaliação para numa assertion de
+`system/core` dizendo exatamente isso — antes de o instalador do GRUB falhar de
+um jeito mais obscuro.
+
+Estas linhas **vêm descomentadas** no template, de propósito: o instalador as
+reescreve com `sed`, que só substitui linha já presente.
 
 Outras opções úteis:
 
@@ -265,6 +282,8 @@ nixosConfigurations.meu-pc = self.mkMachine "meu-pc" [ ./algo-extra.nix ];
 | `error: getting status of '/nix/store/…/settings.nix'` | O `settings.nix` foi apagado ou renomeado. Ele é obrigatório e versionado: recupere com `git checkout settings.nix` |
 | `attribute 'sshKeys' missing` (ou outro campo) | Um módulo passou a exigir um campo que o seu `settings.nix` não tem. Acrescente-o, ou dê um default ao módulo com `user.<campo> or <valor>` |
 | `path ... does not exist` no hardware-config | Falta `git add -f machines/<host>/hardware-configuration.nix` |
+| Assertion `bootLoader = "grub" exige grubDevice` | Máquina em BIOS legado sem o disco declarado. Preencha `lcars.system.core.grubDevice` em `machines/<host>/default.nix` — descubra com `lsblk -no pkname "$(findmnt -no SOURCE /)"` |
+| Conflito no `settings.nix` a cada `git pull` | Algum dado de máquina foi parar nele. Ele deve ficar **idêntico** ao do repositório; o que varia entre máquinas vai em `machines/<host>/default.nix` |
 | `value is not a valid value of enum` em `lcars.profile` | Profile novo não foi acrescentado ao enum em `profiles/default.nix` |
 | A máquina ignora o que declarei | O profile definiu a mesma flag; ele usa `mkDefault`, então declarar na máquina deve vencer — confira se não escreveu `mkDefault` na máquina também |
 | `detected dubious ownership in repository` | Rebuild como root num repo de outro dono: `sudo git config --global --add safe.directory ~/.dotfiles` |

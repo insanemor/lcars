@@ -1,11 +1,16 @@
 # =====================================================================
-# lcars — configuração desta instalação
-#
-# Este é o ÚNICO arquivo que você precisa editar, e o default básico do repo:
+# lcars — quem você é e o que você gosta
 #
 #   $EDITOR settings.nix
 #   sudo nixos-rebuild switch --flake .#<máquina>
 #
+# Este arquivo é versionado e vale IGUAL em todas as suas máquinas. É por isso
+# que nada aqui descreve hardware: bootloader, disco do GRUB, VM, notebook e
+# teclado são fatos de cada máquina e moram em machines/<nome>/default.nix.
+#
+# A divisão existe para o `git pull` ser limpo. Se este arquivo tivesse o que
+# muda de máquina para máquina, todo clone divergiria do repositório e cada
+# atualização daria conflito.
 # =====================================================================
 
 {
@@ -13,24 +18,15 @@
   # SISTEMA
   # -------------------------------------------------------------------
   systemSettings = {
-    hostname = "nemor";
     profile = "personal";
 
     timezone = "America/Sao_Paulo";
     locale   = "pt_BR.UTF-8";
 
-    bootMode = "uefi";
-    bootMountPath = "/boot";
-    # Só usado quando bootMode = "bios": o DISCO onde instalar o GRUB
-    # ("/dev/sda"), não a partição. O instalador preenche sozinho ao detectar
-    # boot legado; em UEFI fica vazio mesmo.
-    #
-    # Este campo precisa EXISTIR aqui, ainda que vazio: o install.sh o escreve
-    # com `sed`, que só substitui linha já presente. Sem a linha, ele falharia
-    # em silêncio — foi o que aconteceu na #15.
-    grubDevice = "";
+    # Arquitetura. Isto é fato da máquina, mas fica aqui por necessidade:
+    # flake.nix o lê ANTES de montar o nixosSystem, então não pode vir de um
+    # módulo. Mude só se não for PC de 64 bits.
     system = "x86_64-linux";
-
   };
 
   # -------------------------------------------------------------------
