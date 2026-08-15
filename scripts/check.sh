@@ -6,8 +6,9 @@
 #   ./scripts/check.sh --fmt      só formato e anti-padrões (rápido)
 #   ./scripts/check.sh --fix      corrige formato e anti-padrões no lugar
 #
-# Roda inteiro num container `nixos/nix`, com o store num volume Docker.
-# NADA é instalado na sua máquina, e a árvore de trabalho não é tocada.
+# Usa o `nix` da máquina quando ele existe; senão, um container `nixos/nix`
+# com o store num volume Docker. Nos dois casos nada é instalado, e a sua
+# árvore de trabalho não é tocada.
 #
 # O que ele faz, em ordem de custo:
 #
@@ -29,7 +30,9 @@ set -euo pipefail
 
 IMAGE="nixos/nix:latest"
 VOLUME="lcars-nix-store"
-TOOLS="nixpkgs#nixfmt nixpkgs#statix nixpkgs#deadnix"
+# Array, não string: a lista precisa se dividir em palavras ao virar
+# argumentos do `nix shell`, e aspas em volta de uma string impediriam isso.
+TOOLS=(nixpkgs#nixfmt nixpkgs#statix nixpkgs#deadnix)
 # nixfmt deprecou receber diretório, então os arquivos vão um a um pelo find.
 # As aspas ficam escapadas: isto é expandido só dentro do container.
 FIND_NIX="find . -name \"*.nix\" -not -path \"./.git/*\""
@@ -52,10 +55,21 @@ ok()   { printf '%s  ✓ %s%s\n' "$green" "$*" "$off"; }
 bad()  { printf '%s  ✗ %s%s\n' "$red" "$*" "$off"; }
 note() { printf '%s  · %s%s\n' "$yellow" "$*" "$off"; }
 
-command -v docker >/dev/null 2>&1 \
-  || { bad "docker não encontrado — é ele que roda o nix sem instalar nada aqui"; exit 1; }
-docker info >/dev/null 2>&1 \
-  || { bad "o daemon do docker não responde (permissão? serviço parado?)"; exit 1; }
+# --- onde rodar --------------------------------------------------------
+# Com `nix` na máquina, usamos ele direto: é mais rápido e não precisa de
+# container. O Docker existe porque a máquina de desenvolvimento é Garuda, sem
+# nix — mas numa NixOS (o alvo deste repo) o nix está ali, e exigir Docker
+# tornaria o check inútil justamente onde ele é mais útil.
+if command -v nix >/dev/null 2>&1; then
+  RUNNER=nix
+elif command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+  RUNNER=docker
+else
+  bad "preciso de 'nix' ou de um Docker funcionando para avaliar os .nix"
+  note "nix:    https://nixos.org/download"
+  note "docker: o daemon precisa estar de pé e acessível sem sudo"
+  exit 1
+fi
 
 # --- área de trabalho -------------------------------------------------
 # Uma CÓPIA do repo, para não sujar a sua árvore: a avaliação precisa de uma
@@ -100,34 +114,42 @@ git -C "$WORK" init -q
 git -C "$WORK" add -A -f >/dev/null
 git -C "$WORK" -c user.email=check@lcars -c user.name=check commit -qm check
 
-# Um só `docker run` para tudo: subir o container é o que custa, não os
-# comandos. O gitconfig evita "repository path is not owned by current user",
-# já que o container roda como root sobre um diretório do seu usuário.
-run_in_container() {
-  # NIX_CONFIG em vez de --extra-experimental-features: a flag carrega aspas
-  # simples, que colidiriam com as aspas em que o comando é embutido aqui.
-  docker run --rm \
-    -v "$VOLUME:/nix" \
-    -v "$WORK:/repo" \
-    -w /repo \
-    -e NIX_CONFIG="experimental-features = nix-command flakes" \
-    "$IMAGE" \
-    sh -c "printf '[safe]\n\tdirectory = /repo\n' > /root/.gitconfig
-           nix shell $TOOLS -c sh -c '$1'"
+# Roda um comando com as ferramentas disponíveis, dentro da cópia do repo.
+#
+# NIX_CONFIG em vez de --extra-experimental-features: a flag carrega aspas
+# simples, que colidiriam com as aspas em que o comando é embutido aqui.
+run_tools() {
+  if [[ "$RUNNER" == "nix" ]]; then
+    ( cd "$WORK" \
+      && NIX_CONFIG="experimental-features = nix-command flakes" \
+         nix shell "${TOOLS[@]}" -c sh -c "$1" )
+  else
+    # Um só `docker run` por chamada: subir o container é o que custa, não os
+    # comandos. O gitconfig evita "repository path is not owned by current
+    # user", já que o container roda como root sobre um diretório seu.
+    docker run --rm \
+      -v "$VOLUME:/nix" \
+      -v "$WORK:/repo" \
+      -w /repo \
+      -e NIX_CONFIG="experimental-features = nix-command flakes" \
+      "$IMAGE" \
+      sh -c "printf '[safe]\n\tdirectory = /repo\n' > /root/.gitconfig
+             nix shell ${TOOLS[*]} -c sh -c '$1'"
+  fi
 }
 
-docker volume create "$VOLUME" >/dev/null
+[[ "$RUNNER" == "docker" ]] && docker volume create "$VOLUME" >/dev/null
 
-printf '%slcars — verificando %s arquivos .nix%s\n' \
-  "$bold" "$(find "$WORK" -name '*.nix' | wc -l)" "$off"
+printf '%slcars — verificando %s arquivos .nix (via %s)%s\n' \
+  "$bold" "$(find "$WORK" -name '*.nix' | wc -l)" "$RUNNER" "$off"
 
 # --- --fix: reformata e sai -------------------------------------------
 if [[ "$MODE" == "fix" ]]; then
   step "reformatando"
   # statix antes do nixfmt: ele reescreve expressões (assignment -> inherit) e
   # deixa a formatação do trecho novo por conta do nixfmt, que roda depois.
-  run_in_container 'statix fix .' || { bad "statix fix falhou"; exit 1; }
-  run_in_container "$FIND_NIX -exec nixfmt {} +" || { bad "nixfmt falhou"; exit 1; }
+  run_tools 'statix fix .' || { bad "statix fix falhou"; exit 1; }
+  run_tools "$FIND_NIX -exec nixfmt {} +" || { bad "nixfmt falhou"; exit 1; }
   # Traz de volta só os .nix, um a um: o WORK tem um .git nosso e a máquina
   # descartável, que não podem vazar para o repo.
   changed=0
@@ -150,7 +172,7 @@ falhas=0
 
 # --- 1. formato -------------------------------------------------------
 step "formato (nixfmt)"
-if out="$(run_in_container "$FIND_NIX -exec nixfmt --check {} + 2>&1" 2>&1)"; then
+if out="$(run_tools "$FIND_NIX -exec nixfmt --check {} + 2>&1" 2>&1)"; then
   ok "formatação consistente"
 else
   bad "arquivos fora do padrão:"
@@ -161,7 +183,7 @@ fi
 
 # --- 2. anti-padrões --------------------------------------------------
 step "anti-padrões (statix)"
-if out="$(run_in_container 'statix check . 2>&1' 2>&1)"; then
+if out="$(run_tools 'statix check . 2>&1' 2>&1)"; then
   ok "nenhum anti-padrão"
 else
   bad "apontamentos:"
@@ -185,7 +207,7 @@ for profile in basic personal; do
   git -C "$WORK" add -A -f >/dev/null
   git -C "$WORK" -c user.email=check@lcars -c user.name=check commit -qm "$profile" --allow-empty
 
-  if out="$(run_in_container "nix eval .#nixosConfigurations.checkhost.config.system.build.toplevel.drvPath 2>&1" 2>&1)"; then
+  if out="$(run_tools "nix eval .#nixosConfigurations.checkhost.config.system.build.toplevel.drvPath 2>&1" 2>&1)"; then
     ok "avalia"
   else
     bad "erro de avaliação:"
@@ -204,7 +226,7 @@ done
 # Não reprova: módulos NixOS convencionalmente recebem { config, lib, pkgs,
 # ... } mesmo sem usar tudo, e isso é idioma da linguagem, não defeito.
 step "código morto (deadnix) — informativo"
-if out="$(run_in_container 'deadnix --fail . 2>&1' 2>&1)"; then
+if out="$(run_tools 'deadnix --fail . 2>&1' 2>&1)"; then
   ok "nada não usado"
 else
   printf '%s\n' "$out" | sed 's/\x1b\[[0-9;]*m//g' | grep -E '╭─\[|Unused' \
