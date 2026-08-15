@@ -21,6 +21,14 @@
 
     bootMode = "uefi";
     bootMountPath = "/boot";
+    # Só usado quando bootMode = "bios": o DISCO onde instalar o GRUB
+    # ("/dev/sda"), não a partição. O instalador preenche sozinho ao detectar
+    # boot legado; em UEFI fica vazio mesmo.
+    #
+    # Este campo precisa EXISTIR aqui, ainda que vazio: o install.sh o escreve
+    # com `sed`, que só substitui linha já presente. Sem a linha, ele falharia
+    # em silêncio — foi o que aconteceu na #15.
+    grubDevice = "";
     system = "x86_64-linux";
 
   };

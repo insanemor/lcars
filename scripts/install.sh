@@ -31,19 +31,62 @@ echo "Configuração de hardware salva em: $destination/hardware-configuration.n
 # settings.nix vem versionado com o default básico — o script edita esse mesmo
 # arquivo, e o editor abaixo te dá a chance de revisar antes do build.
 
+# Escreve um campo do settings.nix, e AVISA se não achou a linha.
+#
+# O sed só substitui o que já existe: se o campo tiver sido removido do
+# settings.nix, ele não faz nada e sai com status 0. Foi assim que grubDevice
+# ficou vazio numa VM BIOS e o build morreu numa assertion lá adiante, sem
+# nenhuma pista de onde tinha começado.
+settings="$HOME/.dotfiles/settings.nix"
+set_field() {
+    local campo="$1" valor="$2" escapado
+
+    if ! grep -qE "^[[:space:]]*${campo}[[:space:]]*=" "$settings"; then
+        echo "AVISO: campo '$campo' não existe em settings.nix — não foi preenchido." >&2
+        echo "       acrescente '$campo = \"$valor\";' à mão antes do rebuild." >&2
+        return
+    fi
+
+    # Barra, & e contrabarra têm significado na substituição do sed. Sem isto,
+    # um valor como "/dev/sda" faz o sed abortar com "opção desconhecida".
+    escapado=$(printf '%s' "$valor" | sed 's/[\/&\\]/\\&/g')
+    sed -i "0,/^\([[:space:]]*\)${campo}[[:space:]]*=.*/s//\1${campo} = \"${escapado}\";/" "$settings"
+
+    # Conferir o resultado, não só a tentativa: é o que separa "o sed rodou" de
+    # "o valor está lá". Qualquer forma de falha cai aqui.
+    if ! grep -qF "${campo} = \"${valor}\";" "$settings"; then
+        echo "AVISO: não consegui escrever '$campo' em settings.nix." >&2
+        echo "       ajuste '$campo = \"$valor\";' à mão antes do rebuild." >&2
+    fi
+}
+
 # Check if uefi or bios
 if [ -d /sys/firmware/efi/efivars ]; then
-    sed -i "0,/bootMode.*=.*\".*\";/s//bootMode = \"uefi\";/" ~/.dotfiles/settings.nix
+    set_field bootMode uefi
 else
-    sed -i "0,/bootMode.*=.*\".*\";/s//bootMode = \"bios\";/" ~/.dotfiles/settings.nix
-    grubDevice=$(findmnt / | awk -F' ' '{ print $2 }' | sed 's/\[.*\]//g' | tail -n 1 | lsblk -no pkname | tail -n 1 )
-    sed -i "0,/grubDevice.*=.*\".*\";/s//grubDevice = \"\/dev\/$grubDevice\";/" ~/.dotfiles/settings.nix
+    set_field bootMode bios
+    # O DISCO da raiz, não a partição: /dev/sda, não /dev/sda1.
+    #
+    # `findmnt -no SOURCE` devolve a partição direto, sem cabeçalho; o sed tira
+    # o subvolume que btrfs acrescenta ("[/@]"). O disco sai do `lsblk` com a
+    # partição como ARGUMENTO — antes ela ia por pipe, que o lsblk ignora, e
+    # ele listava todos os discos do sistema para o `tail -n 1` pegar o último.
+    # Numa máquina de um disco só isso acerta por acaso; com dois, instalaria
+    # o GRUB no disco errado.
+    root_part=$(findmnt -no SOURCE / | sed 's/\[.*\]//')
+    root_disk=$(lsblk -no pkname "$root_part" 2>/dev/null | head -n 1)
+    if [ -n "$root_disk" ]; then
+        set_field grubDevice "/dev/$root_disk"
+    else
+        echo "AVISO: não consegui descobrir o disco de '$root_part'." >&2
+        echo "       preencha grubDevice no settings.nix antes do rebuild." >&2
+    fi
 fi
 
 # Patch settings.nix com o nome da máquina, o usuário e o nome completo
-sed -i "0,/hostname.*=.*\".*\";/s//hostname = \"$model_name\";/" ~/.dotfiles/settings.nix
-sed -i "0,/username.*=.*\".*\";/s//username = \"$(whoami)\";/" ~/.dotfiles/settings.nix
-sed -i "0,/fullName.*=.*\".*\";/s//fullName = \"$(getent passwd "$(whoami)" | cut -d ':' -f 5 | cut -d ',' -f 1)\";/" ~/.dotfiles/settings.nix
+set_field hostname "$model_name"
+set_field username "$(whoami)"
+set_field fullName "$(getent passwd "$(whoami)" | cut -d ':' -f 5 | cut -d ',' -f 1)"
 
 # Open up editor to manually edit settings.nix before install
 if [ -z "$EDITOR" ]; then
