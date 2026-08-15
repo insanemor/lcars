@@ -12,14 +12,14 @@
 #
 #   # profiles/personal/default.nix
 #   lcars.system.wm.plasma.enable = mkDefault true;   # o desktop
-#   lcars.user.starship.enable    = mkDefault true;   # o meu prompt
+#   lcars.user.direnv.enable      = mkDefault true;   # o meu shell
 #
 # Do outro lado da fronteira, cada módulo de user/ lê a flag por `osConfig`,
 # que o Home Manager expõe justamente quando roda como módulo NixOS:
 #
-#   # user/shell/starship.nix
+#   # user/app/direnv.nix
 #   { osConfig, lib, ... }:
-#   lib.mkIf osConfig.lcars.user.starship.enable { ... }
+#   lib.mkIf osConfig.lcars.user.direnv.enable { ... }
 #
 # Todas vêm DESLIGADAS, como em system/: nada liga sozinho, quem decide é o
 # profile. Para acrescentar um módulo em user/: declare a flag aqui, importe-o

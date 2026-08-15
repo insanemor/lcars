@@ -34,10 +34,9 @@ with lib;
     ];
 
     # --- ambiente do usuário (user/) ----------------------------------
-    # Num desktop, tudo: o prompt, o direnv e o gancho de dotfiles fazem
-    # diferença no uso interativo.
+    # Num desktop, tudo: o direnv e o gancho de dotfiles fazem diferença no
+    # uso interativo.
     lcars.user.zsh.enable      = mkDefault true;
-    lcars.user.starship.enable = mkDefault true;
     lcars.user.git.enable      = mkDefault true;
     lcars.user.direnv.enable   = mkDefault true;
     lcars.user.dotfiles.enable = mkDefault true;

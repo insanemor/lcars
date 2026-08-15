@@ -33,10 +33,9 @@ lib.mkIf osConfig.lcars.user.zsh.enable {
       gpl = "git pull";
     };
 
-    # A integração do starship e do direnv com o zsh já é injetada pelos
-    # próprios módulos (programs.starship / programs.direnv). Não repita aqui:
-    # o antigo `source ${pkgs.starship}/share/starship/init.zsh` apontava para
-    # um caminho que não existe no pacote.
+    # A integração do direnv com o zsh já é injetada pelo próprio módulo
+    # (programs.direnv). Não repita aqui com um `source` manual: o caminho
+    # dentro do pacote muda, e a linha quebra sem avisar.
   };
 
   home.packages = with pkgs; [
