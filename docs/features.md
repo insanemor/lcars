@@ -110,7 +110,7 @@ não fica aberta na rede.
 
 - **KDE Plasma 6** com **SDDM**, sessão padrão Wayland (a sessão X11 continua
   disponível na tela de login; `lcars.system.wm.plasma.wayland = false` inverte isso)
-- **Fontes**: `noto-fonts`, `noto-fonts-emoji`, `liberation_ttf`, `dejavu_fonts`, mais o conjunto padrão do NixOS
+- **Fontes**: `noto-fonts`, `noto-fonts-color-emoji`, `liberation_ttf`, `dejavu_fonts`, mais o conjunto padrão do NixOS
 - **Aplicativos**: só o que o módulo `plasma6` do NixOS traz. Nada é
   acrescentado por este repo — **nem navegador**. Remova o que não quiser com
   `lcars.system.wm.plasma.excludePackages`
