@@ -5,7 +5,7 @@
 | [features.md](./features.md) | **O que vem instalado** — inventário de tudo que uma instalação entrega, por profile e por módulo |
 | [adding-a-host.md](./adding-a-host.md) | Adicionar uma máquina, escolher e criar profiles, resolver problemas comuns |
 | [secrets.md](./secrets.md) | 1Password (CLI, GUI, agente SSH), dotfiles via Document, e opnix para serviços |
-| [workflow.md](./workflow.md) | Como mudanças entram no repo: issue, branch, merge `--no-ff` |
+| [workflow.md](./workflow.md) | Como mudanças entram no repo: issue, branch, merge `--no-ff`, e o `scripts/check.sh` |
 
 Para instalar, comece pelo [README](../README.md) da raiz.
 

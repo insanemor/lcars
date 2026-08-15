@@ -1,0 +1,20 @@
+# Configuração do statix, usado por scripts/check.sh.
+
+disabled = [
+  # W20 "Avoid repeated keys in attribute sets" reprova o idioma padrão de
+  # módulos NixOS: declarar services.thermald.enable e services.logind.lidSwitch
+  # lado a lado, ou programs._1password e programs.ssh.knownHosts no mesmo
+  # bloco. Obedecer a essa regra exigiria aninhar tudo sob um `services = { … }`
+  # ou `programs = { … }`, o que afasta o código da forma que a documentação do
+  # NixOS usa e piora o diff quando uma opção é acrescentada.
+  #
+  # Não confundir com o erro de aninhamento que a avaliação pega: `github.com`
+  # sem aspas vira caminho `github` → `com`. Isso é erro de verdade, e quem
+  # acusa é o `nix eval`, não esta regra.
+  "repeated_keys",
+]
+
+ignore = [
+  ".git",
+  "result",
+]

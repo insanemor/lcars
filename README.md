@@ -123,7 +123,7 @@ A árvore é dividida por **papel**, não por mecanismo do Nix:
 │   └── personal/   # escape hatch via private.nix em $HOME (sem flag)
 │
 ├── settings.nix    # SUA configuração — o único arquivo que você edita
-├── scripts/        # install.sh — clona o repo e instala a máquina
+├── scripts/        # install.sh (instala) e check.sh (verifica os .nix)
 └── docs/
 ```
 
