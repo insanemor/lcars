@@ -7,9 +7,14 @@
 # ligada no profile. A flag vem do config do NixOS, lida por `osConfig`.
 #
 # Referência de estrutura e atalhos: github.com/Sly-Harvey/NixOS (MIT).
-{ osConfig, lib, pkgs, ... }:
+{ config, osConfig, lib, pkgs, ... }:
 
 let
+  rice = osConfig.lcars.system.theme.rice;
+  # As cores do esquema, como o stylix as resolveu. Nada de hex aqui: trocar
+  # `lcars.system.theme.scheme` muda a borda junto.
+  cores = config.lib.stylix.colors;
+
   # SUPER é a tecla Windows. Escolha do Hyprland e dos rices em geral: não
   # colide com atalho de aplicativo, ao contrário de Alt ou Ctrl.
   mod = "SUPER";
@@ -51,14 +56,38 @@ lib.mkIf osConfig.lcars.user.hyprland.enable {
       # para hyprland — não há paleta escrita neste arquivo.
       general = {
         gaps_in = 4;
-        gaps_out = 8;
+        gaps_out = if rice then 9 else 8;
         border_size = 2;
         layout = "dwindle";
+      }
+      # Borda em gradiente a 45°, a assinatura visual do rice de referência.
+      #
+      # mkForce porque o stylix declara `col.active_border` sem mkDefault
+      # (modules/hyprland/hm.nix) — sem forçar, as duas definições colidem.
+      # Se um dia ele passar a usar mkDefault, este mkForce pode sair.
+      // lib.optionalAttrs rice {
+        "col.active_border" =
+          lib.mkForce "rgb(${cores.base0E}) rgb(${cores.base0C}) 45deg";
       };
 
       decoration = {
-        rounding = 8;
-        blur.enabled = true;
+        rounding = if rice then 10 else 8;
+
+        blur = {
+          enabled = true;
+        }
+        // lib.optionalAttrs rice {
+          # Valores do repo de referência. Blur é caro: numa VM sem aceleração
+          # 3D, subir passes é o primeiro lugar onde a interface engasga.
+          size = 6;
+          passes = 2;
+          ignore_opacity = true;
+          new_optimizations = true;
+        };
+
+        # Desligada no rice: com borda em gradiente e blur, a sombra vira
+        # ruído em volta de cada janela.
+        shadow.enabled = !rice;
       };
 
       # Animações ligadas, mas curtas: numa VM sem aceleração 3D, animação
@@ -144,10 +173,8 @@ lib.mkIf osConfig.lcars.user.hyprland.enable {
 
   # O terminal não vem com o Hyprland, e sem ele não há como se recuperar de
   # nada dentro da sessão.
-  home.packages = with pkgs; [
-    kitty
-    # `rofi`, não `rofi-wayland`: os dois foram fundidos no nixpkgs, e o nome
-    # antigo agora aborta a avaliação com um throw.
-    rofi
-  ];
+  # O rofi NÃO está aqui: quem o instala é user/wm/rofi.nix, via programs.rofi.
+  # Pôr nos dois lugares daria duas cópias no PATH, e a do home.packages não
+  # teria a configuração.
+  home.packages = [ pkgs.kitty ];
 }

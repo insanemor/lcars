@@ -73,6 +73,21 @@ in
       '';
     };
 
+    # A forma é separada da cor de propósito: quem gosta da paleta mas não do
+    # visual em ilhas não deve ter que escolher entre os dois.
+    rice = mkOption {
+      type = types.bool;
+      default = true;
+      description = ''
+        Aplica a geometria do rice: barra em ilhas arredondadas, borda de
+        janela em gradiente, cantos e blur ajustados. Desligar deixa o visual
+        padrão de cada programa, ainda pintado pelo esquema.
+
+        Inspirado em github.com/Sly-Harvey/NixOS (MIT) — de lá vêm as formas;
+        as cores continuam saindo do esquema base16 acima.
+      '';
+    };
+
     fonts = {
       size = mkOption {
         type = types.int;
