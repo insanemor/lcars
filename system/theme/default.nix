@@ -20,21 +20,6 @@ with lib;
 
 let
   cfg = config.lcars.system.theme;
-
-  # Papel de parede gerado a partir das cores do próprio esquema.
-  #
-  # A alternativa seria versionar um .webp de alguns MB — o repo de referência
-  # tem 18 deles. Num repositório que se quer forkável e legível em diff, um
-  # gradiente derivado da paleta dá um fundo coerente sem acrescentar binário.
-  # Para usar uma foto sua, aponte `wallpaper` para o arquivo.
-  gradiente =
-    pkgs.runCommand "lcars-wallpaper.png"
-      { nativeBuildInputs = [ pkgs.imagemagick ]; }
-      ''
-        magick -size 3840x2160 \
-          gradient:'#${config.lib.stylix.colors.base00}-#${config.lib.stylix.colors.base01}' \
-          "$out"
-      '';
 in
 {
   options.lcars.system.theme = {
@@ -68,8 +53,11 @@ in
       type = types.nullOr types.path;
       default = null;
       description = ''
-        Imagem de fundo. `null` gera um gradiente a partir das cores do
-        esquema — sem binário no repositório.
+        Imagem de fundo. `null` deixa o Hyprland pintar uma cor sólida
+        derivada do esquema, sem daemon de papel de parede — é o padrão, e o
+        que sobrevive numa VM sem aceleração 3D.
+
+        Apontar para uma imagem liga o hyprpaper, que a renderiza.
       '';
     };
 
@@ -113,9 +101,23 @@ in
       polarity = cfg.polarity;
       base16Scheme = "${pkgs.base16-schemes}/share/themes/${cfg.scheme}.yaml";
 
-      # O stylix exige `image` ou `base16Scheme`; temos os dois, e a imagem
-      # serve para o papel de parede, não para derivar a paleta.
-      image = if cfg.wallpaper != null then cfg.wallpaper else gradiente;
+      # `null` quando você não aponta uma imagem, e isso é deliberado.
+      #
+      # O stylix exige `image` OU `base16Scheme`; como o esquema está definido
+      # acima, a imagem é opcional. E ela não é neutra: definir `image` faz o
+      # stylix auto-habilitar o alvo hyprpaper, que sobe um daemon com pilha
+      # OpenGL — o mesmo que segfaultava na VM sem GPU (#26).
+      #
+      # Sem imagem, o fundo do Hyprland é o `misc.background_color` que o
+      # próprio stylix deriva de base00: uma cor sólida, pintada pelo
+      # compositor, sem processo nenhum a mais. O Plasma usa o papel de parede
+      # padrão dele.
+      #
+      # Antes daqui havia um gradiente gerado com ImageMagick. Saiu: para duas
+      # cores quase idênticas (base00 e base01) a diferença para a cor sólida é
+      # imperceptível, e não compensava a dependência de build nem a superfície
+      # de falha.
+      image = cfg.wallpaper;
 
       fonts = {
         monospace = {
