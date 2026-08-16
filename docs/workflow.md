@@ -123,7 +123,7 @@ sudo nixos-generate-config --show-hardware-config > machines/teste/hardware-conf
 git add -f machines/teste
 
 nix flake check                                 # avalia todas as máquinas
-sudo nixos-rebuild dry-activate --flake .#teste # compila tudo, não ativa
+nixos-rebuild dry-activate --flake .#teste --elevate=sudo # compila tudo, não ativa
 ```
 
 `dry-activate` **compila o sistema inteiro** — é lento, mas é o que o
