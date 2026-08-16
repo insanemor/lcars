@@ -3,7 +3,14 @@
 # Separado de system/core porque é a parte que decide quem entra na máquina, e
 # porque um servidor e um desktop querem políticas diferentes aqui sem mexer
 # no resto da base.
-{ config, lib, pkgs, sys, user, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  sys,
+  user,
+  ...
+}:
 
 with lib;
 
@@ -12,7 +19,10 @@ let
 in
 {
   options.lcars.system.security = {
-    enable = mkOption { type = types.bool; default = true; };
+    enable = mkOption {
+      type = types.bool;
+      default = true;
+    };
 
     sshKeys = mkOption {
       type = types.listOf types.str;
@@ -30,7 +40,10 @@ in
       description = "Instala e liga o sshd (somente autenticação por chave).";
     };
 
-    firewall.enable = mkOption { type = types.bool; default = true; };
+    firewall.enable = mkOption {
+      type = types.bool;
+      default = true;
+    };
 
     firewall.allowedTCPPorts = mkOption {
       type = types.listOf types.port;

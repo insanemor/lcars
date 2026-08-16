@@ -7,7 +7,13 @@
 # ligada no profile. A flag vem do config do NixOS, lida por `osConfig`.
 #
 # Referência de estrutura e atalhos: github.com/Sly-Harvey/NixOS (MIT).
-{ config, osConfig, lib, pkgs, ... }:
+{
+  config,
+  osConfig,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   rice = osConfig.lcars.system.theme.rice;
@@ -74,8 +80,7 @@ lib.mkIf osConfig.lcars.user.hyprland.enable {
       # (modules/hyprland/hm.nix) — sem forçar, as duas definições colidem.
       # Se um dia ele passar a usar mkDefault, este mkForce pode sair.
       // lib.optionalAttrs rice {
-        "col.active_border" =
-          lib.mkForce "rgb(${cores.base0E}) rgb(${cores.base0C}) 45deg";
+        "col.active_border" = lib.mkForce "rgb(${cores.base0E}) rgb(${cores.base0C}) 45deg";
       };
 
       decoration = {
@@ -160,14 +165,18 @@ lib.mkIf osConfig.lcars.user.hyprland.enable {
         "${mod}, N, exec, swaync-client -t -sw"
       ]
       # Workspaces 1–9: SUPER troca, SUPER+SHIFT leva a janela junto.
-      ++ builtins.concatLists (builtins.genList
-        (i:
-          let n = toString (i + 1);
-          in [
+      ++ builtins.concatLists (
+        builtins.genList (
+          i:
+          let
+            n = toString (i + 1);
+          in
+          [
             "${mod}, ${n}, workspace, ${n}"
             "${mod} SHIFT, ${n}, movetoworkspace, ${n}"
-          ])
-        9);
+          ]
+        ) 9
+      );
 
       # Teclas de mídia e brilho. `bindel` repete enquanto segurada, que é o
       # que se espera de volume e brilho; `bindl` funciona com a tela travada.

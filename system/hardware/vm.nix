@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
@@ -17,7 +22,10 @@ with lib;
       "virtio_input"
       "virtio_gpu"
     ];
-    boot.initrd.kernelModules = [ "virtio_balloon" "virtio_console" ];
+    boot.initrd.kernelModules = [
+      "virtio_balloon"
+      "virtio_console"
+    ];
 
     services.qemuGuest.enable = true;
     services.spice-vdagentd.enable = true;

@@ -12,10 +12,10 @@ with lib;
 {
   config = mkIf (config.lcars.profile == "personal") {
     # --- sistema (system/) --------------------------------------------
-    lcars.system.core.enable     = mkDefault true;
+    lcars.system.core.enable = mkDefault true;
     lcars.system.security.enable = mkDefault true;
 
-    lcars.system.wm.plasma.enable       = mkDefault true;
+    lcars.system.wm.plasma.enable = mkDefault true;
     lcars.system.app.onePassword.enable = mkDefault true;
 
     # Os dois ambientes ligados de propósito: aparecem lado a lado na tela de
@@ -32,7 +32,7 @@ with lib;
     # Áudio é independente do desktop: o Plasma não o liga por trás, é aqui
     # que os dois se encontram. O teclado vale em qualquer máquina; o layout
     # em si vem do default do módulo, ou da máquina, se ela tiver outro.
-    lcars.system.hardware.audio.enable    = mkDefault true;
+    lcars.system.hardware.audio.enable = mkDefault true;
     lcars.system.hardware.keyboard.enable = mkDefault true;
 
     # Estes pacotes não são do sistema, são do usuário — e qual conjunto
@@ -47,12 +47,12 @@ with lib;
     # --- ambiente do usuário (user/) ----------------------------------
     # Num desktop, tudo: o direnv e o gancho de dotfiles fazem diferença no
     # uso interativo.
-    lcars.user.zsh.enable      = mkDefault true;
-    lcars.user.git.enable      = mkDefault true;
-    lcars.user.direnv.enable   = mkDefault true;
+    lcars.user.zsh.enable = mkDefault true;
+    lcars.user.git.enable = mkDefault true;
+    lcars.user.direnv.enable = mkDefault true;
     lcars.user.dotfiles.enable = mkDefault true;
     lcars.user.hyprland.enable = mkDefault true;
-    lcars.user.waybar.enable   = mkDefault true;
-    lcars.user.swaync.enable   = mkDefault true;
+    lcars.user.waybar.enable = mkDefault true;
+    lcars.user.swaync.enable = mkDefault true;
   };
 }

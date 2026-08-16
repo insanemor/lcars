@@ -13,7 +13,12 @@
 # ser utilizável.
 #
 # Referência de estrutura: github.com/Sly-Harvey/NixOS (MIT).
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 

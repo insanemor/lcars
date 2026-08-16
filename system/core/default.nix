@@ -3,7 +3,14 @@
 # O que NÃO mora aqui: fileSystems, swapDevices e boot.initrd vêm do
 # machines/<host>/hardware-configuration.nix; ssh e firewall vivem em
 # system/security.
-{ config, lib, pkgs, sys, user, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  sys,
+  user,
+  ...
+}:
 
 with lib;
 
@@ -15,17 +22,29 @@ let
   # atributo procura uma chave chamada literalmente "kdePackages.kate".
   # Erra com uma mensagem que diz qual nome está errado, em vez do
   # "attribute missing" cru do Nix.
-  pkgByName = name:
-    let path = lib.splitString "." name;
-    in lib.attrByPath path
-         (throw "lcars: pacote '${name}' não existe em nixpkgs — confira o nome no settings.nix")
-         pkgs;
+  pkgByName =
+    name:
+    let
+      path = lib.splitString "." name;
+    in
+    lib.attrByPath path
+      (throw "lcars: pacote '${name}' não existe em nixpkgs — confira o nome no settings.nix")
+      pkgs;
 in
 {
   options.lcars.system.core = {
-    enable = mkOption { type = types.bool; default = true; };
-    locale  = mkOption { type = types.str;   default = sys.locale; };
-    timezone = mkOption { type = types.str;  default = sys.timezone; };
+    enable = mkOption {
+      type = types.bool;
+      default = true;
+    };
+    locale = mkOption {
+      type = types.str;
+      default = sys.locale;
+    };
+    timezone = mkOption {
+      type = types.str;
+      default = sys.timezone;
+    };
 
     extraPackages = mkOption {
       type = types.listOf types.str;
@@ -40,7 +59,11 @@ in
     # declara é machines/<host>/default.nix, não o settings.nix. Nada aqui é
     # detectável pelo nixos-generate-config.
     bootLoader = mkOption {
-      type = types.enum [ "systemd-boot" "grub" "none" ];
+      type = types.enum [
+        "systemd-boot"
+        "grub"
+        "none"
+      ];
       default = "systemd-boot";
       description = ''
         "systemd-boot" para UEFI, "grub" para BIOS legado (usa grubDevice),
@@ -118,7 +141,10 @@ in
 
     # --- flakes ---------------------------------------------------------
     # Obrigatório: sem isto o próximo `nixos-rebuild --flake` falha.
-    nix.settings.experimental-features = [ "nix-command" "flakes" ];
+    nix.settings.experimental-features = [
+      "nix-command"
+      "flakes"
+    ];
     nix.gc = {
       automatic = true;
       dates = "weekly";
@@ -158,7 +184,10 @@ in
     ];
 
     swapDevices = mkIf (cfg.swapFileSize != null) [
-      { device = "/swapfile"; size = cfg.swapFileSize; }
+      {
+        device = "/swapfile";
+        size = cfg.swapFileSize;
+      }
     ];
 
     # --- preferências do usuário ---------------------------------------
@@ -194,29 +223,37 @@ in
 
     users.users.${user.username} = {
       isNormalUser = true;
-      description  = user.fullName;
-      home         = "/home/${user.username}";
+      description = user.fullName;
+      home = "/home/${user.username}";
       # bashInteractive, não bash: `pkgs.bash` é a build sem readline, para
       # scripts. Como shell de login ela não tem histórico nem edição de
       # linha. É por isso que users.defaultUserShell do NixOS é o Interactive.
       shell = if config.lcars.user.zsh.enable then pkgs.zsh else pkgs.bashInteractive;
-      extraGroups  = [ "networkmanager" "wheel" "video" "audio" ];
+      extraGroups = [
+        "networkmanager"
+        "wheel"
+        "video"
+        "audio"
+      ];
       initialPassword = mkIf (cfg.initialPassword != null) cfg.initialPassword;
       packages = map pkgByName ((user.packages or [ ]) ++ cfg.userPackages);
     };
 
     # --- pacotes base --------------------------------------------------
-    environment.systemPackages = with pkgs; [
-      git
-      vim
-      htop
-      curl
-      wget
-      jq
-      rsync
-      gnused
-      gnugrep
-      python3
-    ] ++ map pkgByName cfg.extraPackages;
+    environment.systemPackages =
+      with pkgs;
+      [
+        git
+        vim
+        htop
+        curl
+        wget
+        jq
+        rsync
+        gnused
+        gnugrep
+        python3
+      ]
+      ++ map pkgByName cfg.extraPackages;
   };
 }

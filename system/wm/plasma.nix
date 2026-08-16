@@ -1,4 +1,11 @@
-{ config, lib, pkgs, sys, user, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  sys,
+  user,
+  ...
+}:
 
 with lib;
 
@@ -24,7 +31,10 @@ in
     excludePackages = mkOption {
       type = types.listOf types.str;
       default = [ ];
-      example = [ "elisa" "khelpcenter" ];
+      example = [
+        "elisa"
+        "khelpcenter"
+      ];
       description = ''
         Nomes de pacotes de `kdePackages` a NÃO instalar, entre os que o
         módulo plasma6 traz por padrão.
@@ -47,8 +57,7 @@ in
     # definição assim que um segundo ambiente fosse ligado junto — e é
     # justamente conviver com outro que torna seguro experimentar.
 
-    environment.plasma6.excludePackages =
-      map (p: pkgs.kdePackages.${p}) cfg.excludePackages;
+    environment.plasma6.excludePackages = map (p: pkgs.kdePackages.${p}) cfg.excludePackages;
 
     # O áudio NÃO mora aqui: é system/hardware/audio.nix, ligado por
     # `lcars.system.hardware.audio.enable`. Um desktop quer os dois, mas o

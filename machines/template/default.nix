@@ -19,7 +19,14 @@
 # em lugar nenhum. `template` é ignorado pela auto-descoberta. O instalador
 # nomeia o diretório com o modelo do hardware; na mão, escolha o que quiser.
 # --------------------------------------------------------------------
-{ config, lib, pkgs, sys, user, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  sys,
+  user,
+  ...
+}:
 
 {
   imports = [

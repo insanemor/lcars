@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
@@ -13,7 +18,10 @@ in
     # NixOS aborta a avaliação se os dois estiverem ligados. Escolha um.
     # O Plasma integra com "ppd"; "tlp" dá mais controle fino de bateria.
     powerManager = mkOption {
-      type = types.enum [ "tlp" "ppd" ];
+      type = types.enum [
+        "tlp"
+        "ppd"
+      ];
       default = "tlp";
     };
   };
@@ -31,10 +39,10 @@ in
       services.tlp.enable = true;
       services.tlp.settings = {
         START_CHARGE_THRESH_BAT0 = 80;
-        STOP_CHARGE_THRESH_BAT0  = 90;
+        STOP_CHARGE_THRESH_BAT0 = 90;
         # TLP_DEFAULT_MODE aceita "AC" ou "BAT", não "balance".
-        TLP_DEFAULT_MODE         = "AC";
-        CPU_SCALING_GOVERNOR_ON_AC  = "performance";
+        TLP_DEFAULT_MODE = "AC";
+        CPU_SCALING_GOVERNOR_ON_AC = "performance";
         CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
       };
     })
