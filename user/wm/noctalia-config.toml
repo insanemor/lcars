@@ -1,38 +1,97 @@
-# Configuração do noctalia — a sua, versionada.
-#
-# COMO ATUALIZAR ESTE ARQUIVO
-#
-#   1. Ajuste o que quiser no centro de controle do noctalia (SUPER+C)
-#   2. Rode `nsave`
-#
-# O nsave (scripts/save.sh) exporta por cima deste arquivo, valida o TOML,
-# mostra o diff, pergunta e publica. À mão seria:
-#
-#        noctalia config export merged > ~/.dotfiles/user/wm/noctalia-config.toml
-#        cd ~/.dotfiles && git diff && git commit -am "…" && git push
-#
-# Sem esse passo, o que você ajustou vive só no state-dir desta máquina e some
-# num clone novo — ou no próximo `nupdate`, que faz git reset --hard.
-#
-# O QUE NÃO ADIANTA MEXER AQUI
-#
-# Paleta, fonte, modo claro/escuro, papel de parede e as três opacidades são
-# escritos pelo stylix, a partir de `lcars.system.theme`. Esses oito caminhos
-# são *removidos* deste arquivo na leitura (a lista está em
-# user/wm/noctalia.nix) — por isso o `export merged` acima pode despejar a
-# configuração inteira sem colidir com o stylix, mas também por isso mudar cor
-# ou fonte pela GUI não gruda. Para trocar cor, troque
-# `lcars.system.theme.scheme`; para trocar a fonte, `lcars.system.theme.fonts`.
-#
-# O arquivo começa quase vazio, e continua pequeno depois do primeiro export:
-# `merged` exporta a SUA configuração, não os defaults embutidos do noctalia
-# (esse é o `full`). O diff mostra o que você mudou.
+[control_center]
+hidden_tabs = [ "media", "weather" ]
+
+[desktop_widgets]
+schema_version = 2
+widget_order = []
+
+    [desktop_widgets.grid]
+    cell_size = 16
+    major_interval = 4
+    visible = true
+
+    [desktop_widgets.widget]
+
+[dock]
+background_opacity = 1.0
+border = "on_surface"
+cross_axis_padding = 5
+enabled = true
+icon_size = 20
+item_spacing = 3
+launcher_custom_image_colorize = true
+launcher_icon = "home-filled"
+launcher_position = "start"
+main_axis_padding = 5
+show_dots = true
+
+[lockscreen_widgets]
+enabled = false
+schema_version = 2
+widget_order = [ "lockscreen-login-box@Virtual-1" ]
+
+    [lockscreen_widgets.grid]
+    cell_size = 16
+    major_interval = 4
+    visible = true
+
+    [lockscreen_widgets.widget."lockscreen-login-box@Virtual-1"]
+    box_height = 196.0
+    box_width = 810.0
+    cx = 512.0
+    cy = 586.0
+    output = "Virtual-1"
+    placement_height = 768.0
+    placement_width = 1024.0
+    rotation = 0.0
+    type = "login_box"
+
+        [lockscreen_widgets.widget."lockscreen-login-box@Virtual-1".settings]
+        background_color = "surface_variant"
+        background_opacity = 0.88
+        background_radius = 12.0
+        center_password_text = false
+        input_opacity = 1.0
+        input_radius = 6.0
+        layout = "regular"
+        show_caps_lock = true
+        show_keyboard_layout = true
+        show_login_button = true
+        show_media = true
+        show_session_buttons = true
+        show_unlock_hint = true
+        show_weather = true
+
+[notification]
+background_opacity = 1.0
+
+[osd]
+background_opacity = 1.0
 
 [shell]
-# Mostra as opções avançadas no painel de configuração — sem isso, boa parte
-# do que dá para ajustar fica escondida.
+app_icon_colorize = true
+external_ip_enabled = true
+font_family = "JetBrainsMono Nerd Font"
+lang = "pt-BR"
+polkit_agent = false
 settings_show_advanced = true
 
-# O agente polkit já vem do Hyprland (system/wm/hyprland.nix). Dois agentes
-# disputando o mesmo serviço é conflito, não redundância.
-polkit_agent = false
+[theme]
+builtin = "Noctalia"
+community_palette = "Catppuccin Macchiato Lavender"
+custom_palette = "stylix"
+mode = "dark"
+source = "community"
+wallpaper_scheme = "m3-content"
+
+    [theme.templates]
+    builtin_ids = [ "kitty", "niri" ]
+
+[wallpaper]
+fill_mode = "stretch"
+
+    [wallpaper.default]
+    path = "/nix/store/hf47w2xxai1bdas9f89hwrzlqk9nqyci-noctalia-5.0.0/share/noctalia/assets/noctalia-wallpaper.png"
+
+    [wallpaper.last]
+    path = "/nix/store/hf47w2xxai1bdas9f89hwrzlqk9nqyci-noctalia-5.0.0/share/noctalia/assets/noctalia-wallpaper.png"
