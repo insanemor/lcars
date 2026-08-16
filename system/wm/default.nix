@@ -4,13 +4,19 @@
 # login e você escolhe na hora. É o que torna seguro experimentar um ambiente
 # novo sem perder o que já funciona.
 #
-# Este arquivo existe porque duas coisas são do display manager, não de um WM
-# em particular, e declará-las dentro de cada módulo geraria conflito de
-# definição no instante em que dois estivessem ligados:
+# Este arquivo existe porque algumas coisas são de "ter ambiente gráfico", não
+# de um WM em particular, e declará-las dentro de cada módulo geraria conflito
+# de definição no instante em que dois estivessem ligados:
 #
 #   - o SDDM em si
 #   - qual sessão abre por padrão
-{ config, lib, ... }:
+#   - as fontes e o dconf
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
@@ -70,5 +76,29 @@ in
     # `sessao` pode ser vazia se alguém ligar um WM sem sessão conhecida; aí
     # não declaramos nada e o SDDM usa a ordem dele.
     services.displayManager.defaultSession = mkIf (sessao != "") sessao;
+
+    # As fontes moraram dentro do plasma.nix, e não eram do KDE: qualquer
+    # ambiente gráfico precisa delas, e desligar o Plasma levava as fontes do
+    # sistema inteiro junto — com o sintoma aparecendo longe da causa.
+    #
+    # `enableDefaultPackages` traz o conjunto que o NixOS considera básico
+    # (DejaVu, Liberation, gyre, unifont e as CJK). As de baixo são as que
+    # queremos garantir por nome; o stylix acrescenta as dele — a Nerd Font do
+    # terminal, entre elas — a partir de lcars.system.theme.fonts.
+    fonts = {
+      enableDefaultPackages = true;
+      packages = with pkgs; [
+        noto-fonts
+        # noto-fonts-emoji foi renomeado para noto-fonts-color-emoji no
+        # nixpkgs; o nome antigo aborta a avaliação com um throw.
+        noto-fonts-color-emoji
+        liberation_ttf
+        dejavu_fonts
+      ];
+    };
+
+    # Também não é do KDE: aplicativos GTK guardam preferência no dconf, e sem
+    # isto elas não persistem entre sessões.
+    programs.dconf.enable = true;
   };
 }

@@ -63,22 +63,9 @@ in
     # `lcars.system.hardware.audio.enable`. Um desktop quer os dois, mas o
     # profile liga cada um explicitamente — este módulo não o faz por trás.
 
-    # Fontes vão em fonts.packages, não em systemPackages — só assim o
-    # fontconfig do sistema as enxerga.
-    fonts = {
-      enableDefaultPackages = true;
-      packages = with pkgs; [
-        noto-fonts
-        # noto-fonts-emoji foi renomeado para noto-fonts-color-emoji no
-        # nixpkgs; o nome antigo aborta a avaliação com um throw.
-        noto-fonts-color-emoji
-        liberation_ttf
-        dejavu_fonts
-      ];
-    };
-
-    # O Plasma é Qt, mas os aplicativos GTK que você instalar leem suas
-    # configurações do dconf.
-    programs.dconf.enable = true;
+    # As fontes e o `programs.dconf.enable` moravam aqui, e nenhum dos dois é
+    # do KDE: foram para system/wm/default.nix, onde valem para qualquer
+    # ambiente gráfico. Desligar o Plasma não pode levar as fontes do sistema
+    # inteiro junto.
   };
 }
