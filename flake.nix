@@ -23,6 +23,14 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Tema: um esquema base16 pinta Hyprland, waybar, rofi, terminal, GTK, Qt,
+    # Plasma e o console TTY de uma vez. É o que evita fiar cor programa por
+    # programa — veja system/theme/.
+    stylix = {
+      url = "github:danth/stylix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # FUTURO — descomente para ligar um repo privado sobreposto:
     # lcars-private = {
     #   url = "git+ssh://git@github.com/<voce>/lcars-private.git";
@@ -68,6 +76,11 @@
             # Manager — é o que permite ao profile ligar os dois lados no
             # mesmo lugar. Veja o cabeçalho do arquivo.
             ./user/options.nix
+
+            # O módulo NixOS do stylix integra sozinho com o Home Manager, o
+            # que encaixa aqui: o HM roda como módulo NixOS neste repo. Quem
+            # liga e configura é system/theme/, com lcars.system.theme.enable.
+            inputs.stylix.nixosModules.stylix
             ./profiles
             ./machines/${hostName}
 

@@ -36,18 +36,19 @@ lib.mkIf osConfig.lcars.user.hyprland.enable {
       monitor = ",preferred,auto,1";
 
       # --- o que sobe junto com a sessão --------------------------------
-      # Sem papel de parede o fundo fica preto; sem a barra e as notificações,
-      # a sessão parece travada porque nada dá retorno visual. As duas últimas
-      # só têm efeito depois da camada 3, quando forem configuradas.
-      exec-once = [
-        "hyprpaper"
-        "waybar"
-        "swaync"
-      ];
+      # Só o papel de parede. A barra e as notificações sobem por unidades
+      # systemd dos próprios módulos (user/wm/waybar.nix, swaync.nix), o que é
+      # melhor: reiniciam sozinhas se caírem, e `systemctl --user status` diz o
+      # que houve.
+      #
+      # Esta lista já apontou para três programas NÃO instalados. O Hyprland
+      # tenta executar, falha calado e segue — a tela fica preta sem nenhuma
+      # pista do motivo. Nunca ponha aqui algo que o módulo não instale.
+      exec-once = lib.optional osConfig.lcars.system.theme.enable "hyprpaper";
 
       # --- aparência ----------------------------------------------------
-      # Valores sóbrios de propósito: o tema de verdade vem na camada 2, via
-      # stylix, e sobrescreve as cores daqui.
+      # Só geometria. As CORES vêm do stylix (system/theme/), que tem alvo
+      # para hyprland — não há paleta escrita neste arquivo.
       general = {
         gaps_in = 4;
         gaps_out = 8;
@@ -103,6 +104,9 @@ lib.mkIf osConfig.lcars.user.hyprland.enable {
 
         # Captura de tela: seleciona uma região e joga na área de transferência.
         ''${mod} SHIFT, S, exec, grim -g "$(slurp)" - | wl-copy''
+
+        # Painel de notificações.
+        "${mod}, N, exec, swaync-client -t -sw"
       ]
       # Workspaces 1–9: SUPER troca, SUPER+SHIFT leva a janela junto.
       ++ builtins.concatLists (builtins.genList

@@ -178,11 +178,44 @@ O SDDM não pertence a nenhum dos dois: mora em `system/wm/default.nix` e sobe
 com qualquer ambiente ligado — senão uma máquina só com Hyprland ficaria sem
 tela de login.
 
-**O Hyprland é um compositor cru.** Ele não traz barra, menu nem gerenciador
-de arquivos, e o que está aqui é o mínimo para a sessão ser utilizável:
-`SUPER+Enter` abre o terminal (kitty), `SUPER+D` o lançador (rofi), `SUPER+Q`
-fecha a janela, `SUPER+SHIFT+E` sai da sessão. Aparência ainda é a padrão — o
-tema vem depois.
+**Atalhos do Hyprland**, todos com `SUPER` (tecla Windows):
+
+| Atalho | O que faz |
+|---|---|
+| `SUPER+Enter` | terminal (kitty) |
+| `SUPER+D` | lançador (rofi) |
+| `SUPER+N` | painel de notificações |
+| `SUPER+Q` | fecha a janela |
+| `SUPER+SHIFT+E` | sai da sessão |
+| `SUPER+F` / `SUPER+V` | tela cheia / flutuante |
+| `SUPER+setas` ou `hjkl` | move o foco |
+| `SUPER+1…9` | troca de workspace (com `SHIFT`, leva a janela) |
+| `SUPER+SHIFT+S` | captura de região para a área de transferência |
+| `SUPER+botão esq/dir` | arrasta / redimensiona a janela |
+
+### Um esquema de cores para tudo
+
+O tema não é configurado programa por programa. Um esquema
+[base16](https://github.com/tinted-theming/schemes) é declarado uma vez e o
+[stylix](https://github.com/danth/stylix) o aplica em Hyprland, waybar, rofi,
+kitty, notificações, GTK, Qt, Plasma e no console TTY.
+
+Padrão: **Catppuccin Mocha**, escuro. Para trocar:
+
+```nix
+# machines/<máquina>/default.nix, ou no profile
+lcars.system.theme.scheme = "gruvbox-dark-hard";
+lcars.system.theme.polarity = "dark";
+```
+
+Os nomes disponíveis saem de `ls $(nix eval --raw nixpkgs#base16-schemes)/share/themes/`.
+
+O papel de parede é **gerado a partir das cores do esquema** — um gradiente,
+sem imagem binária no repositório. Para usar a sua:
+
+```nix
+lcars.system.theme.wallpaper = ./caminho/para/imagem.png;
+```
 
 **Conforme o hardware** — em notebook, `tlp` com limite de carga 80–90% e
 suspensão ao fechar a tampa; em VM, virtio, `qemu-guest-agent` e `spice-vdagent`.
@@ -202,15 +235,18 @@ A árvore é dividida por **papel**, não por mecanismo do Nix:
 │   ├── basic/      # headless: base + ssh
 │   └── personal/   # desktop completo: Plasma + 1Password + ferramentas
 │
+├── flake.lock      # versões dos inputs, pinadas — commitado de propósito
 ├── system/         # módulos NixOS, opt-in via lcars.system.<caminho>.enable
 │   ├── core/       # identidade, locale, boot, usuário
 │   ├── security/   # sshd e firewall
 │   ├── hardware/   # laptop.nix, vm.nix
+│   ├── theme/      # o esquema de cores, via stylix
 │   ├── wm/         # plasma.nix, hyprland.nix, e a tela de login
 │   └── app/        # 1password/
 │
 ├── user/           # módulos do Home Manager, opt-in via lcars.user.<módulo>.enable
 │   ├── options.nix # as flags acima — declaradas do lado NixOS, veja abaixo
+│   ├── wm/         # hyprland.nix, waybar.nix, swaync.nix
 │   ├── shell/      # zsh.nix
 │   ├── app/        # git.nix, direnv.nix, dotfiles.nix
 │   └── personal/   # escape hatch via private.nix em $HOME (sem flag)

@@ -16,6 +16,9 @@ O repo vem com `personal`.
 | Plasma + fontes (`system/wm`) | `lcars.system.wm.plasma.enable` | — | sim |
 | Hyprland, compositor (`system/wm`) | `lcars.system.wm.hyprland.enable` | — | sim |
 | Config do Hyprland (`user/wm`) | `lcars.user.hyprland.enable` | — | sim |
+| Tema unificado (`system/theme`) | `lcars.system.theme.enable` | — | sim |
+| Barra waybar (`user/wm`) | `lcars.user.waybar.enable` | — | sim |
+| Notificações swaync (`user/wm`) | `lcars.user.swaync.enable` | — | sim |
 | Áudio PipeWire (`system/hardware`) | `lcars.system.hardware.audio.enable` | — | sim |
 | Teclado, console e gráfico (`system/hardware`) | `lcars.system.hardware.keyboard.enable` | sim | sim |
 | 1Password CLI e GUI (`system/app`) | `lcars.system.app.onePassword.enable` | — | sim |
@@ -169,8 +172,59 @@ sobe com a sessão, e os pacotes `kitty` e `rofi`. O layout do teclado vem de
 | `SUPER+SHIFT+S` | captura de região para a área de transferência |
 | teclas de mídia | volume, brilho, play/pause |
 
-A aparência ainda é a padrão do Hyprland. Estrutura e atalhos inspirados em
+As cores vêm do tema (abaixo) — não há paleta escrita no módulo do Hyprland.
+Estrutura e atalhos inspirados em
 [Sly-Harvey/NixOS](https://github.com/Sly-Harvey/NixOS) (MIT).
+
+### Barra · `user/wm/waybar.nix` · `lcars.user.waybar.enable`
+
+Layout: workspaces e título da janela à esquerda, relógio ao centro, volume,
+rede, bateria e bandeja à direita. A cor vem do tema.
+
+Sobe por unidade systemd, não pelo `exec-once` do Hyprland — assim reinicia
+sozinha se cair, e `systemctl --user status waybar` diz o que houve. Pelo
+`exec-once`, uma falha é silenciosa.
+
+### Notificações · `user/wm/swaync.nix` · `lcars.user.swaync.enable`
+
+O Hyprland não tem servidor de notificação, e sem um nada avisa bateria fraca
+nem download concluído — o programa que tentou notificar não recebe erro, então
+o silêncio parece normal.
+
+Notificação comum some em 8s; a marcada como crítica fica até você fechar.
+`SUPER+N` abre o painel.
+
+---
+
+## Tema — só no profile `personal`
+
+`system/theme/default.nix` · option `lcars.system.theme`
+
+Um esquema [base16](https://github.com/tinted-theming/schemes) declarado uma
+vez, aplicado pelo [stylix](https://github.com/danth/stylix) em: **Hyprland,
+waybar, rofi, kitty, swaync, hyprlock, GTK, Qt, Plasma e o console TTY**.
+
+| Option | Padrão | Para quê |
+|---|---|---|
+| `scheme` | `"catppuccin-mocha"` | nome de um esquema do pacote `base16-schemes` |
+| `polarity` | `"dark"` | diz aos programas se o esquema é claro ou escuro |
+| `wallpaper` | `null` | `null` gera um gradiente das cores do esquema |
+| `fonts.monospace` | `"JetBrainsMono Nerd Font"` | Nerd Font porque a barra usa ícones que só existem nelas |
+| `fonts.size` | `11` | corpo da fonte de interface |
+
+**Por que fica em `system/theme/` e não em `system/wm/`:** tema é transversal.
+Ele pinta o console TTY, o GTK e o Qt, que existem independentemente de qual
+ambiente gráfico está ligado. Amarrá-lo a um WM faria a cor do console depender
+do desktop.
+
+**Por que stylix e não cor à mão.** O repo de referência fia a paleta em cada
+programa — 17 arquivos `.rasi` só para o rofi, CSS próprio para a barra, 218
+arquivos ao todo em `desktop/hyprland`. Aqui, trocar de esquema é uma linha, e
+nenhum programa fica para trás.
+
+O papel de parede é gerado das cores do esquema em vez de versionado: o repo de
+referência carrega 18 imagens; um gradiente derivado da paleta dá fundo
+coerente sem binário no diff.
 
 ---
 

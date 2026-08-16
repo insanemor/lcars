@@ -11,6 +11,7 @@
 #   core/       identidade, locale, boot, usuário
 #   security/   sshd e firewall
 #   hardware/   o que depende do hardware: áudio, teclado, notebook, VM
+#   theme/      cor, fontes e papel de parede — transversal, não é de um WM
 #   wm/         ambientes gráficos (Plasma, Hyprland) e a tela de login
 #   app/        aplicativos de sistema
 #
@@ -27,6 +28,7 @@
     ./hardware/keyboard.nix
     ./hardware/laptop.nix
     ./hardware/vm.nix
+    ./theme
     ./wm
     ./app/1password
   ];
