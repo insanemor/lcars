@@ -81,7 +81,7 @@ builtin = "Noctalia"
 community_palette = "Catppuccin Macchiato Lavender"
 custom_palette = "stylix"
 mode = "dark"
-source = "community"
+source = "custom"
 wallpaper_scheme = "m3-content"
 
     [theme.templates]
