@@ -50,17 +50,33 @@ nixos-rebuild switch --flake .#vm-teste --elevate=sudo
 
 Ele não foi feito para rodar duas vezes: o `git clone` falha se `~/.dotfiles` já existir. Para uma máquina nova a partir de um clone que já existe, siga o [caminho manual](./docs/adding-a-host.md#caminho-manual).
 
-## Depois de instalado: `nupdate`
+## Depois de instalado: `nupdate` e `nsave`
+
+Dois comandos, um em cada sentido.
 
 ```bash
 nupdate               # traz o que mudou no repositório e aplica
 nupdate --inputs      # …e também atualiza o nixpkgs (build longo)
 nupdate --no-check    # pula a avaliação, vai direto ao rebuild
+
+nsave                 # publica o que você ajustou nesta máquina
+nsave -n              # mostra o que faria, sem alterar nada
 ```
 
-O alias vem do próprio repo (`user/shell/zsh.nix`) e chama [`scripts/update.sh`](./scripts/update.sh). Ele descobre a máquina pelo `hostname`, então não há nome para decorar, e roda de qualquer diretório.
+Os aliases vêm do próprio repo (`user/shell/zsh.nix`) e chamam
+[`scripts/update.sh`](./scripts/update.sh) e
+[`scripts/save.sh`](./scripts/save.sh). Ambos descobrem a máquina pelo
+`hostname`, então não há nome para decorar, e rodam de qualquer diretório.
 
-A sequência: sincroniza → (opcional) atualiza inputs → **avalia** → `nixos-rebuild switch`. A avaliação leva segundos e evita descobrir um erro de código depois de meio sistema compilado; se ela falhar, o rebuild não roda.
+O `nupdate` faz: sincroniza → (opcional) atualiza inputs → **avalia** →
+`nixos-rebuild switch`. A avaliação leva segundos e evita descobrir um erro de
+código depois de meio sistema compilado; se ela falhar, o rebuild não roda.
+
+O `nsave` faz o contrário: exporta a configuração do noctalia, valida, mostra o
+diff, pergunta e publica em `main`. Ele **não** publica `machines/`, e se o
+rebase conflitar ele desfaz e explica, em vez de escolher um lado. Existe
+porque o `nupdate` faz `git reset --hard` — um ajuste feito aqui e não
+publicado some no próximo `nupdate`.
 
 Para editar a configuração antes de aplicar, o caminho continua o de sempre:
 
@@ -121,6 +137,8 @@ Duas coisas nunca são tocadas:
 - O que você editou **e o repositório não** — isso nem chega a ser conflito, e sobrevive normalmente.
 
 Se você mantém edições em `settings.nix` que quer preservar, vale movê-las para `machines/<máquina>/default.nix`, que o `nupdate` respeita.
+
+E se a edição é para valer em todas as máquinas, publique-a com **`nsave`** antes do próximo `nupdate` — é exatamente o buraco que ele fecha.
 
 ### O `settings.nix` é versionado; o hardware-config não
 
@@ -220,8 +238,7 @@ do **noctalia**, um shell só no lugar de waybar + rofi + swaync. Ele tem centro
 de controle gráfico, e o que você ajustar ali dá para versionar:
 
 ```bash
-noctalia config export merged > ~/.dotfiles/user/wm/noctalia-config.toml
-cd ~/.dotfiles && git diff && nupdate
+nsave                       # exporta, mostra o diff, pergunta e publica
 ```
 
 Detalhes em [docs/features.md](./docs/features.md#o-ciclo-gui--export--commit).
@@ -307,7 +324,7 @@ A árvore é dividida por **papel**, não por mecanismo do Nix:
 │   └── personal/   # escape hatch via private.nix em $HOME (sem flag)
 │
 ├── settings.nix    # SUA configuração — o único arquivo que você edita
-├── scripts/        # install.sh (instala), update.sh (nupdate), check.sh (verifica)
+├── scripts/        # install.sh, update.sh (nupdate), save.sh (nsave), check.sh
 └── docs/
 ```
 
