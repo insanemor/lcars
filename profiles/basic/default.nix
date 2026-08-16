@@ -18,6 +18,10 @@ with lib;
     lcars.system.wm.plasma.enable   = mkDefault false;
     lcars.system.wm.hyprland.enable = mkDefault false;
 
+    # Sem tema: numa máquina headless, um esquema de cores para GTK e Qt é
+    # peso morto. O console usa a paleta padrão do kernel.
+    lcars.system.theme.enable = mkDefault false;
+
     # 1Password é proprietário e puxa a GUI junto; numa máquina headless não
     # ganha nada. Ligue explicitamente se quiser só o CLI aqui.
     lcars.system.app.onePassword.enable = mkDefault false;
@@ -38,5 +42,7 @@ with lib;
     lcars.user.direnv.enable   = mkDefault false;
     lcars.user.dotfiles.enable = mkDefault false;
     lcars.user.hyprland.enable = mkDefault false;
+    lcars.user.waybar.enable   = mkDefault false;
+    lcars.user.swaync.enable   = mkDefault false;
   };
 }

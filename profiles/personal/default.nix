@@ -24,6 +24,11 @@ with lib;
     # Para inverter: lcars.system.wm.defaultSession = "hyprland";
     lcars.system.wm.hyprland.enable = mkDefault true;
 
+    # Tema: um esquema base16 pinta os dois ambientes, o terminal, o launcher,
+    # GTK, Qt e o console de uma vez. Trocar de esquema é uma linha —
+    # lcars.system.theme.scheme.
+    lcars.system.theme.enable = mkDefault true;
+
     # Áudio é independente do desktop: o Plasma não o liga por trás, é aqui
     # que os dois se encontram. O teclado vale em qualquer máquina; o layout
     # em si vem do default do módulo, ou da máquina, se ela tiver outro.
@@ -47,5 +52,7 @@ with lib;
     lcars.user.direnv.enable   = mkDefault true;
     lcars.user.dotfiles.enable = mkDefault true;
     lcars.user.hyprland.enable = mkDefault true;
+    lcars.user.waybar.enable   = mkDefault true;
+    lcars.user.swaync.enable   = mkDefault true;
   };
 }

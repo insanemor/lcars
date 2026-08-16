@@ -29,6 +29,8 @@ caminho do arquivo:
 | `lcars.system.hardware.audio.enable` | `system/hardware/audio.nix` |
 | `lcars.system.wm.hyprland.enable` | `system/wm/hyprland.nix` |
 | `lcars.user.hyprland.enable` | `user/wm/hyprland.nix` |
+| `lcars.user.waybar.enable` | `user/wm/waybar.nix` |
+| `lcars.system.theme.enable` | `system/theme/default.nix` |
 | `lcars.user.direnv.enable` | `user/app/direnv.nix` |
 | `lcars.user.dotfiles.enable` | `user/app/dotfiles.nix` |
 
@@ -195,6 +197,8 @@ Outras opções úteis:
 | `lcars.system.core.userPackages` | idem, no usuário — **somado** a `userSettings.packages` |
 | `lcars.system.hardware.laptop.powerManager` | `"tlp"` ou `"ppd"` |
 | `lcars.system.wm.defaultSession` | qual sessão abre por padrão: `"plasma"`, `"hyprland"`… |
+| `lcars.system.theme.scheme` | esquema base16, ex. `"gruvbox-dark-hard"` |
+| `lcars.system.theme.wallpaper` | imagem de fundo; `null` gera um gradiente das cores |
 | `lcars.system.hardware.keyboard.layout` / `.variant` | layout XKB, valendo no console e no gráfico |
 | `lcars.system.hardware.audio.jack` | emulação JACK, para software de áudio profissional |
 
