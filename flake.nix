@@ -38,9 +38,16 @@
     # };
   };
 
-  outputs = { self, nixpkgs, home-manager, opnix, ... }@inputs:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      home-manager,
+      opnix,
+      ...
+    }@inputs:
     let
-      lib = nixpkgs.lib;
+      inherit (nixpkgs) lib;
 
       # ---------------------------------------------------------------
       # settings.nix — quem você é e o que você gosta. Versionado, e igual em
@@ -53,7 +60,7 @@
       # ---------------------------------------------------------------
       settings = import ./settings.nix;
 
-      sys  = settings.systemSettings;
+      sys = settings.systemSettings;
       user = settings.userSettings;
 
       system = sys.system or "x86_64-linux";
@@ -65,10 +72,19 @@
       #   profiles/      presets que ligam essas flags (mkDefault)
       #   machines/      hardware da máquina, e overrides se você tiver várias
       #   user/          módulos do Home Manager, opt-in por lcars.user.<x>
-      mkMachine = hostName: extras:
+      mkMachine =
+        hostName: extras:
         nixpkgs.lib.nixosSystem {
           inherit system;
-          specialArgs = { inherit inputs settings sys user hostName; };
+          specialArgs = {
+            inherit
+              inputs
+              settings
+              sys
+              user
+              hostName
+              ;
+          };
 
           modules = [
             ./system
@@ -89,7 +105,7 @@
             # O que vem do settings.nix. Tudo com mkDefault, para que
             # machines/<host>/default.nix possa sobrescrever qualquer campo
             # quando o repo servir mais de uma máquina.
-            ({ ... }: {
+            (_: {
               networking.hostName = lib.mkDefault hostName;
 
               lcars.profile = lib.mkDefault sys.profile;
@@ -128,7 +144,7 @@
                 users.${user.username} = {
                   imports = [ ./user ];
                   home = {
-                    username = user.username;
+                    inherit (user) username;
                     homeDirectory = "/home/${user.username}";
                     stateVersion = "24.05";
                   };
@@ -137,7 +153,8 @@
             })
 
             inputs.opnix.nixosModules.default
-          ] ++ extras;
+          ]
+          ++ extras;
         };
 
       # Auto-descoberta: todo diretório em machines/ vira uma entrada em
@@ -146,13 +163,14 @@
       # Com uma máquina só, você nunca mexe aqui: o instalador cria
       # machines/<hostname>/ e o settings.nix aponta para ele.
       machineDirs =
-        let entries = builtins.readDir ./machines;
-        in lib.filter
-          (name: entries.${name} == "directory" && name != "template")
-          (builtins.attrNames entries);
+        let
+          entries = builtins.readDir ./machines;
+        in
+        lib.filter (name: entries.${name} == "directory" && name != "template") (
+          builtins.attrNames entries
+        );
 
-      discoveredMachines =
-        lib.genAttrs machineDirs (name: mkMachine name [ ]);
+      discoveredMachines = lib.genAttrs machineDirs (name: mkMachine name [ ]);
     in
     {
       # Exposto para quem quiser registrar uma máquina à mão com módulos
@@ -161,6 +179,7 @@
 
       nixosConfigurations = discoveredMachines;
     }
-      // lib.optionalAttrs (inputs ? lcars-private)
-            { nixosModules.default = inputs.lcars-private.nixosModules.default; };
+    // lib.optionalAttrs (inputs ? lcars-private) {
+      nixosModules.default = inputs.lcars-private.nixosModules.default;
+    };
 }

@@ -29,25 +29,18 @@
 
 {
   options.lcars.user = {
-    zsh.enable = lib.mkEnableOption
-      "o shell zsh do usuário — autosuggestion, syntax highlighting, histórico compartilhado e aliases";
+    zsh.enable = lib.mkEnableOption "o shell zsh do usuário — autosuggestion, syntax highlighting, histórico compartilhado e aliases";
 
-    git.enable = lib.mkEnableOption
-      "a configuração do git — identidade vinda do settings.nix, aliases e assinatura por chave SSH";
+    git.enable = lib.mkEnableOption "a configuração do git — identidade vinda do settings.nix, aliases e assinatura por chave SSH";
 
-    direnv.enable = lib.mkEnableOption
-      "o direnv com nix-direnv, para shells por projeto";
+    direnv.enable = lib.mkEnableOption "o direnv com nix-direnv, para shells por projeto";
 
-    dotfiles.enable = lib.mkEnableOption
-      "os dotfiles puxados de itens Document do 1Password na ativação";
+    dotfiles.enable = lib.mkEnableOption "os dotfiles puxados de itens Document do 1Password na ativação";
 
-    hyprland.enable = lib.mkEnableOption
-      "a configuração do Hyprland — atalhos, regras de janela e o que sobe com a sessão (o compositor é lcars.system.wm.hyprland)";
+    hyprland.enable = lib.mkEnableOption "a configuração do Hyprland — atalhos, regras de janela e o que sobe com a sessão (o compositor é lcars.system.wm.hyprland)";
 
-    waybar.enable = lib.mkEnableOption
-      "a barra do Hyprland — layout dos módulos; a cor vem de lcars.system.theme";
+    waybar.enable = lib.mkEnableOption "a barra do Hyprland — layout dos módulos; a cor vem de lcars.system.theme";
 
-    swaync.enable = lib.mkEnableOption
-      "o servidor de notificações; sem ele nada avisa bateria fraca nem download concluído";
+    swaync.enable = lib.mkEnableOption "o servidor de notificações; sem ele nada avisa bateria fraca nem download concluído";
   };
 }

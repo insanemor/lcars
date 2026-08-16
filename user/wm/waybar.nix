@@ -24,82 +24,84 @@ lib.mkIf osConfig.lcars.user.waybar.enable {
     # `mkAfter` porque `programs.waybar.style` é do tipo `lines`: as definições
     # se concatenam, e a nossa precisa vir DEPOIS da do stylix para vencer no
     # cascade.
-    style = lib.mkIf osConfig.lcars.system.theme.rice (lib.mkAfter ''
-      /* A barra em si some: quem tem fundo são as ilhas. */
-      window#waybar {
-        background: transparent;
-      }
+    style = lib.mkIf osConfig.lcars.system.theme.rice (
+      lib.mkAfter ''
+        /* A barra em si some: quem tem fundo são as ilhas. */
+        window#waybar {
+          background: transparent;
+        }
 
-      /* As três ilhas. Laterais com a cor de destaque, centro discreto —
-         assim o relógio não compete com o resto. */
-      .modules-left,
-      .modules-center,
-      .modules-right {
-        background: @base00;
-        border-radius: 11px;
-        margin: 4px 0;
-        padding: 0 10px;
-      }
+        /* As três ilhas. Laterais com a cor de destaque, centro discreto —
+           assim o relógio não compete com o resto. */
+        .modules-left,
+        .modules-center,
+        .modules-right {
+          background: @base00;
+          border-radius: 11px;
+          margin: 4px 0;
+          padding: 0 10px;
+        }
 
-      .modules-left,
-      .modules-right {
-        border: 1px solid @base0D;
-      }
+        .modules-left,
+        .modules-right {
+          border: 1px solid @base0D;
+        }
 
-      .modules-center {
-        border: 1px solid @base03;
-      }
+        .modules-center {
+          border: 1px solid @base03;
+        }
 
-      tooltip {
-        background: @base00;
-        border: 1px solid @base0D;
-        border-radius: 9px;
-      }
+        tooltip {
+          background: @base00;
+          border: 1px solid @base0D;
+          border-radius: 9px;
+        }
 
-      /* Workspaces como pílulas. O stylix os desenha com uma borda embaixo;
-         aqui a marcação do ativo é a cor e a largura. */
-      #workspaces button {
-        border: none;
-        border-bottom: none;
-        border-radius: 10px;
-        padding: 0 6px;
-        color: @base04;
-        transition: all 0.2s ease;
-      }
+        /* Workspaces como pílulas. O stylix os desenha com uma borda embaixo;
+           aqui a marcação do ativo é a cor e a largura. */
+        #workspaces button {
+          border: none;
+          border-bottom: none;
+          border-radius: 10px;
+          padding: 0 6px;
+          color: @base04;
+          transition: all 0.2s ease;
+        }
 
-      #workspaces button:hover {
-        background: @base02;
-        color: @base05;
-      }
+        #workspaces button:hover {
+          background: @base02;
+          color: @base05;
+        }
 
-      #workspaces button.active {
-        color: @base09;
-        padding: 0 11px;
-      }
+        #workspaces button.active {
+          color: @base09;
+          padding: 0 11px;
+        }
 
-      #workspaces button.urgent {
-        color: @base08;
-      }
+        #workspaces button.urgent {
+          color: @base08;
+        }
 
-      /* Espaço entre os módulos de cada ilha, para não ficarem colados. */
-      #clock,
-      #battery,
-      #network,
-      #pulseaudio,
-      #tray,
-      #window {
-        padding: 0 8px;
-      }
+        /* Espaço entre os módulos de cada ilha, para não ficarem colados. */
+        #clock,
+        #battery,
+        #network,
+        #pulseaudio,
+        #tray,
+        #window {
+          padding: 0 8px;
+        }
 
-      /* Aviso de bateria: o único lugar em que a cor grita de propósito. */
-      #battery.warning {
-        color: @base0A;
-      }
+        /* Aviso de bateria: o único lugar em que a cor grita de propósito. */
+        #battery.warning {
+          color: @base0A;
+        }
 
-      #battery.critical {
-        color: @base08;
-      }
-    '');
+        #battery.critical {
+          color: @base08;
+        }
+      ''
+    );
 
     # Ligar pelo systemd, e não pelo exec-once do Hyprland: assim a barra
     # reinicia sozinha se cair, e o `systemctl --user status waybar` diz o que
@@ -116,9 +118,17 @@ lib.mkIf osConfig.lcars.user.waybar.enable {
       position = "top";
       height = 34;
 
-      modules-left = [ "hyprland/workspaces" "hyprland/window" ];
+      modules-left = [
+        "hyprland/workspaces"
+        "hyprland/window"
+      ];
       modules-center = [ "clock" ];
-      modules-right = [ "pulseaudio" "network" "battery" "tray" ];
+      modules-right = [
+        "pulseaudio"
+        "network"
+        "battery"
+        "tray"
+      ];
 
       "hyprland/workspaces" = {
         format = "{id}";
@@ -143,7 +153,11 @@ lib.mkIf osConfig.lcars.user.waybar.enable {
       pulseaudio = {
         format = "{icon} {volume}%";
         format-muted = "󰝟 mudo";
-        format-icons.default = [ "󰕿" "󰖀" "󰕾" ];
+        format-icons.default = [
+          "󰕿"
+          "󰖀"
+          "󰕾"
+        ];
         on-click = "pamixer -t";
         scroll-step = 5;
       };
@@ -160,7 +174,13 @@ lib.mkIf osConfig.lcars.user.waybar.enable {
       battery = {
         format = "{icon} {capacity}%";
         format-charging = "󰂄 {capacity}%";
-        format-icons = [ "󰁺" "󰁽" "󰂀" "󰂂" "󰁹" ];
+        format-icons = [
+          "󰁺"
+          "󰁽"
+          "󰂀"
+          "󰂂"
+          "󰁹"
+        ];
         states = {
           warning = 30;
           critical = 15;

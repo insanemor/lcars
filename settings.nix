@@ -21,7 +21,7 @@
     profile = "personal";
 
     timezone = "America/Sao_Paulo";
-    locale   = "pt_BR.UTF-8";
+    locale = "pt_BR.UTF-8";
 
     # Arquitetura. Isto é fato da máquina, mas fica aqui por necessidade:
     # flake.nix o lê ANTES de montar o nixosSystem, então não pode vir de um
@@ -35,18 +35,18 @@
   userSettings = {
     username = "ins";
     fullName = "Rodrigo Moreira";
-    email    = "moreira@zaia.com.br";
+    email = "moreira@zaia.com.br";
 
-    editor   = "nano";
+    editor = "nano";
     terminal = "konsole";
-    browser  = "firefox";
+    browser = "firefox";
 
     # ---------------------------------------------------------------
     # 1Password
     # ---------------------------------------------------------------
     onePassword = {
-      enableCli      = true;
-      enableGui      = true;
+      enableCli = true;
+      enableGui = true;
       enableSshAgent = true;
 
       # Vault onde os itens Document dos dotfiles vivem.

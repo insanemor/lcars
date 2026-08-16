@@ -12,7 +12,13 @@
 # Está no .gitignore por padrão (pode conter números de série). Como flakes só
 # leem arquivos rastreados pelo git, adicione-o com `git add -f` depois de
 # revisar.
-{ config, lib, pkgs, modulesPath, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  modulesPath,
+  ...
+}:
 
 {
   imports = [ ];

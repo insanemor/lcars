@@ -8,7 +8,15 @@
 #
 # Opt-in por `lcars.user.dotfiles.enable`, ligado no profile; a flag vem do
 # config do NixOS (veja user/options.nix).
-{ config, osConfig, lib, pkgs, sys, user, ... }:
+{
+  config,
+  osConfig,
+  lib,
+  pkgs,
+  sys,
+  user,
+  ...
+}:
 
 with lib;
 
@@ -28,34 +36,36 @@ mkIf osConfig.lcars.user.dotfiles.enable {
   # precisam ser symlinks para fora do store. `source = <path>` faria o
   # home-manager tentar copiá-los para o store durante o build e falhar,
   # porque nesse momento eles ainda não existem.
-  xdg.configFile = builtins.listToAttrs (map (item: {
-    name = "dotfiles/${item.rel}";
-    value = {
-      source = config.lib.file.mkOutOfStoreSymlink item.cachePath;
-      force = true;
-    };
-  }) items);
+  xdg.configFile = builtins.listToAttrs (
+    map (item: {
+      name = "dotfiles/${item.rel}";
+      value = {
+        source = config.lib.file.mkOutOfStoreSymlink item.cachePath;
+        force = true;
+      };
+    }) items
+  );
 
   # Ativação: puxa cada Document do 1Password em `home-manager switch`.
   # Requer `op signin` ou token de service account na sessão do usuário.
-  home.activation.dotfilesFrom1Password =
-    mkIf (items != [ ])
-      (lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-        mkdir -p ${escapeShellArg cacheDir}
+  home.activation.dotfilesFrom1Password = mkIf (items != [ ]) (
+    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      mkdir -p ${escapeShellArg cacheDir}
 
-        if ! command -v op >/dev/null 2>&1; then
-          echo "lcars: 'op' não está no PATH — pulando dotfiles do 1Password"
-        elif [ -z "''${OP_SERVICE_ACCOUNT_TOKEN:-}" ] && ! op whoami >/dev/null 2>&1; then
-          echo "lcars: sem login no 1Password — pulando dotfiles"
-        else
-          ${concatMapStringsSep "\n  " (item: ''
-            if op read ${escapeShellArg item.opPath} > ${escapeShellArg "${item.cachePath}.tmp"} 2>/dev/null; then
-              mv ${escapeShellArg "${item.cachePath}.tmp"} ${escapeShellArg item.cachePath}
-            else
-              rm -f ${escapeShellArg "${item.cachePath}.tmp"}
-              echo "lcars: falha ao ler ${item.rel} do 1Password"
-            fi
-          '') items}
-        fi
-      '');
+      if ! command -v op >/dev/null 2>&1; then
+        echo "lcars: 'op' não está no PATH — pulando dotfiles do 1Password"
+      elif [ -z "''${OP_SERVICE_ACCOUNT_TOKEN:-}" ] && ! op whoami >/dev/null 2>&1; then
+        echo "lcars: sem login no 1Password — pulando dotfiles"
+      else
+        ${concatMapStringsSep "\n  " (item: ''
+          if op read ${escapeShellArg item.opPath} > ${escapeShellArg "${item.cachePath}.tmp"} 2>/dev/null; then
+            mv ${escapeShellArg "${item.cachePath}.tmp"} ${escapeShellArg item.cachePath}
+          else
+            rm -f ${escapeShellArg "${item.cachePath}.tmp"}
+            echo "lcars: falha ao ler ${item.rel} do 1Password"
+          fi
+        '') items}
+      fi
+    ''
+  );
 }

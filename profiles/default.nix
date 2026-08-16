@@ -28,7 +28,10 @@
   ];
 
   options.lcars.profile = lib.mkOption {
-    type = lib.types.enum [ "basic" "personal" ];
+    type = lib.types.enum [
+      "basic"
+      "personal"
+    ];
     default = "basic";
     description = ''
       Preset de flags desta máquina. Ao adicionar um profile novo, crie o

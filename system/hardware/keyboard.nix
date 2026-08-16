@@ -18,7 +18,12 @@
 # `ckbcomp`, em tempo de build. Então declaramos só o XKB, e o console segue.
 # Isso não exige o xserver habilitado — o módulo do console lê apenas os
 # valores de `services.xserver.xkb`, e funciona numa máquina headless.
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
@@ -62,8 +67,8 @@ in
     # A fonte da verdade. Mesmo sem X, estas opções são só dados — quem as
     # consome aqui é o console, logo abaixo.
     services.xserver.xkb = {
-      layout = cfg.layout;
-      variant = cfg.variant;
+      inherit (cfg) layout;
+      inherit (cfg) variant;
     };
 
     # Para model e options (troca de layout por atalho, por exemplo), declare

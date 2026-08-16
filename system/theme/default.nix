@@ -14,7 +14,12 @@
 #
 # O stylix parte de um esquema base16 e deriva o resto. Trocar de esquema é
 # uma linha, e nada fica para trás.
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
@@ -41,7 +46,11 @@ in
     };
 
     polarity = mkOption {
-      type = types.enum [ "dark" "light" "either" ];
+      type = types.enum [
+        "dark"
+        "light"
+        "either"
+      ];
       default = "dark";
       description = ''
         Diz ao stylix se o esquema é claro ou escuro. Programas que têm modo
@@ -98,7 +107,7 @@ in
   config = mkIf cfg.enable {
     stylix = {
       enable = true;
-      polarity = cfg.polarity;
+      inherit (cfg) polarity;
       base16Scheme = "${pkgs.base16-schemes}/share/themes/${cfg.scheme}.yaml";
 
       # `null` quando você não aponta uma imagem, e isso é deliberado.

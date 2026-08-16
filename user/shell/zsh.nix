@@ -5,7 +5,12 @@
 # Bits sensíveis (seu nome em prompt customizado etc.) pertencem ao
 # 1Password (userSettings.dotfilesFrom1Password) ou ao escape hatch
 # `user/personal/default.nix`.
-{ osConfig, lib, pkgs, ... }:
+{
+  osConfig,
+  lib,
+  pkgs,
+  ...
+}:
 
 lib.mkIf osConfig.lcars.user.zsh.enable {
   programs.zsh = {
@@ -25,11 +30,11 @@ lib.mkIf osConfig.lcars.user.zsh.enable {
     };
 
     shellAliases = {
-      ll  = "ls -alF --color";
-      la  = "ls -A --color";
-      l   = "ls -CF --color";
-      gs  = "git status";
-      gp  = "git push";
+      ll = "ls -alF --color";
+      la = "ls -A --color";
+      l = "ls -CF --color";
+      gs = "git status";
+      gp = "git push";
       gpl = "git pull";
 
       # Atualiza o repo e aplica no sistema. Aceita --inputs (atualiza o

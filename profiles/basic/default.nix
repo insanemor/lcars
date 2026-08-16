@@ -12,10 +12,10 @@ with lib;
 {
   config = mkIf (config.lcars.profile == "basic") {
     # --- sistema (system/) --------------------------------------------
-    lcars.system.core.enable     = mkDefault true;
+    lcars.system.core.enable = mkDefault true;
     lcars.system.security.enable = mkDefault true;
 
-    lcars.system.wm.plasma.enable   = mkDefault false;
+    lcars.system.wm.plasma.enable = mkDefault false;
     lcars.system.wm.hyprland.enable = mkDefault false;
 
     # Sem tema: numa máquina headless, um esquema de cores para GTK e Qt é
@@ -30,19 +30,19 @@ with lib;
     # Áudio não: sem placa de som ou sem ninguém para ouvir, o PipeWire só
     # acrescentaria um daemon.
     lcars.system.hardware.keyboard.enable = mkDefault true;
-    lcars.system.hardware.audio.enable    = mkDefault false;
+    lcars.system.hardware.audio.enable = mkDefault false;
 
     # --- ambiente do usuário (user/) ----------------------------------
     # Só o que serve a quem entra por ssh para trabalhar. Ficam de fora:
     # direnv (não há projetos aqui) e dotfiles (dependem de sessão aberta no
     # 1Password, que numa máquina headless normalmente não existe).
-    lcars.user.zsh.enable      = mkDefault true;
-    lcars.user.git.enable      = mkDefault true;
+    lcars.user.zsh.enable = mkDefault true;
+    lcars.user.git.enable = mkDefault true;
 
-    lcars.user.direnv.enable   = mkDefault false;
+    lcars.user.direnv.enable = mkDefault false;
     lcars.user.dotfiles.enable = mkDefault false;
     lcars.user.hyprland.enable = mkDefault false;
-    lcars.user.waybar.enable   = mkDefault false;
-    lcars.user.swaync.enable   = mkDefault false;
+    lcars.user.waybar.enable = mkDefault false;
+    lcars.user.swaync.enable = mkDefault false;
   };
 }

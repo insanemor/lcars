@@ -1,4 +1,12 @@
-{ config, lib, pkgs, sys, user, inputs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  sys,
+  user,
+  inputs,
+  ...
+}:
 
 with lib;
 
@@ -14,9 +22,18 @@ in
       description = "Instala o 1Password e configura o agente SSH.";
     };
 
-    enableCli = mkOption { type = types.bool; default = user.onePassword.enableCli; };
-    enableGui = mkOption { type = types.bool; default = user.onePassword.enableGui; };
-    enableSshAgent = mkOption { type = types.bool; default = user.onePassword.enableSshAgent; };
+    enableCli = mkOption {
+      type = types.bool;
+      default = user.onePassword.enableCli;
+    };
+    enableGui = mkOption {
+      type = types.bool;
+      default = user.onePassword.enableGui;
+    };
+    enableSshAgent = mkOption {
+      type = types.bool;
+      default = user.onePassword.enableSshAgent;
+    };
 
     polkitOwner = mkOption {
       type = types.str;
@@ -38,7 +55,8 @@ in
     # Usamos só o predicate (não allowUnfree global) para o desvio ficar
     # limitado aos pacotes do 1Password.
     nixpkgs.config.allowUnfreePredicate =
-      pkg: builtins.elem (lib.getName pkg) [
+      pkg:
+      builtins.elem (lib.getName pkg) [
         "1password-cli"
         "1password-gui"
         "1password"
