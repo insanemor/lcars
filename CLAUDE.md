@@ -102,10 +102,34 @@ Na dúvida sobre se algo entra no ciclo: entra.
   não conseguiria escrever lá. Ao criar um módulo em `user/`, declare a flag,
   importe em `user/default.nix`, envolva o corpo em `mkIf` e ligue nos profiles.
 
+- **Antes de pôr algo no `exec-once` do Hyprland, procure um serviço.** Este
+  erro já custou três entregas e duas rodadas de VM, nas duas formas que ele
+  tem:
+
+  - **#19** — pus `hyprpaper`, `waybar` e `swaync` para subir com a sessão sem
+    que estivessem instalados. O Hyprland tenta, falha calado e segue: tela
+    preta, e o usuário sem nenhuma pista do motivo.
+  - **#24** — o `hyprpaper` estava instalado, mas o stylix já o subia por
+    `services.hyprpaper`. A segunda instância morria porque a primeira detinha
+    o socket, e o que aparecia era "erro fatal" de um programa que estava
+    funcionando.
+
+  A verificação, antes de acrescentar `programa` à lista: existe
+  `services.<programa>` ou `programs.<programa>.systemd` no Home Manager, ou
+  algum módulo já o configura? Se existir, **use o serviço** — ele reinicia o
+  que cai e responde a `systemctl --user status`, enquanto pelo `exec-once`
+  qualquer falha é silêncio.
+
+  Na #21 eu tinha escrito no próprio arquivo "nunca ponha aqui algo que o
+  módulo não instale". Cobria só a primeira forma, e por isso não me impediu
+  de cometer a segunda — a regra tem que ser a de cima, não aquela.
+
 - **Alvo é o nixos-unstable.** Opções do NixOS mudam de nome com frequência
-  (`sound.enable`, `hardware.pulseaudio`, `hardware.tlp` e
-  `services.xserver.displayManager.*` já quebraram este repo). Confirme o nome
-  atual antes de usar; não confie na memória de versões antigas.
+  (`sound.enable`, `hardware.pulseaudio`, `hardware.tlp`,
+  `services.xserver.displayManager.*`, `rofi-wayland`, `noto-fonts-emoji` e
+  `programs.waybar.systemd.target` já quebraram ou avisaram neste repo).
+  Confirme o nome atual antes de usar; não confie na memória de versões
+  antigas. O `./scripts/check.sh --eval` pega essa classe em segundos.
 
 - **Commits e docs em português**, com acentuação correta. Identificadores,
   nomes de opção e termos técnicos ficam na forma original.
