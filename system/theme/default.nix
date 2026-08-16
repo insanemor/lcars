@@ -32,16 +32,26 @@ in
 
     scheme = mkOption {
       type = types.str;
-      default = "catppuccin-mocha";
+      default = "simbiot-dark";
       example = "gruvbox-dark-hard";
       description = ''
-        Nome de um esquema base16, entre os que o pacote `base16-schemes`
-        traz. Veja a lista com:
+        Nome de um esquema base16. Procurado primeiro em
+        `system/theme/schemes/<nome>.yaml`, neste repositório, e só depois
+        entre os que o pacote `base16-schemes` traz.
+
+        Deste repositório:
+
+          simbiot-dark   as cores do site da SimbioIT
+
+        Do pacote, veja a lista com:
 
           ls ${"$"}{pkgs.base16-schemes}/share/themes/
 
         Alguns conhecidos: catppuccin-mocha, gruvbox-dark-hard, nord,
         tokyo-night-dark, rose-pine, dracula, solarized-dark.
+
+        Para criar o seu, ponha um .yaml em `schemes/` com as chaves base00
+        a base0F e use o nome do arquivo aqui.
       '';
     };
 
@@ -111,7 +121,22 @@ in
     stylix = {
       enable = true;
       inherit (cfg) polarity;
-      base16Scheme = "${pkgs.base16-schemes}/share/themes/${cfg.scheme}.yaml";
+      # Um esquema do repositório vence o de mesmo nome no pacote. É o que
+      # permite `scheme = "simbiot-dark"` conviver com `scheme = "nord"` na
+      # mesma option, sem uma segunda para "esquema próprio" — o nome continua
+      # sendo a interface inteira.
+      #
+      # O `pathExists` é resolvido na avaliação, e `./schemes` entra no store
+      # junto com o resto do flake, então o arquivo precisa estar rastreado pelo
+      # git como qualquer outro.
+      base16Scheme =
+        let
+          proprio = ./schemes + "/${cfg.scheme}.yaml";
+        in
+        if builtins.pathExists proprio then
+          proprio
+        else
+          "${pkgs.base16-schemes}/share/themes/${cfg.scheme}.yaml";
 
       # `null` quando você não aponta uma imagem, e isso é deliberado.
       #

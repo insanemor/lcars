@@ -250,7 +250,16 @@ O tema não é configurado programa por programa. Um esquema
 [stylix](https://github.com/danth/stylix) o aplica em Hyprland, noctalia,
 kitty, GTK, Qt, Plasma e no console TTY.
 
-Padrão: **Catppuccin Mocha**, escuro. Para trocar:
+Padrão: **`simbiot-dark`**, as cores do site da SimbioIT — fundo azul-petróleo
+`#111d23`, o ciano do logo `#29b6bf` como cor primária da interface, e o lime
+`#bad350` fechando o gradiente das bordas. Sete das dezesseis cores foram
+amostradas da página; as outras nove, derivadas na mesma família. Detalhes e a
+tabela completa em
+[docs/features.md](./docs/features.md#simbiot-dark-a-paleta-padr%C3%A3o).
+
+O `scheme` procura primeiro em `system/theme/schemes/`, neste repositório, e só
+depois no pacote `base16-schemes` — então a mesma option serve para a paleta
+própria e para qualquer esquema pronto. Para trocar:
 
 ```nix
 # machines/<máquina>/default.nix, ou no profile
@@ -273,15 +282,15 @@ lcars.system.theme.wallpaper = ./caminho/para/imagem.png;
 ### A forma, separada da cor
 
 Além da paleta, o repo traz a **geometria** do rice de
-[Sly-Harvey/NixOS](https://github.com/Sly-Harvey/NixOS): barra em três ilhas
-arredondadas sobre fundo transparente, workspaces como pílulas, borda de janela
-em gradiente a 45°, cantos em 10 e blur ajustado.
+[Sly-Harvey/NixOS](https://github.com/Sly-Harvey/NixOS): borda de janela em
+gradiente a 45°, cantos em 10, blur ajustado e sombra desligada. (A forma da
+barra e dos painéis não vem daí — quem a define é o noctalia, e você a ajusta
+pela GUI.)
 
-O que foi copiado de lá é só a forma — **nenhum valor de cor**. No repo de
-origem a paleta Catppuccin está fixa em 30 linhas de `@define-color` dentro do
-CSS, e trocar de esquema exige reescrevê-las. Aqui o CSS referencia as
-variáveis que o stylix declara, então mudar `scheme` repinta a barra e a borda
-junto.
+O que foi copiado é só a forma — **nenhum valor de cor**. No repo de origem a
+paleta Catppuccin está fixa em 30 linhas de `@define-color` dentro do CSS, e
+trocar de esquema exige reescrevê-las. Aqui o gradiente é `base0D → base0A`,
+então mudar `scheme` repinta a borda junto.
 
 Para ficar só com o stylix, sem a geometria:
 

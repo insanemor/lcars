@@ -249,7 +249,7 @@ noctalia, kitty, hyprlock, GTK, Qt, Plasma e o console TTY**.
 
 | Option | Padrão | Para quê |
 |---|---|---|
-| `scheme` | `"catppuccin-mocha"` | nome de um esquema do pacote `base16-schemes` |
+| `scheme` | `"simbiot-dark"` | nome de um esquema — deste repositório ou do pacote `base16-schemes` |
 | `polarity` | `"dark"` | diz aos programas se o esquema é claro ou escuro |
 | `wallpaper` | `null` | `null` = cor sólida pintada pelo compositor, **sem daemon**; uma imagem liga o hyprpaper |
 | `fonts.monospace` | `"JetBrainsMono Nerd Font"` | Nerd Font porque a barra usa ícones que só existem nelas |
@@ -265,6 +265,58 @@ do desktop.
 programa — 17 arquivos `.rasi` só para o lançador, CSS próprio para a barra,
 218 arquivos ao todo em `desktop/hyprland`. Aqui, trocar de esquema é uma
 linha, e nenhum programa fica para trás.
+
+### `simbiot-dark`, a paleta padrão
+
+`system/theme/schemes/simbiot-dark.yaml`. As cores do site da SimbioIT,
+amostradas por região da página e não escolhidas a olho:
+
+| base | Hex | De onde veio | Onde aparece |
+|---|---|---|---|
+| `base00` | `#111d23` | fundo da página | fundo de tudo, inclusive o do Hyprland |
+| `base05` | `#b4c4c3` | texto do parágrafo | texto padrão |
+| `base07` | `#eef3f3` | títulos | texto de destaque |
+| `base0A` | `#bad350` | quadrados do arco | classe, aviso, e o fim do gradiente da borda |
+| `base0B` | `#6ad3a1` | palavra "Inovadoras" | string, sucesso |
+| `base0C` | `#4accbc` | botão e "Soluções" | suporte, escape |
+| `base0D` | `#29b6bf` | **logo e arco** | a primária — barra, foco, botões do noctalia, início do gradiente |
+
+As outras nove são derivadas: a escala de fundo (`base01`-`base04`, `base06`) e
+os acentos que o site não tem (`base08` vermelho, `base09` laranja, `base0E`
+violeta, `base0F` rosa), que o base16 exige para sintaxe e erro. Ficaram na
+mesma família das extraídas — S 38-62, V 74-85, com os fundos presos ao
+azul-petróleo do site.
+
+Contraste medido em WCAG contra o fundo: texto 9.50:1 e títulos 15.32:1, os
+dois AAA; o acento mais fraco é 4.61:1, nenhum abaixo de AA. O `base03`
+(comentários) fica em 3.12:1, que é o piso do próprio base16 — ele reserva essa
+cor justamente para o que deve recuar.
+
+**`base0D` é o ciano do logo, e não o verde-água, de propósito.** O stylix passa
+`base0D` como `mPrimary` para o noctalia e é ela que abre o gradiente da borda
+do Hyprland — é a cor que dá a cara do sistema. Verificado: o noctalia recebe
+`mPrimary = #29b6bf` e a borda ativa sai como
+`rgb(29b6bf) rgb(bad350) 45deg`, que é o arco da direita do site.
+
+### Usando outro esquema, ou criando o seu
+
+`scheme` procura primeiro em `system/theme/schemes/<nome>.yaml`, neste
+repositório, e só depois no pacote. A mesma option serve aos dois:
+
+```nix
+lcars.system.theme.scheme = "simbiot-dark";       # daqui
+lcars.system.theme.scheme = "gruvbox-dark-hard";  # do pacote
+```
+
+Para criar o seu, ponha um `.yaml` em `schemes/` — e leia o cabeçalho do
+`simbiot-dark.yaml` antes: o parser YAML que o stylix usa é em Nix puro e tem
+duas armadilhas que **não** dão erro no lugar certo (comentário indentado dentro
+de `palette:`, e dois-pontos seguido de espaço em comentário inline, que faz a
+cor sumir da paleta em silêncio).
+
+Nada no repositório escreve cor fixa. O gradiente da borda é `base0D → base0A`,
+então trocar de esquema troca o gradiente junto — com `gruvbox-dark-hard` ele
+vira `rgb(83a598) rgb(fabd2f)`, verificado.
 
 ### O papel de parede, e por que ele é uma cor
 
@@ -293,7 +345,7 @@ O repo de referência versiona 18 imagens; este continua sem nenhuma.
 ### A forma, com `rice = true`
 
 A geometria das janelas vem do mesmo repo de referência, mas **sem nenhum valor
-de cor**: borda em gradiente 45° (`base0E` → `base0C`), cantos em 10, blur
+de cor**: borda em gradiente 45° (`base0D` → `base0A`), cantos em 10, blur
 `size 6 passes 2`, sombra desligada, `gaps_out` em 9.
 
 A forma da barra e dos painéis **não** está aqui. Era CSS da waybar e um tema
