@@ -6,15 +6,22 @@
 # básico da instalação. Editá-lo deixa o clone sujo — é o esperado.
 # =====================================================================
 
-# A configuração de hardware por máquina pode vazar números de série;
-# mantenha local por padrão. Adicione com `git add -f` (o flake só lê arquivos
-# rastreados) e revise antes de commitar.
-machines/*/hardware-configuration.nix
+# O diretório de cada máquina é local: ele descreve aquele hardware e não vale
+# para mais ninguém. O `hardware-configuration.nix` ainda pode trazer UUID de
+# partição e número de série.
+#
+# O flake só lê arquivos rastreados, então o instalador e o nupdate fazem
+# `git add -f machines/<host>` para pô-los no index — o que basta para avaliar
+# e não é commit. Ignorar aqui protege do resto: um `git add -A` distraído, ou
+# um `git commit` que arraste o index inteiro (#33).
+#
+# Para versionar a sua máquina deliberadamente, `git add -f` continua servindo.
+machines/*/
 
-# ...menos o do template, que é só um placeholder. Sem esta exceção,
-# `cp -r machines/template machines/<novo>` produz um host cujo import aponta para
-# um arquivo que não existe no clone.
-!machines/template/hardware-configuration.nix
+# ...menos o template, que é o esqueleto de onde toda máquina nasce — inclusive
+# o placeholder de hardware. Sem esta exceção, `machines/<novo>` sai com um
+# import apontando para um arquivo que não existe no clone.
+!machines/template/
 
 # Artefatos comuns de build
 result
