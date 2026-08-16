@@ -92,7 +92,13 @@ in
     # O agente SSH do 1Password é ligado DENTRO do app (Settings → Developer),
     # não por um módulo NixOS — `services._1password` não existe. O que cabe
     # ao sistema é apontar o ssh para o socket que o app expõe.
-    programs.ssh.extraConfig = mkIf cfg.enableSshAgent ''
+    #
+    # Depende de enableGui, e não só de enableSshAgent: quem cria o socket é o
+    # app gráfico. Com a GUI desligada — uma máquina headless, o profile basic —
+    # esta linha apontaria para um caminho que nunca vai existir, e todo `ssh`
+    # da máquina passaria por um agente ausente antes de cair nas chaves do
+    # disco.
+    programs.ssh.extraConfig = mkIf (cfg.enableSshAgent && cfg.enableGui) ''
       Host *
         IdentityAgent ~/.1password/agent.sock
     '';
