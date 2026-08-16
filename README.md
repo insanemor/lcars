@@ -92,6 +92,23 @@ Se você já pegou o erro acima, uma vez só:
 sudo chown -R "$USER" ~/.dotfiles
 ```
 
+### Arquivos `.hm-bak` no seu `$HOME`
+
+Quando um módulo de `user/` passa a gerenciar um dotfile que já existia, o Home
+Manager renomeia o antigo para `<nome>.hm-bak` em vez de apagá-lo — nada é
+perdido.
+
+Acontece na primeira vez que o tema é aplicado: o stylix gerencia
+`~/.gtkrc-2.0` e `~/.config/gtk-{3,4}.0/settings.ini`, que o Plasma já havia
+escrito. Compare e apague quando não precisar mais:
+
+```bash
+diff ~/.gtkrc-2.0 ~/.gtkrc-2.0.hm-bak
+```
+
+Sem esse backup configurado, a ativação **falharia** em vez de renomear, e o
+rebuild terminaria com o sistema atualizado e o `$HOME` no estado anterior.
+
 ### O `nupdate` descarta o que você editou
 
 Em caso de conflito, **o repositório sempre vence** — sem perguntar, sem parar. É deliberado: o comando existe para rodar sem exigir atenção.

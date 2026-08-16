@@ -294,6 +294,8 @@ nixosConfigurations.meu-pc = self.mkMachine "meu-pc" [ ./algo-extra.nix ];
 | A máquina ignora o que declarei | O profile definiu a mesma flag; ele usa `mkDefault`, então declarar na máquina deve vencer — confira se não escreveu `mkDefault` na máquina também |
 | `detected dubious ownership in repository` | Rebuild como root num repo de outro dono. Use `nixos-rebuild --elevate=sudo`, que avalia como você; o paliativo é `sudo git config --global --add safe.directory ~/.dotfiles` |
 | `insufficient permission for adding an object to repository database` | Um `sudo nixos-rebuild` anterior deixou objetos do root em `.git/objects`. Destrave com `sudo chown -R "$USER" ~/.dotfiles` e passe a usar `--elevate=sudo` |
+| `Failed to start Home Manager environment` / `switch-to-configuration … status 4` | O sistema atualizou, o `$HOME` não. Veja a causa com `journalctl -u home-manager-ins.service -b \| tail -40` |
+| Apareceu um arquivo `.hm-bak` no `$HOME` | Não é erro. O Home Manager passou a gerenciar um dotfile que já existia e guardou o antigo em vez de apagá-lo. Compare com `diff ~/.gtkrc-2.0 ~/.gtkrc-2.0.hm-bak` e apague o `.hm-bak` quando não precisar mais |
 | `experimental Nix feature 'nix-command' is disabled` | `export NIX_CONFIG="experimental-features = nix-command flakes"` |
 | tlp e power-profiles-daemon em conflito | `lcars.system.hardware.laptop.powerManager = "tlp"` ou `"ppd"` |
 | O repo em `~/.dotfiles` pertence ao root e você não consegue editá-lo | O instalador foi chamado com `sudo`. Ele deve rodar como você: `curl … \| bash`, sem sudo. Conserte com `sudo chown -R "$USER" ~/.dotfiles` |
