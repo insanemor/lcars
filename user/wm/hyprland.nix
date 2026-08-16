@@ -41,15 +41,23 @@ lib.mkIf osConfig.lcars.user.hyprland.enable {
       monitor = ",preferred,auto,1";
 
       # --- o que sobe junto com a sessão --------------------------------
-      # Só o papel de parede. A barra e as notificações sobem por unidades
-      # systemd dos próprios módulos (user/wm/waybar.nix, swaync.nix), o que é
-      # melhor: reiniciam sozinhas se caírem, e `systemctl --user status` diz o
-      # que houve.
+      # Vazia, e é para continuar assim.
       #
-      # Esta lista já apontou para três programas NÃO instalados. O Hyprland
-      # tenta executar, falha calado e segue — a tela fica preta sem nenhuma
-      # pista do motivo. Nunca ponha aqui algo que o módulo não instale.
-      exec-once = lib.optional osConfig.lcars.system.theme.enable "hyprpaper";
+      # Barra, notificações e papel de parede sobem por unidades systemd dos
+      # próprios módulos (programs.waybar, services.swaync, services.hyprpaper
+      # — este último configurado pelo stylix). O systemd reinicia o que cai e
+      # responde a `systemctl --user status`; pelo exec-once, falha é silêncio.
+      #
+      # DUAS REGRAS, aprendidas errando as duas:
+      #
+      #   1. nunca ponha aqui algo que o módulo não instale — o Hyprland tenta
+      #      executar, falha calado, e a tela fica sem pista do motivo (#19);
+      #   2. nunca ponha aqui algo que JÁ suba por systemd — a segunda
+      #      instância morre porque a primeira detém o socket, e o usuário vê
+      #      "erro fatal" de um programa que na verdade está funcionando (#24).
+      #
+      # Só entra aqui o que não tiver um serviço próprio.
+      exec-once = [ ];
 
       # --- aparência ----------------------------------------------------
       # Só geometria. As CORES vêm do stylix (system/theme/), que tem alvo

@@ -104,10 +104,12 @@ lib.mkIf osConfig.lcars.user.waybar.enable {
     # Ligar pelo systemd, e não pelo exec-once do Hyprland: assim a barra
     # reinicia sozinha se cair, e o `systemctl --user status waybar` diz o que
     # aconteceu. Pelo exec-once, uma falha é silenciosa.
-    systemd = {
-      enable = true;
-      target = "graphical-session.target";
-    };
+    #
+    # Sem declarar o alvo: o default de `systemd.targets` já é
+    # `[ config.wayland.systemd.target ]`, que é a sessão gráfica. Declarar à
+    # mão não acrescentava nada e ainda usava `target` (string), renomeado para
+    # `targets` (lista) — era de onde vinha o aviso de option deprecada.
+    systemd.enable = true;
 
     settings.principal = {
       layer = "top";
