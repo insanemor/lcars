@@ -105,6 +105,20 @@
                 extraSpecialArgs = { inherit settings sys user; };
                 sharedModules = [ ./user/personal ];
 
+                # Sem isto, o Home Manager ABORTA a ativação ao encontrar um
+                # arquivo que ele não criou no caminho de um que quer criar —
+                # e o rebuild termina com o sistema atualizado e o $HOME não.
+                #
+                # Acontece sempre que um módulo novo passa a gerenciar um
+                # dotfile que já existia. O caso concreto: o stylix liga
+                # `gtk.enable`, e o Plasma já havia escrito ~/.gtkrc-2.0 e
+                # ~/.config/gtk-3.0/settings.ini para tematizar apps GTK.
+                #
+                # Com a extensão definida, o arquivo antigo vira <nome>.hm-bak
+                # e a ativação segue. Nada é perdido: o conteúdo anterior fica
+                # ali do lado.
+                backupFileExtension = "hm-bak";
+
                 # Tudo do usuário num atributo só. Separar em
                 # `users.${x}.imports` e `users.${x}.home` não compila: o Nix
                 # funde caminhos ESTÁTICOS ({ a.b = 1; a.c = 2; }), mas não

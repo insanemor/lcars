@@ -6,7 +6,7 @@
 # normal.
 #
 # A cor vem do stylix (system/theme/), que tem alvo para swaync.
-{ osConfig, lib, pkgs, ... }:
+{ osConfig, lib, ... }:
 
 lib.mkIf osConfig.lcars.user.swaync.enable {
   services.swaync = {
@@ -30,7 +30,8 @@ lib.mkIf osConfig.lcars.user.swaync.enable {
     };
   };
 
-  # `swaync-client` é o que abre e fecha o painel; sem ele o atalho do
-  # Hyprland não tem o que chamar.
-  home.packages = [ pkgs.swaynotificationcenter ];
+  # O pacote NÃO é declarado aqui: `services.swaync` já o instala, e com ele
+  # vem o `swaync-client` que o atalho SUPER+N chama. Declarar de novo em
+  # home.packages seria duplicação — inofensiva, porque o Nix deduplica
+  # derivações idênticas, mas enganosa para quem lê.
 }
