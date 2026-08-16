@@ -17,8 +17,7 @@ O repo vem com `personal`.
 | Hyprland, compositor (`system/wm`) | `lcars.system.wm.hyprland.enable` | — | sim |
 | Config do Hyprland (`user/wm`) | `lcars.user.hyprland.enable` | — | sim |
 | Tema unificado (`system/theme`) | `lcars.system.theme.enable` | — | sim |
-| Barra waybar (`user/wm`) | `lcars.user.waybar.enable` | — | sim |
-| Notificações swaync (`user/wm`) | `lcars.user.swaync.enable` | — | sim |
+| Shell noctalia (`user/wm`) | `lcars.user.noctalia.enable` | — | sim |
 | Áudio PipeWire (`system/hardware`) | `lcars.system.hardware.audio.enable` | — | sim |
 | Teclado, console e gráfico (`system/hardware`) | `lcars.system.hardware.keyboard.enable` | sim | sim |
 | 1Password CLI e GUI (`system/app`) | `lcars.system.app.onePassword.enable` | — | sim |
@@ -157,42 +156,77 @@ inutilizável: `wl-clipboard`, `brightnessctl`, `pamixer`, `playerctl`,
 `hyprpicker`, `grim`, `slurp`, `hyprpaper`.
 
 **Usuário** (`lcars.user.hyprland.enable`) — atalhos, regras de janela, o que
-sobe com a sessão, e os pacotes `kitty` e `rofi`. O layout do teclado vem de
+sobe com a sessão, e o pacote `kitty`. O layout do teclado vem de
 `lcars.system.hardware.keyboard`, o mesmo do console e do SDDM.
 
 | Atalho | O que faz |
 |---|---|
 | `SUPER+Enter` | terminal (kitty) |
-| `SUPER+D` | lançador (rofi) |
+| `SUPER+D` | lançador (painel do noctalia) |
+| `SUPER+N` | notificações |
+| `SUPER+C` | centro de controle |
+| `SUPER+V` | histórico da área de transferência |
+| `SUPER+ESC` | menu de sessão (desligar, reiniciar, bloquear) |
 | `SUPER+Q` | fecha a janela |
 | `SUPER+SHIFT+E` | sai da sessão |
-| `SUPER+F` / `SUPER+V` | tela cheia / flutuante |
+| `SUPER+F` | tela cheia |
 | `SUPER+setas` ou `hjkl` | move o foco |
 | `SUPER+1..9` | troca de workspace (com `SHIFT`, leva a janela) |
 | `SUPER+SHIFT+S` | captura de região para a área de transferência |
 | teclas de mídia | volume, brilho, play/pause |
 
+Os cinco primeiros painéis são comandos de IPC para o shell que já está no ar
+(`noctalia msg panel-toggle <id>`), não programas separados que abrem e fecham.
+
 As cores vêm do tema (abaixo) — não há paleta escrita no módulo do Hyprland.
 Estrutura e atalhos inspirados em
 [Sly-Harvey/NixOS](https://github.com/Sly-Harvey/NixOS) (MIT).
 
-### Barra · `user/wm/waybar.nix` · `lcars.user.waybar.enable`
+### Shell · `user/wm/noctalia.nix` · `lcars.user.noctalia.enable`
 
-Layout: workspaces e título da janela à esquerda, relógio ao centro, volume,
-rede, bateria e bandeja à direita. A cor vem do tema.
+Barra, lançador, servidor de notificações, centro de controle, histórico de
+área de transferência, menu de sessão, OSD de volume e brilho e papel de
+parede — uma peça só, em vez de waybar + rofi + swaync, que eram três módulos
+com três formatos de configuração e nenhuma interface de ajuste.
 
-Sobe por unidade systemd, não pelo `exec-once` do Hyprland — assim reinicia
-sozinha se cair, e `systemctl --user status waybar` diz o que houve. Pelo
-`exec-once`, uma falha é silenciosa.
+Sobe por unidade systemd (`programs.noctalia.systemd.enable`), não pelo
+`exec-once` do Hyprland: assim reinicia se cair e `systemctl --user status
+noctalia` diz o que houve. Pelo `exec-once`, falha é silêncio.
 
-### Notificações · `user/wm/swaync.nix` · `lcars.user.swaync.enable`
+Sem ele o Hyprland não tem servidor de notificação, e aí nada avisa bateria
+fraca nem download concluído — quem tentou notificar não recebe erro, então o
+silêncio parece normal.
 
-O Hyprland não tem servidor de notificação, e sem um nada avisa bateria fraca
-nem download concluído — o programa que tentou notificar não recebe erro, então
-o silêncio parece normal.
+#### O ciclo GUI → export → commit
 
-Notificação comum some em 8s; a marcada como crítica fica até você fechar.
-`SUPER+N` abre o painel.
+É o motivo de ele estar aqui. O noctalia tem centro de controle gráfico, e o
+que você ajusta ali dá para exportar e versionar:
+
+```bash
+# 1. ajuste no centro de controle (SUPER+C), veja o resultado na hora
+# 2. exporte por cima do arquivo versionado
+noctalia config export merged > ~/.dotfiles/user/wm/noctalia-config.toml
+# 3. confira e aplique
+cd ~/.dotfiles && git diff
+nupdate
+```
+
+Sem o passo 2, o ajuste vive só no state-dir daquela máquina e some num clone
+novo. Com ele, a configuração entra no fluxo normal do repositório — issue,
+branch, commit.
+
+O arquivo começa quase vazio de propósito: o que não está nele usa o default do
+noctalia, e um despejo de centenas de linhas de defaults tornaria ilegível o
+diff da primeira coisa que você mudar.
+
+**As chaves do tema são podadas na leitura.** Paleta, fonte, modo claro/escuro,
+caminho do papel de parede e as três opacidades são escritas pelo stylix. Como
+`export merged` despeja a configuração inteira, inclusive essas, os dois lados
+definiriam a mesma chave — o que o sistema de módulos trata como conflito e
+aborta. `user/wm/noctalia.nix` remove esses oito caminhos do que lê do arquivo,
+e por isso o ciclo acima funciona sem você editar nada à mão. O efeito prático:
+mudar cor ou fonte pela GUI não gruda. Para trocar, mexa em
+`lcars.system.theme.scheme` e `lcars.system.theme.fonts`.
 
 ---
 
@@ -202,7 +236,7 @@ Notificação comum some em 8s; a marcada como crítica fica até você fechar.
 
 Um esquema [base16](https://github.com/tinted-theming/schemes) declarado uma
 vez, aplicado pelo [stylix](https://github.com/danth/stylix) em: **Hyprland,
-waybar, rofi, kitty, swaync, hyprlock, GTK, Qt, Plasma e o console TTY**.
+noctalia, kitty, hyprlock, GTK, Qt, Plasma e o console TTY**.
 
 | Option | Padrão | Para quê |
 |---|---|---|
@@ -211,7 +245,7 @@ waybar, rofi, kitty, swaync, hyprlock, GTK, Qt, Plasma e o console TTY**.
 | `wallpaper` | `null` | `null` = cor sólida pintada pelo compositor, **sem daemon**; uma imagem liga o hyprpaper |
 | `fonts.monospace` | `"JetBrainsMono Nerd Font"` | Nerd Font porque a barra usa ícones que só existem nelas |
 | `fonts.size` | `11` | corpo da fonte de interface |
-| `rice` | `true` | a **geometria** do rice: ilhas, gradiente, cantos. `false` deixa a forma padrão de cada programa, ainda pintada pelo esquema |
+| `rice` | `true` | a **geometria** das janelas do Hyprland: gradiente, cantos, blur. `false` deixa a forma padrão, ainda pintada pelo esquema |
 
 **Por que fica em `system/theme/` e não em `system/wm/`:** tema é transversal.
 Ele pinta o console TTY, o GTK e o Qt, que existem independentemente de qual
@@ -219,9 +253,9 @@ ambiente gráfico está ligado. Amarrá-lo a um WM faria a cor do console depend
 do desktop.
 
 **Por que stylix e não cor à mão.** O repo de referência fia a paleta em cada
-programa — 17 arquivos `.rasi` só para o rofi, CSS próprio para a barra, 218
-arquivos ao todo em `desktop/hyprland`. Aqui, trocar de esquema é uma linha, e
-nenhum programa fica para trás.
+programa — 17 arquivos `.rasi` só para o lançador, CSS próprio para a barra,
+218 arquivos ao todo em `desktop/hyprland`. Aqui, trocar de esquema é uma
+linha, e nenhum programa fica para trás.
 
 ### O papel de parede, e por que ele é uma cor
 
@@ -249,28 +283,19 @@ O repo de referência versiona 18 imagens; este continua sem nenhuma.
 
 ### A forma, com `rice = true`
 
-A geometria vem do mesmo repo de referência, mas **sem nenhum valor de cor**:
+A geometria das janelas vem do mesmo repo de referência, mas **sem nenhum valor
+de cor**: borda em gradiente 45° (`base0E` → `base0C`), cantos em 10, blur
+`size 6 passes 2`, sombra desligada, `gaps_out` em 9.
 
-| Onde | O que muda |
-|---|---|
-| waybar | três ilhas arredondadas sobre barra transparente; laterais com borda de destaque, centro discreta; workspaces como pílulas que mudam de largura |
-| janelas | borda em gradiente 45° (`base0E` → `base0C`), cantos em 10, blur `size 6 passes 2`, sombra desligada |
-| rofi | 600px de largura, 8 linhas, cantos em 11 |
+A forma da barra e dos painéis **não** está aqui. Era CSS da waybar e um tema
+`.rasi` do rofi; hoje é o noctalia que a define, e você a ajusta pelo centro de
+controle, exportando o resultado (veja o ciclo acima). A flag `rice` só governa
+o Hyprland.
 
-Três detalhes que valem saber para quem for mexer:
-
-- **O CSS da waybar entra por `lib.mkAfter`.** `programs.waybar.style` é do
-  tipo `lines`, e as definições se concatenam: a nossa precisa vir depois da do
-  stylix para vencer no cascade. Verificado no arquivo gerado — stylix ocupa
-  até a linha 135, o nosso começa na 146.
-- **A borda em gradiente precisa de `mkForce`.** O stylix declara
-  `col.active_border` sem `mkDefault` (`modules/hyprland/hm.nix`); sem forçar,
-  as duas definições colidem. Se ele passar a usar `mkDefault`, o `mkForce`
-  pode sair.
-- **O tema do rofi não pode declarar `"*"`.** É lá que o stylix põe a paleta
-  inteira, e o merge é por chave — definir `"*"` do nosso lado apagaria as
-  cores. Só entram chaves que ele não usa: `window`, `inputbar`, `listview`,
-  `element`.
+Um detalhe que vale saber para quem for mexer: **a borda em gradiente precisa
+de `mkForce`.** O stylix declara `col.active_border` sem `mkDefault`
+(`modules/hyprland/hm.nix`); sem forçar, as duas definições colidem. Se ele
+passar a usar `mkDefault`, o `mkForce` pode sair.
 
 ---
 

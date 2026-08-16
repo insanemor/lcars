@@ -26,7 +26,9 @@ let
   mod = "SUPER";
 
   terminal = "kitty";
-  launcher = "rofi -show drun";
+  # O launcher é um painel do noctalia, não um programa à parte: um comando
+  # de IPC para o shell que já está no ar (`noctalia msg panel-toggle <id>`).
+  launcher = "noctalia msg panel-toggle launcher";
 in
 lib.mkIf osConfig.lcars.user.hyprland.enable {
   wayland.windowManager.hyprland = {
@@ -50,8 +52,8 @@ lib.mkIf osConfig.lcars.user.hyprland.enable {
       # Vazia, e é para continuar assim.
       #
       # Barra, notificações e papel de parede sobem por unidades systemd dos
-      # próprios módulos (programs.waybar, services.swaync, services.hyprpaper
-      # — este último configurado pelo stylix). O systemd reinicia o que cai e
+      # próprios módulos (programs.noctalia.systemd, services.hyprpaper — este
+      # último configurado pelo stylix). O systemd reinicia o que cai e
       # responde a `systemctl --user status`; pelo exec-once, falha é silêncio.
       #
       # DUAS REGRAS, aprendidas errando as duas:
@@ -161,8 +163,12 @@ lib.mkIf osConfig.lcars.user.hyprland.enable {
         # Captura de tela: seleciona uma região e joga na área de transferência.
         ''${mod} SHIFT, S, exec, grim -g "$(slurp)" - | wl-copy''
 
-        # Painel de notificações.
-        "${mod}, N, exec, swaync-client -t -sw"
+        # Painéis do noctalia. Os ids são os do shell; `panel-open` com um
+        # segundo argumento abre direto numa aba (aqui, as notificações).
+        "${mod}, N, exec, noctalia msg panel-open control-center notifications"
+        "${mod}, C, exec, noctalia msg panel-toggle control-center"
+        "${mod}, V, exec, noctalia msg panel-toggle clipboard"
+        "${mod}, ESCAPE, exec, noctalia msg panel-toggle session"
       ]
       # Workspaces 1–9: SUPER troca, SUPER+SHIFT leva a janela junto.
       ++ builtins.concatLists (
@@ -205,8 +211,8 @@ lib.mkIf osConfig.lcars.user.hyprland.enable {
   # O terminal não vem com o Hyprland, e sem ele não há como se recuperar de
   # nada dentro da sessão.
   #
-  # O rofi NÃO está aqui: quem o instala é user/wm/rofi.nix, via programs.rofi.
-  # Pôr nos dois lugares daria duas cópias no PATH, e a do home.packages não
-  # teria a configuração.
+  # O noctalia NÃO está aqui: quem o instala é user/wm/noctalia.nix, via
+  # programs.noctalia. Pôr nos dois lugares daria duas cópias no PATH, e a do
+  # home.packages não teria a configuração.
   home.packages = [ pkgs.kitty ];
 }

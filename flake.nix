@@ -23,12 +23,22 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Tema: um esquema base16 pinta Hyprland, waybar, rofi, terminal, GTK, Qt,
+    # Tema: um esquema base16 pinta Hyprland, noctalia, terminal, GTK, Qt,
     # Plasma e o console TTY de uma vez. É o que evita fiar cor programa por
     # programa — veja system/theme/.
     stylix = {
       url = "github:danth/stylix";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # Shell de desktop: barra, launcher, notificações, tela de bloqueio, dock e
+    # centro de controle numa peça só, com GUI de ajuste. Veja user/wm/noctalia.nix.
+    #
+    # O flake dele declara nixpkgs por URL de tarball, não por github:, então
+    # `follows` não se aplica — ele traz o próprio. É duplicação de árvore no
+    # lock, mas é o que o upstream oferece.
+    noctalia = {
+      url = "github:noctalia-dev/noctalia-shell";
     };
 
     # FUTURO — descomente para ligar um repo privado sobreposto:
@@ -119,7 +129,12 @@
                 useGlobalPkgs = true;
                 useUserPackages = true;
                 extraSpecialArgs = { inherit settings sys user; };
-                sharedModules = [ ./user/personal ];
+                # O módulo do noctalia declara programs.noctalia no Home
+                # Manager; user/wm/noctalia.nix é quem o liga e configura.
+                sharedModules = [
+                  ./user/personal
+                  inputs.noctalia.homeModules.default
+                ];
 
                 # Sem isto, o Home Manager ABORTA a ativação ao encontrar um
                 # arquivo que ele não criou no caminho de um que quer criar —
