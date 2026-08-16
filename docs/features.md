@@ -211,6 +211,7 @@ waybar, rofi, kitty, swaync, hyprlock, GTK, Qt, Plasma e o console TTY**.
 | `wallpaper` | `null` | `null` gera um gradiente das cores do esquema |
 | `fonts.monospace` | `"JetBrainsMono Nerd Font"` | Nerd Font porque a barra usa ícones que só existem nelas |
 | `fonts.size` | `11` | corpo da fonte de interface |
+| `rice` | `true` | a **geometria** do rice: ilhas, gradiente, cantos. `false` deixa a forma padrão de cada programa, ainda pintada pelo esquema |
 
 **Por que fica em `system/theme/` e não em `system/wm/`:** tema é transversal.
 Ele pinta o console TTY, o GTK e o Qt, que existem independentemente de qual
@@ -225,6 +226,31 @@ nenhum programa fica para trás.
 O papel de parede é gerado das cores do esquema em vez de versionado: o repo de
 referência carrega 18 imagens; um gradiente derivado da paleta dá fundo
 coerente sem binário no diff.
+
+### A forma, com `rice = true`
+
+A geometria vem do mesmo repo de referência, mas **sem nenhum valor de cor**:
+
+| Onde | O que muda |
+|---|---|
+| waybar | três ilhas arredondadas sobre barra transparente; laterais com borda de destaque, centro discreta; workspaces como pílulas que mudam de largura |
+| janelas | borda em gradiente 45° (`base0E` → `base0C`), cantos em 10, blur `size 6 passes 2`, sombra desligada |
+| rofi | 600px de largura, 8 linhas, cantos em 11 |
+
+Três detalhes que valem saber para quem for mexer:
+
+- **O CSS da waybar entra por `lib.mkAfter`.** `programs.waybar.style` é do
+  tipo `lines`, e as definições se concatenam: a nossa precisa vir depois da do
+  stylix para vencer no cascade. Verificado no arquivo gerado — stylix ocupa
+  até a linha 135, o nosso começa na 146.
+- **A borda em gradiente precisa de `mkForce`.** O stylix declara
+  `col.active_border` sem `mkDefault` (`modules/hyprland/hm.nix`); sem forçar,
+  as duas definições colidem. Se ele passar a usar `mkDefault`, o `mkForce`
+  pode sair.
+- **O tema do rofi não pode declarar `"*"`.** É lá que o stylix põe a paleta
+  inteira, e o merge é por chave — definir `"*"` do nosso lado apagaria as
+  cores. Só entram chaves que ele não usa: `window`, `inputbar`, `listview`,
+  `element`.
 
 ---
 

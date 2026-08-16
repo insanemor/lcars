@@ -217,6 +217,25 @@ sem imagem binária no repositório. Para usar a sua:
 lcars.system.theme.wallpaper = ./caminho/para/imagem.png;
 ```
 
+### A forma, separada da cor
+
+Além da paleta, o repo traz a **geometria** do rice de
+[Sly-Harvey/NixOS](https://github.com/Sly-Harvey/NixOS): barra em três ilhas
+arredondadas sobre fundo transparente, workspaces como pílulas, borda de janela
+em gradiente a 45°, cantos em 10 e blur ajustado.
+
+O que foi copiado de lá é só a forma — **nenhum valor de cor**. No repo de
+origem a paleta Catppuccin está fixa em 30 linhas de `@define-color` dentro do
+CSS, e trocar de esquema exige reescrevê-las. Aqui o CSS referencia as
+variáveis que o stylix declara, então mudar `scheme` repinta a barra e a borda
+junto.
+
+Para ficar só com o stylix, sem a geometria:
+
+```nix
+lcars.system.theme.rice = false;
+```
+
 **Conforme o hardware** — em notebook, `tlp` com limite de carga 80–90% e
 suspensão ao fechar a tampa; em VM, virtio, `qemu-guest-agent` e `spice-vdagent`.
 
@@ -246,7 +265,7 @@ A árvore é dividida por **papel**, não por mecanismo do Nix:
 │
 ├── user/           # módulos do Home Manager, opt-in via lcars.user.<módulo>.enable
 │   ├── options.nix # as flags acima — declaradas do lado NixOS, veja abaixo
-│   ├── wm/         # hyprland.nix, waybar.nix, swaync.nix
+│   ├── wm/         # hyprland.nix, waybar.nix, swaync.nix, rofi.nix
 │   ├── shell/      # zsh.nix
 │   ├── app/        # git.nix, direnv.nix, dotfiles.nix
 │   └── personal/   # escape hatch via private.nix em $HOME (sem flag)

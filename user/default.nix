@@ -22,5 +22,6 @@
     ./wm/hyprland.nix
     ./wm/waybar.nix
     ./wm/swaync.nix
+    ./wm/rofi.nix
   ];
 }
