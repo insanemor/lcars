@@ -316,11 +316,51 @@ passar a usar `mkDefault`, o `mkForce` pode sair.
 - Regra polkit para o usuário dono da GUI (`polkitPolicyOwners`)
 - Chave pública do `github.com` pré-registrada em `programs.ssh.knownHosts`, para não haver prompt de host desconhecido no primeiro clone
 - `ssh` do sistema apontando para `~/.1password/agent.sock` via `IdentityAgent`
+- `gpg.ssh.program` do git apontando para o `op-ssh-sign`, quando há chave de assinatura (`user/app/git.nix`)
 - Software proprietário liberado por `allowUnfreePredicate` restrito aos pacotes do 1Password — `allowUnfree` global **não** é ligado
 
 O agente SSH em si é um recurso do aplicativo, ligado em **Settings →
 Developer**. Não existe módulo NixOS para ele; o que o repo faz é apontar o ssh
 para o socket que o app cria.
+
+### O que só pode ser feito à mão
+
+Três cliques que nenhum módulo cobre, e sem os quais o `nsave` não publica:
+ligar *Use the SSH agent* em **Settings → Developer**, ter um item do tipo *SSH
+Key* no cofre, e cadastrar a chave pública em
+[github.com/settings/keys](https://github.com/settings/keys). O `install.sh`
+imprime esses passos ao terminar; o README os detalha.
+
+### `IdentityAgent` depende da GUI, não só do agente
+
+`programs.ssh.extraConfig` é escrito quando `enableSshAgent` **e** `enableGui`
+estão ligados. Quem cria o socket é o app gráfico: numa máquina headless, ou no
+profile `basic`, a linha apontaria para um caminho que nunca vai existir, e todo
+`ssh` da máquina passaria por um agente ausente antes de cair nas chaves do
+disco.
+
+### Assinatura de commits · `user/app/git.nix`
+
+Desligada por padrão — sem `gpgKey` no `settings.nix`, o bloco inteiro sai da
+configuração, em vez de declarar `format = "ssh"` sem chave nenhuma.
+
+Com `gpgKey` preenchido **e** a GUI instalada, entra também:
+
+```
+[gpg "ssh"]
+	program = …/bin/op-ssh-sign
+```
+
+Sem essa linha a assinatura falharia: a chave vive dentro do cofre e nunca vira
+arquivo em disco, e o `ssh-keygen -Y sign` padrão espera um caminho de chave
+privada. Com `enableGui = false` ela não é escrita — aí a chave é de disco e o
+comportamento padrão do git serve.
+
+O aninhamento importa. `programs.git.extraConfig` é tipado como
+`attrsOf (attrsOf (either valor seção))` (home-manager,
+`modules/programs/git.nix:41-49`), então `gpg.ssh.program` em três níveis vira a
+subseção `[gpg "ssh"]`. Escrito como `"gpg.ssh".program`, sairia uma seção de
+nome literal `gpg.ssh` e o git não leria a chave.
 
 ---
 

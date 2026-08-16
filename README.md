@@ -365,9 +365,56 @@ A diferença para o instalador: aqui você escolhe o nome da máquina em vez de 
 
 ## 1Password
 
-No profile `personal`, o CLI e a GUI vêm instalados. Abra `1password`, entre com email ou pareie via QR code, e ligue o agente SSH em **Settings → Developer**. O socket aparece em `~/.1password/agent.sock`, que o `ssh` do sistema já procura via `IdentityAgent`.
+No profile `personal`, o CLI e a GUI vêm instalados, e o `ssh` do sistema já
+está apontado para o socket do agente. **Falta o que só dá para fazer no app** —
+o instalador imprime estes passos ao terminar:
 
-Não existe módulo NixOS para esse agente — ele é um recurso do próprio app. O que o flake faz é apontar o ssh para o socket.
+1. Abra `1password` e entre com email, ou pareie via QR code.
+2. **Settings → Developer** → ligue *Use the SSH agent*. Se ainda não tiver uma
+   chave, crie um item do tipo *SSH Key*.
+3. Copie a chave pública do item e adicione em
+   [github.com/settings/keys](https://github.com/settings/keys).
+
+Teste com:
+
+```bash
+ssh -T git@github.com     # "Hi <você>! You've successfully authenticated"
+```
+
+Não existe módulo NixOS para esse agente — ele é um recurso do próprio app. O
+socket aparece em `~/.1password/agent.sock`, e o que o flake faz é apontar o
+ssh para lá (`IdentityAgent`), além de já trazer a chave do host `github.com`
+para não haver prompt de host desconhecido.
+
+### Por que o remote vira SSH no fim da instalação
+
+O `install.sh` clona por **HTTPS**: numa máquina recém-instalada não existe
+chave SSH nenhuma, e clonar por SSH quebraria antes de tudo. Mas num remote
+HTTPS o git pede usuário e token a cada push, e **o agente do 1Password nunca é
+consultado** — ele só atende `git@github.com`.
+
+Por isso, depois do rebuild, o instalador troca o remote para SSH (derivado do
+remote atual, então o seu fork continua apontando para o seu repositório).
+
+**A consequência:** até você completar os três passos acima, nem `nupdate` nem
+`nsave` conseguem falar com o GitHub — o `git fetch` também passa por ali. Se
+precisar voltar ao HTTPS enquanto isso:
+
+```bash
+git -C ~/.dotfiles remote set-url origin https://github.com/<você>/<repo>.git
+```
+
+### Assinatura de commits
+
+Opcional, e desligada por padrão. Preenchendo `gpgKey` no `settings.nix` com a
+chave **pública**, o git passa a assinar todo commit — e, com a GUI do
+1Password instalada, `gpg.ssh.program` aponta sozinho para o `op-ssh-sign`.
+
+Esse detalhe não é enfeite: a chave vive dentro do cofre e nunca vira arquivo
+em disco, então o `ssh-keygen -Y sign` padrão não a encontraria e todo commit
+falharia. Para o GitHub mostrar os commits como *Verified*, a mesma chave
+precisa estar cadastrada lá **como Signing Key**, não só como Authentication
+Key.
 
 ## Por que 1Password e não um repo privado?
 
