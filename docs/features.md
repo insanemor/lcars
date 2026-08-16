@@ -490,21 +490,32 @@ nsave --no-export           # não roda o export do noctalia
 ```
 
 Na ordem: exporta a configuração do noctalia por cima do arquivo versionado,
-**valida o TOML** (inválido para aqui, antes de qualquer commit), mostra o que
-mudou, espera você confirmar, commita em `main` e publica.
+**valida o TOML** (inválido para aqui, antes de qualquer commit), consulta o
+remoto, mostra o que mudou aqui e o que ainda não subiu, espera você confirmar,
+commita em `main` e publica.
 
-Três decisões que valem saber:
+Quatro decisões que valem saber:
 
 - **`machines/` não é publicado.** É o único diretório que descreve hardware, e
   cada máquina tem o seu — levá-lo junto num comando que roda sem atenção faria
   uma máquina sobrescrever a configuração da outra. Se você mexeu lá, o script
   lista os arquivos e segue sem eles.
+- **Ter o que commitar e ter o que publicar são coisas diferentes.** Um commit
+  feito à mão deixa a árvore limpa e o remoto desatualizado ao mesmo tempo; o
+  `nsave` publica esse commit sem criar um vazio por cima. A primeira versão
+  olhava só a árvore e saía dizendo que estava tudo em dia sem ter consultado o
+  remoto ([#31](https://github.com/insanemor/lcars/issues/31)) — por isso o
+  `fetch` acontece antes de decidir se há trabalho.
 - **Conflito não é adivinhado.** Se o remoto estiver à frente, ele rebaseia; se
   o rebase parar, desfaz o rebase e sai explicando, com o seu commit intacto e
   nada pela metade. Ao contrário do `nupdate`, aqui não há lado que sempre
   vence — os dois são trabalho seu.
 - **Ele não aplica nada.** Publicar e aplicar são coisas diferentes; aplicar é
   o `nupdate`.
+
+Sem rede, ou com o SSH ainda por configurar, o `fetch` falha — e aí ele avisa e
+segue com a referência em cache, em vez de abortar. Dá para commitar offline; o
+`push` é que vai falhar no fim.
 
 Se o noctalia não estiver no PATH, o script avisa e segue sem exportar — o que
 o torna útil para publicar qualquer ajuste feito na máquina, não só o do shell.

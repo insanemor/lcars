@@ -16,9 +16,16 @@
 # A sequência:
 #   1. exporta a configuração do noctalia por cima do arquivo versionado
 #   2. valida o TOML — inválido para aqui, antes de qualquer commit
-#   3. mostra o que mudou e espera você confirmar
-#   4. commita em main
-#   5. rebaseia sobre o remoto, se ele estiver à frente, e publica
+#   3. consulta o remoto e mostra o que mudou aqui e o que ainda não subiu
+#   4. espera você confirmar
+#   5. commita em main, se houver arquivo alterado
+#   6. rebaseia sobre o remoto, se ele estiver à frente, e publica
+#
+# DUAS COISAS DIFERENTES: ter o que commitar e ter o que publicar. Um commit
+# feito à mão deixa a árvore limpa e o remoto desatualizado ao mesmo tempo, e a
+# primeira versão olhava só a árvore — saía dizendo que estava tudo publicado
+# sem ter consultado o remoto, e o commit ficava para trás (#31). Por isso o
+# fetch acontece antes de decidir se há trabalho, e não junto do push.
 #
 # POR QUE ELE EXISTE: sem ele, publicar um ajuste do noctalia é lembrar de
 # quatro comandos na ordem certa, e a ordem errada custa o trabalho. O
@@ -51,7 +58,7 @@ while [[ $# -gt 0 ]]; do
     -n|--dry-run)   DRY=yes; shift ;;
     -y|--yes)       ASSUME=yes; shift ;;
     --no-export)    EXPORT=no; shift ;;
-    -h|--help)      sed -n '2,36p' "$0" | sed 's/^# \?//'; exit 0 ;;
+    -h|--help)      sed -n '2,43p' "$0" | sed 's/^# \?//'; exit 0 ;;
     *) printf 'opção desconhecida: %s (use --help)\n' "$1" >&2; exit 2 ;;
   esac
 done
@@ -145,20 +152,52 @@ if [[ ${#ficar[@]} -gt 0 ]]; then
   printf '      %s\n' "${ficar[@]}"
 fi
 
-if [[ ${#levar[@]} -eq 0 ]]; then
+# O fetch vem ANTES de decidir se há trabalho, e não junto do push.
+#
+# Ter o que commitar e ter o que publicar são coisas diferentes: um commit feito
+# à mão deixa a árvore limpa e o remoto desatualizado ao mesmo tempo. A versão
+# anterior olhava só a árvore e saía dizendo "o repositório já reflete esta
+# máquina" — afirmação que ela não tinha como fazer, porque nem havia consultado
+# o remoto. O commit ficava para trás em silêncio (#31).
+#
+# Falhar aqui não aborta: sem rede, ou com o SSH ainda por configurar, ainda dá
+# para commitar. A conta de pendentes sai da referência em cache, que pode estar
+# velha — e é por isso que o aviso diz isso em vez de fingir precisão.
+step "consultando origin/$BRANCH"
+if git fetch --quiet origin "$BRANCH" 2>/dev/null; then
+  ok "atualizado"
+else
+  note "não consegui falar com o remoto — seguindo com o que está em cache"
+fi
+
+pendentes=$(git rev-list --count "origin/$BRANCH..HEAD" 2>/dev/null || echo 0)
+
+if [[ ${#levar[@]} -eq 0 && "$pendentes" -eq 0 ]]; then
   printf '\n'
-  ok "nada para publicar — o repositório já reflete esta máquina"
+  ok "nada a fazer — nenhuma alteração aqui, nenhum commit por publicar"
   exit 0
 fi
 
-printf '\n'
-printf '    %s\n' "${levar[@]}"
-printf '\n'
-# --stat sobre os rastreados; os novos não aparecem no diff e já foram listados
-# acima pelo nome.
-git --no-pager diff --stat -- "${levar[@]}" | sed 's/^/    /' || true
-printf '\n'
-git --no-pager diff -- "${levar[@]}" | sed 's/^/    /' || true
+if [[ ${#levar[@]} -eq 0 ]]; then
+  printf '\n'
+  note "nenhum arquivo alterado, mas há $pendentes commit(s) daqui ainda fora do remoto:"
+  git --no-pager log --oneline "origin/$BRANCH..HEAD" | sed 's/^/      /'
+else
+  printf '\n'
+  printf '    %s\n' "${levar[@]}"
+  printf '\n'
+  # --stat sobre os rastreados; os novos não aparecem no diff e já foram listados
+  # acima pelo nome.
+  git --no-pager diff --stat -- "${levar[@]}" | sed 's/^/    /' || true
+  printf '\n'
+  git --no-pager diff -- "${levar[@]}" | sed 's/^/    /' || true
+
+  if [[ "$pendentes" -gt 0 ]]; then
+    printf '\n'
+    note "e $pendentes commit(s) anterior(es) que também vão junto:"
+    git --no-pager log --oneline "origin/$BRANCH..HEAD" | sed 's/^/      /'
+  fi
+fi
 
 # --- 4. confirmar -----------------------------------------------------
 if [[ "$DRY" == "yes" ]]; then
@@ -173,22 +212,28 @@ if [[ "$ASSUME" != "yes" ]]; then
   read -r -p "publicar em $BRANCH? [s/N] " resposta
   case "$resposta" in
     s|S|sim|SIM) ;;
-    *) note "cancelado — o que você exportou continua no disco"; exit 0 ;;
+    # Nada é desfeito: o que foi exportado continua no disco e os commits que
+    # já existiam continuam onde estavam. Cancelar aqui só não publica.
+    *) note "cancelado — nada foi commitado nem publicado"; exit 0 ;;
   esac
 fi
 
 # --- 5. commitar ------------------------------------------------------
-HOST="$(hostname)"
-[[ -n "$MSG" ]] || MSG="config: ajustes feitos em $HOST"
+# Só quando há arquivo alterado. Com a árvore limpa e commits pendentes, o
+# trabalho já está commitado e só falta publicá-lo — forçar um commit aqui
+# criaria um vazio.
+if [[ ${#levar[@]} -gt 0 ]]; then
+  HOST="$(hostname)"
+  [[ -n "$MSG" ]] || MSG="config: ajustes feitos em $HOST"
 
-step "commitando"
-git add -- "${levar[@]}"
-git commit -q -m "$MSG"
-ok "$(git --no-pager log --oneline -1)"
+  step "commitando"
+  git add -- "${levar[@]}"
+  git commit -q -m "$MSG"
+  ok "$(git --no-pager log --oneline -1)"
+fi
 
 # --- 6. publicar ------------------------------------------------------
 step "publicando em origin/$BRANCH"
-git fetch --quiet origin "$BRANCH"
 
 if ! git merge-base --is-ancestor "origin/$BRANCH" HEAD; then
   note "o remoto está à frente — rebaseando o seu commit por cima"
