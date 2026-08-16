@@ -109,6 +109,20 @@ lib.mkIf osConfig.lcars.user.hyprland.enable {
         ];
       };
 
+      # --- fundo, sem daemon ---------------------------------------------
+      # `misc.background_color` NÃO é declarado aqui: o stylix já o define a
+      # partir de base00 (modules/hyprland/hm.nix), no formato rgb() que o
+      # Hyprland espera.
+      #
+      # As duas linhas abaixo, sim. O stylix só liga `disable_hyprland_logo`
+      # quando o hyprpaper está habilitado — e nós o desligamos no caso padrão
+      # (veja services.hyprpaper mais abaixo). Sem elas, o logo do Hyprland
+      # ficaria desenhado por cima da cor de fundo.
+      misc = {
+        disable_hyprland_logo = true;
+        force_default_wallpaper = 0;
+      };
+
       input = {
         # Vem do mesmo lugar que o console e o SDDM: um layout só para a
         # máquina inteira, definido em system/hardware/keyboard.nix.
@@ -181,6 +195,7 @@ lib.mkIf osConfig.lcars.user.hyprland.enable {
 
   # O terminal não vem com o Hyprland, e sem ele não há como se recuperar de
   # nada dentro da sessão.
+  #
   # O rofi NÃO está aqui: quem o instala é user/wm/rofi.nix, via programs.rofi.
   # Pôr nos dois lugares daria duas cópias no PATH, e a do home.packages não
   # teria a configuração.

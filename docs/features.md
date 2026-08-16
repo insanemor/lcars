@@ -208,7 +208,7 @@ waybar, rofi, kitty, swaync, hyprlock, GTK, Qt, Plasma e o console TTY**.
 |---|---|---|
 | `scheme` | `"catppuccin-mocha"` | nome de um esquema do pacote `base16-schemes` |
 | `polarity` | `"dark"` | diz aos programas se o esquema é claro ou escuro |
-| `wallpaper` | `null` | `null` gera um gradiente das cores do esquema |
+| `wallpaper` | `null` | `null` = cor sólida pintada pelo compositor, **sem daemon**; uma imagem liga o hyprpaper |
 | `fonts.monospace` | `"JetBrainsMono Nerd Font"` | Nerd Font porque a barra usa ícones que só existem nelas |
 | `fonts.size` | `11` | corpo da fonte de interface |
 | `rice` | `true` | a **geometria** do rice: ilhas, gradiente, cantos. `false` deixa a forma padrão de cada programa, ainda pintada pelo esquema |
@@ -223,9 +223,29 @@ programa — 17 arquivos `.rasi` só para o rofi, CSS próprio para a barra, 218
 arquivos ao todo em `desktop/hyprland`. Aqui, trocar de esquema é uma linha, e
 nenhum programa fica para trás.
 
-O papel de parede é gerado das cores do esquema em vez de versionado: o repo de
-referência carrega 18 imagens; um gradiente derivado da paleta dá fundo
-coerente sem binário no diff.
+### O papel de parede, e por que ele é uma cor
+
+Sem `wallpaper` definido, **não há daemon de papel de parede**. O fundo do
+Hyprland é `misc.background_color`, que o stylix deriva de `base00` e o
+compositor pinta sozinho.
+
+Isso não é economia de código, é robustez: o `hyprpaper` carrega a imagem como
+textura por EGL/OpenGL, e numa VM QEMU sem GPU ele **segfaultava**
+(`Signal: 11 (SEGV)`, com `libdrm_intel` e `libxcb-dri3` no coredump). Um
+daemon com pilha gráfica para desenhar um fundo chapado é desproporcional, e
+era a única peça do desktop que não sobrevivia à VM.
+
+Apontar `wallpaper` para uma imagem religa o hyprpaper — quem quer ver uma foto
+aceita o custo:
+
+```nix
+lcars.system.theme.wallpaper = ./caminho/imagem.png;
+```
+
+Houve aqui um gradiente gerado com ImageMagick a partir do esquema. Saiu junto
+com o daemon: entre `base00` e `base01` a diferença para a cor sólida é
+imperceptível, e não pagava a dependência de build nem a superfície de falha.
+O repo de referência versiona 18 imagens; este continua sem nenhuma.
 
 ### A forma, com `rice = true`
 

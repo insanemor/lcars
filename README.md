@@ -227,8 +227,11 @@ lcars.system.theme.polarity = "dark";
 
 Os nomes disponíveis saem de `ls $(nix eval --raw nixpkgs#base16-schemes)/share/themes/`.
 
-O papel de parede é **gerado a partir das cores do esquema** — um gradiente,
-sem imagem binária no repositório. Para usar a sua:
+**Não há papel de parede por padrão** — o fundo é uma cor sólida derivada do
+esquema, pintada pelo próprio compositor. É deliberado: o daemon de papel de
+parede carrega a imagem por OpenGL e não sobrevive a uma VM sem aceleração 3D.
+
+Para usar uma imagem, aí sim com daemon:
 
 ```nix
 lcars.system.theme.wallpaper = ./caminho/para/imagem.png;
