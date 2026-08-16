@@ -552,6 +552,14 @@ Quatro decisões que valem saber:
   cada máquina tem o seu — levá-lo junto num comando que roda sem atenção faria
   uma máquina sobrescrever a configuração da outra. Se você mexeu lá, o script
   lista os arquivos e segue sem eles.
+
+  O commit usa `--only` com os caminhos, e não é detalhe: **o index deste
+  repositório nunca está limpo.** O `nupdate` faz `git add -f machines/<host>`
+  a cada execução, porque flakes só leem arquivos rastreados — então um
+  `git commit` seco levaria a máquina junto, que foi o que aconteceu na
+  [#33](https://github.com/insanemor/lcars/issues/33). Vale para você também:
+  um `git commit -m` à mão dentro de `~/.dotfiles` carrega `machines/` sem
+  avisar. Use `git commit -- <arquivo>`.
 - **Ter o que commitar e ter o que publicar são coisas diferentes.** Um commit
   feito à mão deixa a árvore limpa e o remoto desatualizado ao mesmo tempo; o
   `nsave` publica esse commit sem criar um vazio por cima. A primeira versão

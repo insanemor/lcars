@@ -20,7 +20,12 @@ model_name=${model_name:-nixos}
 # Passo 3: Definir o diretório de destino
 destination="$HOME/.dotfiles/machines/$model_name"
 # Passo 4: Criar a máquina a partir do template (traz o default.nix que o flake importa)
-cp -r ~/.dotfiles/machines/template "$destination"
+#
+# `-T` (--no-target-directory) porque `cp -r origem destino` copia PARA DENTRO
+# quando o destino já existe — e aí sai machines/<host>/template/, uma cópia
+# inútil que ninguém importa e que depois viaja junto em algum commit (#33).
+# Acontece na segunda execução do instalador, ou se o diretório já existia.
+cp -rT ~/.dotfiles/machines/template "$destination"
 # Generate hardware config for new system
 # O redirecionamento é feito por você, não pelo sudo — e é o que queremos: o
 # arquivo nasce com o seu dono, não do root. (SC2024)

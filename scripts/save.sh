@@ -227,8 +227,19 @@ if [[ ${#levar[@]} -gt 0 ]]; then
   [[ -n "$MSG" ]] || MSG="config: ajustes feitos em $HOST"
 
   step "commitando"
+
+  # `--only` com os caminhos, e não `git commit` seco.
+  #
+  # Sem isso o commit leva o INDEX INTEIRO, e o index nunca está limpo aqui: o
+  # nupdate faz `git add -f machines/$HOST` toda vez (update.sh:121), porque
+  # flakes só leem arquivos rastreados. O resultado foi um commit publicando o
+  # diretório da máquina — que este mesmo script tinha acabado de listar como
+  # "não publicado" (#33). O filtro valia para a tela e não para o git, que é o
+  # pior lugar para uma mensagem estar errada.
+  #
+  # Com `--only`, o que ficou de fora continua staged e intacto.
   git add -- "${levar[@]}"
-  git commit -q -m "$MSG"
+  git commit -q --only -m "$MSG" -- "${levar[@]}"
   ok "$(git --no-pager log --oneline -1)"
 fi
 
