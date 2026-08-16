@@ -77,15 +77,48 @@ in
       polkitPolicyOwners = [ cfg.polkitOwner ];
     };
 
-    # Hosts do GitHub conhecidos — evita prompts MITM na primeira vez.
+    # Chaves de host do GitHub — dispensam o "quer confiar neste host?" do
+    # primeiro clone, e recusam um host que não seja o GitHub de verdade.
     #
-    # As aspas em "github.com" não são estilo: sem elas o ponto é lido como
-    # caminho de atributo, e o Nix procura a option
-    # `programs.ssh.knownHosts.github.com` (github → com), que não existe.
+    # NUNCA ESCREVA ESTAS CHAVES DE MEMÓRIA. A primeira versão deste bloco
+    # tinha uma ED25519 inventada, com o prefixo certo e o final fabricado
+    # (#30). Ela não expôs ninguém — a verificação falha fechada, recusando a
+    # conexão —, mas quebrou todo SSH para o GitHub, e de um jeito circular: o
+    # `nupdate` não conseguia trazer a correção porque o `git fetch` depende
+    # justamente do que estava quebrado.
+    #
+    # As três abaixo vieram de `ssh-keyscan`, e as fingerprints foram
+    # conferidas contra as que o GitHub publica em
+    # docs.github.com/authentication/keeping-your-account-secure/githubs-ssh-key-fingerprints
+    #
+    # Para reconferir a qualquer momento:
+    #
+    #     ssh-keyscan -t rsa,ecdsa,ed25519 github.com | ssh-keygen -lf -
+    #
+    #     3072 SHA256:uNiVztksCsDhcc0u9e8BujQXVUpKZIDTMczCvj3tD2s (RSA)
+    #      256 SHA256:p2QAMXNIC1TJYWeIOttrVc98/R1BUFWu3/LiyKgUfQM (ECDSA)
+    #      256 SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU (ED25519)
+    #
+    # As três, e não só a ED25519: quem decide o algoritmo é a negociação entre
+    # cliente e servidor, e com uma só no arquivo um cliente que escolha outra
+    # cai no mesmo "REMOTE HOST IDENTIFICATION HAS CHANGED".
+    #
+    # O nome do atributo é só um rótulo — quem casa com o host é `hostNames`,
+    # e é por isso que as três podem apontar para github.com. As aspas em
+    # "github.com" ali dentro não são estilo: sem elas o ponto viraria caminho
+    # de atributo.
     programs.ssh.knownHosts = {
-      "github.com" = {
+      "github.com-ed25519" = {
         hostNames = [ "github.com" ];
-        publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLvab/yH7LoQwSAvAfvxl0g0";
+        publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
+      };
+      "github.com-ecdsa" = {
+        hostNames = [ "github.com" ];
+        publicKey = "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=";
+      };
+      "github.com-rsa" = {
+        hostNames = [ "github.com" ];
+        publicKey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCj7ndNxQowgcQnjshcLrqPEiiphnt+VTTvDP6mHBL9j1aNUkY4Ue1gvwnGLVlOhGeYrnZaMgRK6+PKCUXaDbC7qtbW8gIkhL7aGCsOr/C56SJMy/BCZfxd1nWzAOxSDPgVsmerOBYfNqltV9/hWCqBywINIR+5dIg6JTJ72pcEpEjcYgXkE2YEFXV1JHnsKgbLWNlhScqb2UmyRkQyytRLtL+38TGxkxCflmO+5Z8CSSNY7GidjMIZ7Q4zMjA2n1nGrlTDkzwDCsw+wqFPGQA179cnfGWOWRVruj16z6XyvxvjJwbz0wQZ75XK5tKSb7FNyeIEs4TT4jk+S4dhPeAUC5y+bDYirYgM4GC7uEnztnZyaVWQ7B381AK4Qdrwt51ZqExKbQpTUNn+EjqoTwvqNj4kqx5QUCI0ThS/YkOxJCXmPUWZbhjpCg56i+2aB6CmK2JGhn57K5mj0MNdBXA4/WnwH6XoPWJzK5Nyu2zB3nAZp+S5hpQs+p1vN1/wsjk=";
       };
     };
 
