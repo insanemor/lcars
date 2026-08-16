@@ -1,14 +1,14 @@
 # system/theme — a cor de tudo, a partir de um lugar só.
 #
 # Por que isto não fica em system/wm/: tema é transversal. Um esquema base16
-# pinta o Hyprland, a waybar, o rofi, o terminal, os aplicativos GTK e Qt, o
+# pinta o Hyprland, o noctalia, o terminal, os aplicativos GTK e Qt, o
 # Plasma e até o console TTY. Amarrá-lo a um ambiente gráfico faria a cor do
 # console depender de qual desktop está ligado, o que não faz sentido.
 #
 # O caminho alternativo, que este módulo evita
 # --------------------------------------------
 # O repo que serviu de referência (github.com/Sly-Harvey/NixOS, MIT) fia a cor
-# à mão em cada programa: 17 paletas .rasi só para o rofi, CSS próprio para a
+# à mão em cada programa: 17 paletas .rasi só para o launcher, CSS próprio para a
 # barra, e assim por diante — 218 arquivos em desktop/hyprland. Funciona, mas
 # cada programa novo é mais um arquivo de cor para manter em sincronia.
 #
@@ -76,9 +76,12 @@ in
       type = types.bool;
       default = true;
       description = ''
-        Aplica a geometria do rice: barra em ilhas arredondadas, borda de
-        janela em gradiente, cantos e blur ajustados. Desligar deixa o visual
-        padrão de cada programa, ainda pintado pelo esquema.
+        Aplica a geometria do rice às janelas do Hyprland: borda em
+        gradiente, cantos arredondados, blur e sombra ajustados. Desligar
+        deixa o visual padrão, ainda pintado pelo esquema.
+
+        A forma da barra e dos painéis não passa por aqui: quem a define é o
+        noctalia, pelo próprio arquivo de configuração (user/wm).
 
         Inspirado em github.com/Sly-Harvey/NixOS (MIT) — de lá vêm as formas;
         as cores continuam saindo do esquema base16 acima.
@@ -97,7 +100,7 @@ in
         default = "JetBrainsMono Nerd Font";
         description = ''
           Fonte do terminal e do editor. Uma Nerd Font por padrão porque a
-          waybar e o prompt usam ícones que só existem nelas — com uma fonte
+          a barra e o prompt usam ícones que só existem nelas — com uma fonte
           comum, aparecem quadradinhos vazios.
         '';
       };

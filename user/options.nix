@@ -39,8 +39,6 @@
 
     hyprland.enable = lib.mkEnableOption "a configuração do Hyprland — atalhos, regras de janela e o que sobe com a sessão (o compositor é lcars.system.wm.hyprland)";
 
-    waybar.enable = lib.mkEnableOption "a barra do Hyprland — layout dos módulos; a cor vem de lcars.system.theme";
-
-    swaync.enable = lib.mkEnableOption "o servidor de notificações; sem ele nada avisa bateria fraca nem download concluído";
+    noctalia.enable = lib.mkEnableOption "o shell do desktop — barra, launcher, notificações, lock e dock numa peça só; substitui waybar, rofi e swaync";
   };
 }

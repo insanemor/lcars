@@ -1,0 +1,39 @@
+# Configuração do noctalia — a sua, versionada.
+#
+# COMO ATUALIZAR ESTE ARQUIVO
+#
+#   1. Ajuste o que quiser no centro de controle do noctalia
+#   2. Exporte por cima deste arquivo:
+#
+#        noctalia config export merged > ~/.dotfiles/user/wm/noctalia-config.toml
+#
+#   3. Confira o diff e aplique:
+#
+#        cd ~/.dotfiles && git diff
+#        nupdate
+#
+# Sem o passo 2, o que você ajustou vive só no state-dir desta máquina e some
+# num clone novo.
+#
+# O QUE NÃO ADIANTA MEXER AQUI
+#
+# Paleta, fonte, modo claro/escuro, papel de parede e as três opacidades são
+# escritos pelo stylix, a partir de `lcars.system.theme`. Esses oito caminhos
+# são *removidos* deste arquivo na leitura (a lista está em
+# user/wm/noctalia.nix) — por isso o `export merged` acima pode despejar a
+# configuração inteira sem colidir com o stylix, mas também por isso mudar cor
+# ou fonte pela GUI não gruda. Para trocar cor, troque
+# `lcars.system.theme.scheme`; para trocar a fonte, `lcars.system.theme.fonts`.
+#
+# O arquivo começa quase vazio de propósito: o que não está aqui usa o default
+# do noctalia, e um despejo de centenas de linhas de defaults tornaria
+# ilegível o diff da primeira coisa que você mudar.
+
+[shell]
+# Mostra as opções avançadas no painel de configuração — sem isso, boa parte
+# do que dá para ajustar fica escondida.
+settings_show_advanced = true
+
+# O agente polkit já vem do Hyprland (system/wm/hyprland.nix). Dois agentes
+# disputando o mesmo serviço é conflito, não redundância.
+polkit_agent = false

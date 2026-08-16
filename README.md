@@ -162,10 +162,12 @@ autosuggestion, syntax highlighting e histórico compartilhado; git com aliases
 e `pull.rebase`; direnv com nix-direnv; e o gancho para puxar dotfiles de itens
 Document do 1Password.
 
-**No profile `personal`** — KDE Plasma 6 **e Hyprland** com SDDM, áudio PipeWire, fontes
-Noto/Liberation/DejaVu, 1Password (CLI + GUI + agente SSH), e `ripgrep`, `fd`,
-`bat`, `eza`. O Plasma vem "puro", sem aplicativos extras — **inclusive sem
-navegador**; acrescente o seu em `userSettings.packages`.
+**No profile `personal`** — KDE Plasma 6 **e Hyprland** com SDDM, o shell
+[noctalia](https://github.com/noctalia-dev/noctalia-shell) sobre o Hyprland,
+áudio PipeWire, fontes Noto/Liberation/DejaVu, 1Password (CLI + GUI + agente
+SSH), e `ripgrep`, `fd`, `bat`, `eza`. O Plasma vem "puro", sem aplicativos
+extras — **inclusive sem navegador**; acrescente o seu em
+`userSettings.packages`.
 
 O áudio é flag separada (`lcars.system.hardware.audio.enable`), não parte do
 desktop: dá para ter som sem KDE. O teclado também é módulo próprio, ligado
@@ -200,22 +202,36 @@ tela de login.
 | Atalho | O que faz |
 |---|---|
 | `SUPER+Enter` | terminal (kitty) |
-| `SUPER+D` | lançador (rofi) |
-| `SUPER+N` | painel de notificações |
+| `SUPER+D` | lançador |
+| `SUPER+N` | notificações |
+| `SUPER+C` | centro de controle |
+| `SUPER+V` | histórico da área de transferência |
+| `SUPER+ESC` | menu de sessão |
 | `SUPER+Q` | fecha a janela |
 | `SUPER+SHIFT+E` | sai da sessão |
-| `SUPER+F` / `SUPER+V` | tela cheia / flutuante |
+| `SUPER+F` | tela cheia |
 | `SUPER+setas` ou `hjkl` | move o foco |
 | `SUPER+1…9` | troca de workspace (com `SHIFT`, leva a janela) |
 | `SUPER+SHIFT+S` | captura de região para a área de transferência |
 | `SUPER+botão esq/dir` | arrasta / redimensiona a janela |
 
+Barra, lançador, notificações, centro de controle e menu de sessão são painéis
+do **noctalia**, um shell só no lugar de waybar + rofi + swaync. Ele tem centro
+de controle gráfico, e o que você ajustar ali dá para versionar:
+
+```bash
+noctalia config export merged > ~/.dotfiles/user/wm/noctalia-config.toml
+cd ~/.dotfiles && git diff && nupdate
+```
+
+Detalhes em [docs/features.md](./docs/features.md#o-ciclo-gui--export--commit).
+
 ### Um esquema de cores para tudo
 
 O tema não é configurado programa por programa. Um esquema
 [base16](https://github.com/tinted-theming/schemes) é declarado uma vez e o
-[stylix](https://github.com/danth/stylix) o aplica em Hyprland, waybar, rofi,
-kitty, notificações, GTK, Qt, Plasma e no console TTY.
+[stylix](https://github.com/danth/stylix) o aplica em Hyprland, noctalia,
+kitty, GTK, Qt, Plasma e no console TTY.
 
 Padrão: **Catppuccin Mocha**, escuro. Para trocar:
 
@@ -285,7 +301,7 @@ A árvore é dividida por **papel**, não por mecanismo do Nix:
 │
 ├── user/           # módulos do Home Manager, opt-in via lcars.user.<módulo>.enable
 │   ├── options.nix # as flags acima — declaradas do lado NixOS, veja abaixo
-│   ├── wm/         # hyprland.nix, waybar.nix, swaync.nix, rofi.nix
+│   ├── wm/         # hyprland.nix, noctalia.nix (+ noctalia-config.toml)
 │   ├── shell/      # zsh.nix
 │   ├── app/        # git.nix, direnv.nix, dotfiles.nix
 │   └── personal/   # escape hatch via private.nix em $HOME (sem flag)

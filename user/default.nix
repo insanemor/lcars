@@ -20,8 +20,6 @@
     ./app/direnv.nix
     ./app/dotfiles.nix
     ./wm/hyprland.nix
-    ./wm/waybar.nix
-    ./wm/swaync.nix
-    ./wm/rofi.nix
+    ./wm/noctalia.nix
   ];
 }

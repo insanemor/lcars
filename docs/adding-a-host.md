@@ -29,7 +29,7 @@ caminho do arquivo:
 | `lcars.system.hardware.audio.enable` | `system/hardware/audio.nix` |
 | `lcars.system.wm.hyprland.enable` | `system/wm/hyprland.nix` |
 | `lcars.user.hyprland.enable` | `user/wm/hyprland.nix` |
-| `lcars.user.waybar.enable` | `user/wm/waybar.nix` |
+| `lcars.user.noctalia.enable` | `user/wm/noctalia.nix` |
 | `lcars.system.theme.enable` | `system/theme/default.nix` |
 | `lcars.user.direnv.enable` | `user/app/direnv.nix` |
 | `lcars.user.dotfiles.enable` | `user/app/dotfiles.nix` |

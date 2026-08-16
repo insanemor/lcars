@@ -52,7 +52,6 @@ with lib;
     lcars.user.direnv.enable = mkDefault true;
     lcars.user.dotfiles.enable = mkDefault true;
     lcars.user.hyprland.enable = mkDefault true;
-    lcars.user.waybar.enable = mkDefault true;
-    lcars.user.swaync.enable = mkDefault true;
+    lcars.user.noctalia.enable = mkDefault true;
   };
 }
