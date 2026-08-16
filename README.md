@@ -404,6 +404,45 @@ precisar voltar ao HTTPS enquanto isso:
 git -C ~/.dotfiles remote set-url origin https://github.com/<você>/<repo>.git
 ```
 
+### Se o SSH falhar com "REMOTE HOST IDENTIFICATION HAS CHANGED"
+
+```
+@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @
+Offending ED25519 key in /etc/ssh/ssh_known_hosts:1
+Host key verification failed.
+```
+
+Quer dizer que a chave de host gravada não bate com a que o GitHub apresentou.
+Antes de qualquer coisa, **confira a fingerprint que apareceu na tela** contra as
+[publicadas pelo GitHub](https://docs.github.com/authentication/keeping-your-account-secure/githubs-ssh-key-fingerprints):
+
+```
+3072 SHA256:uNiVztksCsDhcc0u9e8BujQXVUpKZIDTMczCvj3tD2s (RSA)
+ 256 SHA256:p2QAMXNIC1TJYWeIOttrVc98/R1BUFWu3/LiyKgUfQM (ECDSA)
+ 256 SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU (ED25519)
+```
+
+Se **não** bater com nenhuma, pare: aí o aviso está certo e alguém está no meio
+do caminho.
+
+Se bater, é o repositório que está desatualizado — as chaves ficam em
+`system/app/1password/default.nix`, e o `/etc/ssh/ssh_known_hosts` é gerado a
+partir delas. A saída tem um nó: o `nupdate` traria a correção, mas ele precisa
+de `git fetch`, que passa pelo SSH que está quebrado. Contorne por HTTPS:
+
+```bash
+git -C ~/.dotfiles remote set-url origin https://github.com/<você>/<repo>.git
+nupdate
+git -C ~/.dotfiles remote set-url origin git@github.com:<você>/<repo>.git
+ssh -T git@github.com
+```
+
+Foi exatamente o que aconteceu na
+[#30](https://github.com/insanemor/lcars/issues/30): a chave ED25519 do
+repositório estava errada. A verificação falhou fechada — recusou a conexão em
+vez de aceitar um host não verificado —, mas travou o acesso ao GitHub por
+completo.
+
 ### Assinatura de commits
 
 Opcional, e desligada por padrão. Preenchendo `gpgKey` no `settings.nix` com a

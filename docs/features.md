@@ -314,7 +314,7 @@ passar a usar `mkDefault`, o `mkForce` pode sair.
 
 - **CLI** (`op`) e **GUI**, ambos com o wrapper e os grupos que o NixOS exige
 - Regra polkit para o usuário dono da GUI (`polkitPolicyOwners`)
-- Chave pública do `github.com` pré-registrada em `programs.ssh.knownHosts`, para não haver prompt de host desconhecido no primeiro clone
+- As **três** chaves de host do `github.com` (RSA, ECDSA, ED25519) em `programs.ssh.knownHosts`, para não haver prompt de host desconhecido no primeiro clone — e para recusar quem não for o GitHub
 - `ssh` do sistema apontando para `~/.1password/agent.sock` via `IdentityAgent`
 - `gpg.ssh.program` do git apontando para o `op-ssh-sign`, quando há chave de assinatura (`user/app/git.nix`)
 - Software proprietário liberado por `allowUnfreePredicate` restrito aos pacotes do 1Password — `allowUnfree` global **não** é ligado
@@ -322,6 +322,21 @@ passar a usar `mkDefault`, o `mkForce` pode sair.
 O agente SSH em si é um recurso do aplicativo, ligado em **Settings →
 Developer**. Não existe módulo NixOS para ele; o que o repo faz é apontar o ssh
 para o socket que o app cria.
+
+### Por que três chaves, e não uma
+
+Quem escolhe o algoritmo é a negociação entre cliente e servidor. Com só a
+ED25519 no arquivo, um cliente que negocie RSA cai em
+`REMOTE HOST IDENTIFICATION HAS CHANGED` — o mesmo erro de uma chave errada.
+
+E elas **não se escrevem de memória**. A primeira versão deste bloco tinha uma
+ED25519 inventada, com o prefixo correto e o final fabricado
+([#30](https://github.com/insanemor/lcars/issues/30)). O efeito foi curioso: a
+verificação falhou *fechada* — recusou a conexão em vez de aceitar um host não
+verificado, que é o comportamento seguro — mas quebrou todo SSH para o GitHub, e
+de forma circular, porque o `nupdate` precisa de `git fetch` para trazer a
+própria correção. O comentário no módulo traz o comando de reconferência e as
+fingerprints publicadas; o README traz a saída do impasse.
 
 ### O que só pode ser feito à mão
 
