@@ -63,6 +63,27 @@ HOST="$(hostname)"
 
 # --- 1. sincronizar ---------------------------------------------------
 step "sincronizando $REPO com o repositório"
+
+# Versões anteriores deste script rodavam `sudo nixos-rebuild`, e o Nix como
+# root escrevia em .git/objects — deixando objetos com dono root dentro de um
+# repositório seu. O sintoma só aparece depois, num fetch que precise escrever:
+#
+#   error: insufficient permission for adding an object to repository database
+#
+# Detectamos antes para a mensagem fazer sentido. Não corrigimos sozinhos: um
+# `chown -R` recursivo é invasivo demais para um comando que roda sem pedir
+# confirmação.
+if find .git -maxdepth 3 ! -user "$(id -un)" -print -quit 2>/dev/null | grep -q .; then
+  printf '\n'
+  die "há arquivos do root dentro de $REPO/.git — o git não consegue escrever.
+    Isso é resíduo de versões antigas deste script, que rodavam o rebuild
+    como root. Uma vez só, rode:
+
+        sudo chown -R \"\$USER\" $REPO
+
+    e chame o nupdate de novo."
+fi
+
 git fetch --quiet origin "$BRANCH"
 
 antes="$(git rev-parse HEAD)"
@@ -127,8 +148,21 @@ if [[ "$CHECK" == "yes" && -x ./scripts/check.sh ]]; then
 fi
 
 # --- 4. aplicar -------------------------------------------------------
+# NÃO use `sudo nixos-rebuild`. Um flake git+file:// faz o Nix ler a árvore
+# pelo git, e sob sudo quem faz isso é o root — que escreve em .git/objects e
+# deixa os objetos com dono dele. Enquanto só há leitura ninguém nota; no
+# primeiro `git fetch` que traga objetos novos, o git para com
+# "insufficient permission for adding an object to repository database".
+#
+# `--elevate=sudo` inverte: a avaliação e o build rodam como você, e o root só
+# entra na ativação, que não toca no repositório. O nome antigo
+# (--use-remote-sudo) ainda funciona e serve de reserva em versões mais velhas.
 step "nixos-rebuild switch --flake .#$HOST"
-sudo nixos-rebuild switch --flake ".#$HOST"
+if nixos-rebuild --help 2>&1 | grep -q -- --elevate; then
+  nixos-rebuild switch --flake ".#$HOST" --elevate=sudo
+else
+  nixos-rebuild switch --flake ".#$HOST" --use-remote-sudo
+fi
 
 printf '\n'
 ok "pronto — $HOST atualizada"

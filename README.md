@@ -33,7 +33,7 @@ Ao final, o usuário fica com a senha inicial `lcars`. **Troque com `passwd` no 
 O diretório criado em `machines/` recebe o modelo relatado pelo DMI — `20BE0048BR`, `MS-7C56`, `OptiPlex-7070`. Como o `flake.nix` deriva `networking.hostName` do nome do diretório, é também assim que a máquina passa a se chamar, e é o alvo do rebuild:
 
 ```bash
-sudo nixos-rebuild switch --flake ~/.dotfiles#20BE0048BR
+nixos-rebuild switch --flake ~/.dotfiles#20BE0048BR --elevate=sudo
 ```
 
 O nome é reduzido ao que um hostname aceita: tudo que não for letra, número ou hífen vira hífen, e os repetidos colapsam. **Em máquina virtual isso costuma dar um nome feio** — uma VM QEMU/KVM se apresenta como `Standard PC (Q35 + ICH9, 2009)`, que sai como `Standard-PC-Q35-ICH9-2009`. É válido, mas você provavelmente vai querer trocar.
@@ -43,7 +43,7 @@ Renomeie o diretório — é só isso, não há campo de hostname em lugar nenhu
 ```bash
 cd ~/.dotfiles
 git mv machines/Standard-PC-Q35-ICH9-2009 machines/vm-teste
-sudo nixos-rebuild switch --flake .#vm-teste
+nixos-rebuild switch --flake .#vm-teste --elevate=sudo
 ```
 
 ### O instalador é para a primeira vez
@@ -68,7 +68,28 @@ Para editar a configuração antes de aplicar, o caminho continua o de sempre:
 cd ~/.dotfiles
 $EDITOR settings.nix                          # quem você é
 $EDITOR machines/<máquina>/default.nix        # o que a máquina é
-sudo nixos-rebuild switch --flake .#<máquina>
+nixos-rebuild switch --flake .#<máquina> --elevate=sudo
+```
+
+### Por que `--elevate=sudo` e não `sudo nixos-rebuild`
+
+Um flake `git+file://` faz o Nix ler a árvore pelo git. Sob `sudo`, quem faz
+isso é o **root** — e ele escreve em `.git/objects`, deixando os objetos com
+dono dele dentro de um repositório seu. Enquanto só há leitura, ninguém nota;
+no primeiro `git fetch` que precise escrever, o git para:
+
+```
+error: insufficient permission for adding an object to repository database
+```
+
+`--elevate=sudo` inverte: a avaliação e o build rodam como você, e o root só
+entra na ativação, que não toca no repositório. O `nupdate` já faz isso; ao
+rodar o `nixos-rebuild` à mão, use a flag também.
+
+Se você já pegou o erro acima, uma vez só:
+
+```bash
+sudo chown -R "$USER" ~/.dotfiles
 ```
 
 ### O `nupdate` descarta o que você editou
@@ -101,7 +122,7 @@ Por isso, depois de instalar, o ciclo é só:
 
 ```bash
 cd ~/.dotfiles && git pull
-sudo nixos-rebuild switch --flake .#<máquina>
+nixos-rebuild switch --flake .#<máquina> --elevate=sudo
 ```
 
 As linhas de `machines/<nome>/default.nix` **existem descomentadas de propósito**: o instalador as reescreve com `sed`, que só substitui linha já presente. Apagá-las o faria falhar em silêncio.
@@ -229,7 +250,7 @@ cp -r machines/template machines/meu-laptop
 $EDITOR machines/meu-laptop/default.nix               # é VM? é notebook?
 sudo nixos-generate-config --show-hardware-config > machines/meu-laptop/hardware-configuration.nix
 git add -f machines/meu-laptop                        # flakes só leem o que o git rastreia
-sudo nixos-rebuild switch --flake .#meu-laptop
+nixos-rebuild switch --flake .#meu-laptop --elevate=sudo
 ```
 
 A diferença para o instalador: aqui você escolhe o nome da máquina em vez de aceitar o modelo do DMI.

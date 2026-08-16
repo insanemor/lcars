@@ -230,7 +230,7 @@ qualquer coisa neste repo.
 ### 6. Builde e ative
 
 ```bash
-sudo nixos-rebuild switch --flake .#<host>
+nixos-rebuild switch --flake .#<host> --elevate=sudo
 ```
 
 ## Criando um profile novo
@@ -288,7 +288,8 @@ nixosConfigurations.meu-pc = self.mkMachine "meu-pc" [ ./algo-extra.nix ];
 | Conflito no `settings.nix` a cada `git pull` | Algum dado de máquina foi parar nele. Ele deve ficar **idêntico** ao do repositório; o que varia entre máquinas vai em `machines/<host>/default.nix` |
 | `value is not a valid value of enum` em `lcars.profile` | Profile novo não foi acrescentado ao enum em `profiles/default.nix` |
 | A máquina ignora o que declarei | O profile definiu a mesma flag; ele usa `mkDefault`, então declarar na máquina deve vencer — confira se não escreveu `mkDefault` na máquina também |
-| `detected dubious ownership in repository` | Rebuild como root num repo de outro dono: `sudo git config --global --add safe.directory ~/.dotfiles` |
+| `detected dubious ownership in repository` | Rebuild como root num repo de outro dono. Use `nixos-rebuild --elevate=sudo`, que avalia como você; o paliativo é `sudo git config --global --add safe.directory ~/.dotfiles` |
+| `insufficient permission for adding an object to repository database` | Um `sudo nixos-rebuild` anterior deixou objetos do root em `.git/objects`. Destrave com `sudo chown -R "$USER" ~/.dotfiles` e passe a usar `--elevate=sudo` |
 | `experimental Nix feature 'nix-command' is disabled` | `export NIX_CONFIG="experimental-features = nix-command flakes"` |
 | tlp e power-profiles-daemon em conflito | `lcars.system.hardware.laptop.powerManager = "tlp"` ou `"ppd"` |
 | O repo em `~/.dotfiles` pertence ao root e você não consegue editá-lo | O instalador foi chamado com `sudo`. Ele deve rodar como você: `curl … \| bash`, sem sudo. Conserte com `sudo chown -R "$USER" ~/.dotfiles` |

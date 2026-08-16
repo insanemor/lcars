@@ -122,18 +122,28 @@ $EDITOR "$settings";
 # recém-instalada ele ainda não existe: só chega DEPOIS deste build, por
 # system/core. Por isso o bloco inteiro roda dentro do nix-shell.
 #
-#   add -f       flakes só enxergam arquivos rastreados, e o
-#                hardware-configuration está no .gitignore. Põe no index,
-#                não é commit.
-#   safe.directory  o rebuild roda como root sobre um repo que é seu, e o git
-#                aborta nessa situação com "detected dubious ownership".
-#   env PATH     o sudo zera o PATH, então o git do nix-shell não chegaria ao
-#                root sem isto. Sem ele o build morre com
-#                'executing "git": No such file or directory'.
+#   add -f          flakes só enxergam arquivos rastreados, e o
+#                   hardware-configuration está no .gitignore. Põe no index,
+#                   não é commit.
+#   --elevate=sudo  NÃO use `sudo nixos-rebuild`: sob sudo é o root que lê a
+#                   árvore pelo git, e ele escreve em .git/objects deixando os
+#                   objetos com dono dele. O repositório fica travado para
+#                   você no primeiro fetch que precise escrever. Com esta flag
+#                   a avaliação roda como você e o root só ativa.
+#
+#                   Isso também dispensa o `safe.directory` que existia aqui:
+#                   sem root lendo o repositório, não há "dubious ownership".
+#
+#                   O nome antigo, --use-remote-sudo, serve de reserva em
+#                   versões mais velhas do nixos-rebuild.
 #
 # O home-manager entra como módulo neste mesmo rebuild — não há passo separado.
 nix-shell -p git --command "
+  set -e
   git -C $HOME/.dotfiles add -f machines/$model_name
-  sudo env PATH=\"\$PATH\" git config --global --add safe.directory $HOME/.dotfiles
-  sudo env PATH=\"\$PATH\" nixos-rebuild switch --flake $HOME/.dotfiles#$model_name
+  if nixos-rebuild --help 2>&1 | grep -q -- --elevate; then
+    nixos-rebuild switch --flake $HOME/.dotfiles#$model_name --elevate=sudo
+  else
+    nixos-rebuild switch --flake $HOME/.dotfiles#$model_name --use-remote-sudo
+  fi
 "
