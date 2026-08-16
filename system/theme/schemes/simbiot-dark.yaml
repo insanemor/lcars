@@ -1,0 +1,90 @@
+# simbiot-dark — a paleta do sistema, tirada do site da SimbioIT.
+#
+# Esquema base16. O stylix o aplica em tudo: Hyprland, noctalia, kitty, GTK, Qt,
+# Plasma e o console TTY. Trocar de esquema é uma linha em settings.nix.
+#
+# DE ONDE VÊM AS CORES
+#
+# Sete foram amostradas do site, por região, e não escolhidas a olho:
+#
+#   #111d23   fundo da página                 → base00
+#   #b4c4c3   texto do parágrafo              → base05
+#   #eef3f3   títulos                         → base07
+#   #bad350   quadrados do arco               → base0A
+#   #6ad3a1   palavra "Inovadoras"            → base0B
+#   #4accbc   botão e palavra "Soluções"      → base0C
+#   #29b6bf   logo e arco grande              → base0D
+#
+# As outras nove o site não tem. O base16 exige uma escala de fundo e um
+# vermelho, um laranja, um violeta e um "marrom" — para sintaxe de código, erro
+# e aviso. Foram derivadas na mesma família das extraídas (S 38-62, V 74-85),
+# com o matiz dos fundos preso ao azul-petróleo do site (H 191-200), para
+# entrarem sem destoar.
+#
+# CONTRASTE, medido em WCAG contra base00
+#
+#   base05 texto        9.50:1   AAA
+#   base07 títulos     15.32:1   AAA
+#   base03 comentário   3.12:1   AA para texto grande — é o piso do base16,
+#                                que usa base03 para comentário e invisível
+#   o acento mais fraco 4.61:1   (base08) — nenhum abaixo de AA
+#
+# QUEM USA O QUÊ, NA PRÁTICA
+#
+#   base0D  a cor primária da interface. O stylix a passa como `mPrimary` para o
+#           noctalia (barra, foco, botões) e ela abre o gradiente da borda do
+#           Hyprland. É por isso que o ciano do logo está aqui, e não em base0C.
+#   base0A  fecha esse gradiente — ciano → lime é o arco da direita do site.
+#   base0E  o stylix o usa como `mSecondary`. Violeta é invenção necessária: o
+#           base16 precisa de uma cor para keywords, e o site não oferece
+#           nenhuma que se distinga das quatro que já estão em uso.
+#
+# DUAS ARMADILHAS DE FORMATO, as duas custaram uma rodada de avaliação
+#
+# 1. O formato é o base16 v0.11: `palette:` com as cores aninhadas e o `#` no
+#    valor. A forma antiga, com as chaves na raiz e sem `#`, ainda aparece em
+#    tutoriais — com ela o stylix aborta em `attribute 'base08' missing`.
+#
+# 2. O stylix lê YAML com o fromYaml (SenchoPens), um parser em Nix puro e
+#    ingênuo, que impõe duas regras aqui dentro:
+#
+#    NÃO INDENTE COMENTÁRIOS dentro de `palette:`. Ele decide aninhamento pela
+#    coluna, conta o comentário indentado como entrada do bloco, e termina em
+#    `expected a set but found null` sem dizer onde. Na coluna 0 funciona.
+#
+#    NÃO USE DOIS-PONTOS SEGUIDO DE ESPAÇO em comentário inline. Ele procura o
+#    par chave/valor na linha inteira, comentário incluído, e `# lime: classe`
+#    faz a entrada inteira sumir da paleta — sem erro, a cor só não existe
+#    depois. `# lime, classe` e `# lime:classe` passam. Foi o que aconteceu na
+#    primeira versão deste arquivo, e o sintoma foi
+#    `attribute 'base0D' missing` a três camadas de distância.
+#
+#    Linha em branco e comentário na coluna 0 são seguros.
+#
+# Confira contra `${pkgs.base16-schemes}/share/themes/nord.yaml` se mexer aqui.
+#
+# Para voltar a um esquema pronto, `lcars.system.theme.scheme` aceita qualquer
+# nome do pacote base16-schemes (catppuccin-mocha, gruvbox-dark-hard, nord…).
+system: "base16"
+name: "SimbioIT Dark"
+author: "lcars, a partir das cores de simbioit.com.br"
+variant: "dark"
+palette:
+# escala de fundo e texto — H 176-200, o azul-petróleo do site
+  base00: "#111d23" # fundo — extraído
+  base01: "#19252b" # fundo elevado — barra de status, linha atual
+  base02: "#27363d" # seleção
+  base03: "#556d73" # comentários, invisíveis
+  base04: "#89a0a1" # texto secundário
+  base05: "#b4c4c3" # texto — extraído
+  base06: "#d1dedd" # texto claro
+  base07: "#eef3f3" # títulos — extraído
+# acentos
+  base08: "#d95b68" # vermelho — erro, variável, remoção     — derivado
+  base09: "#d68d56" # laranja — número, constante            — derivado
+  base0A: "#bad350" # lime — classe, aviso, busca            — extraído
+  base0B: "#6ad3a1" # verde — string, adição, sucesso        — extraído
+  base0C: "#4accbc" # verde-água — suporte, escape, regex    — extraído
+  base0D: "#29b6bf" # ciano — a cor da marca, função, UI     — extraído
+  base0E: "#a67cd6" # violeta — palavra-chave                — derivado
+  base0F: "#c27891" # rosa — obsoleto                        — derivado

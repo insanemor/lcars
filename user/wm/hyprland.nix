@@ -78,11 +78,16 @@ lib.mkIf osConfig.lcars.user.hyprland.enable {
       }
       # Borda em gradiente a 45°, a assinatura visual do rice de referência.
       #
+      # base0D → base0A. Com o simbiot-dark isso é ciano → lime, que é o arco
+      # da direita do site: o traço ciano com os quadrados lime. Em qualquer
+      # outro esquema continua sendo "primária → destaque", que é o par que o
+      # base16 reserva para isso — não há cor fixa escrita aqui.
+      #
       # mkForce porque o stylix declara `col.active_border` sem mkDefault
       # (modules/hyprland/hm.nix) — sem forçar, as duas definições colidem.
       # Se um dia ele passar a usar mkDefault, este mkForce pode sair.
       // lib.optionalAttrs rice {
-        "col.active_border" = lib.mkForce "rgb(${cores.base0E}) rgb(${cores.base0C}) 45deg";
+        "col.active_border" = lib.mkForce "rgb(${cores.base0D}) rgb(${cores.base0A}) 45deg";
       };
 
       decoration = {
