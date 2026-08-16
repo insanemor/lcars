@@ -24,6 +24,7 @@ Para instalar, comece pelo [README](../README.md) da raiz.
 | **Ligar ou desligar** zsh, git, direnv, dotfiles | `lcars.user.<módulo>.enable` (no profile ou na máquina) |
 | Ligar ou desligar um módulo de sistema | `lcars.system.<caminho>.enable` (idem) |
 | Trocar o ambiente gráfico | `system/wm/` — Plasma e Hyprland convivem; `lcars.system.wm.defaultSession` escolhe qual abre |
-| Ajustar a barra e os painéis do Hyprland | centro de controle do noctalia (`SUPER+C`), depois `noctalia config export merged > user/wm/noctalia-config.toml` |
+| Ajustar a barra e os painéis do Hyprland | centro de controle do noctalia (`SUPER+C`), depois `nsave` |
+| **Publicar o que ajustei nesta máquina** | `nsave` (é `scripts/save.sh`) |
 | Abrir uma porta no firewall | `lcars.system.security.firewall.allowedTCPPorts` (no profile ou na máquina) |
 | Autorizar uma chave SSH | `userSettings.sshKeys` |

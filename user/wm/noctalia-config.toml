@@ -2,18 +2,17 @@
 #
 # COMO ATUALIZAR ESTE ARQUIVO
 #
-#   1. Ajuste o que quiser no centro de controle do noctalia
-#   2. Exporte por cima deste arquivo:
+#   1. Ajuste o que quiser no centro de controle do noctalia (SUPER+C)
+#   2. Rode `nsave`
+#
+# O nsave (scripts/save.sh) exporta por cima deste arquivo, valida o TOML,
+# mostra o diff, pergunta e publica. À mão seria:
 #
 #        noctalia config export merged > ~/.dotfiles/user/wm/noctalia-config.toml
+#        cd ~/.dotfiles && git diff && git commit -am "…" && git push
 #
-#   3. Confira o diff e aplique:
-#
-#        cd ~/.dotfiles && git diff
-#        nupdate
-#
-# Sem o passo 2, o que você ajustou vive só no state-dir desta máquina e some
-# num clone novo.
+# Sem esse passo, o que você ajustou vive só no state-dir desta máquina e some
+# num clone novo — ou no próximo `nupdate`, que faz git reset --hard.
 #
 # O QUE NÃO ADIANTA MEXER AQUI
 #
@@ -25,9 +24,9 @@
 # ou fonte pela GUI não gruda. Para trocar cor, troque
 # `lcars.system.theme.scheme`; para trocar a fonte, `lcars.system.theme.fonts`.
 #
-# O arquivo começa quase vazio de propósito: o que não está aqui usa o default
-# do noctalia, e um despejo de centenas de linhas de defaults tornaria
-# ilegível o diff da primeira coisa que você mudar.
+# O arquivo começa quase vazio, e continua pequeno depois do primeiro export:
+# `merged` exporta a SUA configuração, não os defaults embutidos do noctalia
+# (esse é o `full`). O diff mostra o que você mudou.
 
 [shell]
 # Mostra as opções avançadas no painel de configuração — sem isso, boa parte

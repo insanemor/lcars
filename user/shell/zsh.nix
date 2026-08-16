@@ -44,6 +44,13 @@ lib.mkIf osConfig.lcars.user.zsh.enable {
       # flake é aplicado; se um dia o caminho virar configurável, esta linha
       # acompanha.
       nupdate = "$HOME/.dotfiles/scripts/update.sh";
+
+      # O caminho de volta: exporta a configuração do noctalia, mostra o que
+      # mudou, commita e publica. Aceita -m, -n (dry run) e -y.
+      #
+      # Existe porque o nupdate faz `git reset --hard`: um ajuste feito aqui e
+      # não publicado some no próximo nupdate.
+      nsave = "$HOME/.dotfiles/scripts/save.sh";
     };
 
     # A integração do direnv com o zsh já é injetada pelo próprio módulo

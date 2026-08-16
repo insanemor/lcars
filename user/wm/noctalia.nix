@@ -10,12 +10,11 @@
 # É o motivo de ele estar aqui. Você mexe no centro de controle, olha o
 # resultado na hora, e quando gostar:
 #
-#     noctalia config export merged > ~/.dotfiles/user/wm/noctalia-config.toml
-#     cd ~/.dotfiles && git diff        # veja o que mudou
-#     nupdate                           # aplica
+#     nsave        # exporta, valida, mostra o diff, pergunta e publica
 #
-# Sem esse passo, o que você ajustou vive só no state-dir daquela máquina e
-# some num clone novo.
+# É o scripts/save.sh, o caminho de volta do nupdate. Sem ele, o que você
+# ajustou vive só no state-dir daquela máquina e some num clone novo — ou no
+# próximo nupdate, que faz git reset --hard.
 #
 # Por que `fromTOML` e não `settings = ./arquivo.toml`
 # ----------------------------------------------------
@@ -45,9 +44,10 @@ let
   arquivo = ./noctalia-config.toml;
 
   # Os caminhos que o stylix escreve dentro de `settings` (stylix,
-  # modules/noctalia/hm.nix). `noctalia config export merged` despeja a
-  # configuração inteira, inclusive estes — e aí os dois lados definiriam a
-  # mesma chave, o que o sistema de módulos trata como conflito e aborta.
+  # modules/noctalia/hm.nix). O stylix os escreve no config dir, e é de lá que
+  # `noctalia config export merged` lê — então eles voltam no export, e aí os
+  # dois lados definiriam a mesma chave, o que o sistema de módulos trata como
+  # conflito e aborta.
   #
   # Retirá-los do que exportamos é o que mantém o ciclo GUI → export → commit
   # funcionando sem você ter que lembrar de editar o arquivo à mão.

@@ -202,22 +202,31 @@ silêncio parece normal.
 É o motivo de ele estar aqui. O noctalia tem centro de controle gráfico, e o
 que você ajusta ali dá para exportar e versionar:
 
+Ajuste no centro de controle (`SUPER+C`) e veja o resultado na hora. Quando
+gostar, um comando faz o resto:
+
 ```bash
-# 1. ajuste no centro de controle (SUPER+C), veja o resultado na hora
-# 2. exporte por cima do arquivo versionado
-noctalia config export merged > ~/.dotfiles/user/wm/noctalia-config.toml
-# 3. confira e aplique
-cd ~/.dotfiles && git diff
-nupdate
+nsave
 ```
 
-Sem o passo 2, o ajuste vive só no state-dir daquela máquina e some num clone
-novo. Com ele, a configuração entra no fluxo normal do repositório — issue,
-branch, commit.
+O `nsave` (`scripts/save.sh`) exporta, valida o TOML, mostra o diff, pergunta e
+publica. É o [`nupdate` ao contrário](#nsave--publicar-o-que-voc%C3%AA-ajustou-aqui).
 
-O arquivo começa quase vazio de propósito: o que não está nele usa o default do
-noctalia, e um despejo de centenas de linhas de defaults tornaria ilegível o
-diff da primeira coisa que você mudar.
+À mão, se preferir ver cada passo:
+
+```bash
+noctalia config export merged > ~/.dotfiles/user/wm/noctalia-config.toml
+cd ~/.dotfiles && git diff && git commit -am "config: barra no topo" && git push
+```
+
+Sem o export, o ajuste vive só no state-dir daquela máquina e some num clone
+novo — e some **mais rápido** do que parece: o `nupdate` faz
+`git reset --hard`, então rodá-lo antes de salvar apaga o que você exportou. É
+justamente o que o `nsave` evita.
+
+O arquivo fica pequeno por conta do `merged`, que exporta **a sua**
+configuração e não os defaults embutidos do noctalia (esse é o `full`). O diff
+mostra o que você mudou, não centenas de linhas de valores padrão.
 
 **As chaves do tema são podadas na leitura.** Paleta, fonte, modo claro/escuro,
 caminho do papel de parede e as três opacidades são escritas pelo stylix. Como
@@ -396,14 +405,54 @@ profile — os títulos abaixo trazem a flag de cada um.
 - Autosuggestion, syntax highlighting e completion
 - Histórico de 50 000 linhas, compartilhado entre sessões, sem duplicatas
 - Aliases: `ll`, `la`, `l`, `gs` (git status), `gp` (push), `gpl` (pull)
-- **`nupdate`** — sincroniza `~/.dotfiles` com o repositório, avalia e aplica
-  (`scripts/update.sh`). Aceita `--inputs` para atualizar o nixpkgs junto e
-  `--no-check` para pular a avaliação. Em conflito, o repositório vence e o
-  que você editou vai para um `git stash`; `machines/<host>/` nunca é tocado
+- **`nupdate`** e **`nsave`** — os dois sentidos, descritos logo abaixo
 - `zsh-completions`
 
 Esta flag é a única de `user/` que mexe também no sistema: ela decide o shell
 de login da conta (`bash` quando desligada). Veja "Base do sistema" acima.
+
+#### `nupdate` — trazer o repositório para esta máquina
+
+`scripts/update.sh`. Sincroniza `~/.dotfiles`, avalia os `.nix` e roda o
+`nixos-rebuild`. Aceita `--inputs` para atualizar o nixpkgs junto e
+`--no-check` para pular a avaliação.
+
+**Em conflito, o repositório vence** — sem perguntar, sem parar. O que você
+editou vai para um `git stash` nomeado e commits locais descartados ficam no
+`reflog`; as duas coisas são rede de segurança, não confirmação.
+`machines/<host>/` é preservado sempre, porque não existe no repositório.
+
+#### `nsave` — publicar o que você ajustou aqui
+
+`scripts/save.sh`. O caminho de volta, e o par natural do ciclo do noctalia:
+
+```bash
+nsave                       # exporta, valida, mostra o diff, pergunta, publica
+nsave -m "barra no topo"    # com a sua mensagem de commit
+nsave -n                    # mostra tudo que faria, sem alterar nada
+nsave -y                    # sem perguntar
+nsave --no-export           # não roda o export do noctalia
+```
+
+Na ordem: exporta a configuração do noctalia por cima do arquivo versionado,
+**valida o TOML** (inválido para aqui, antes de qualquer commit), mostra o que
+mudou, espera você confirmar, commita em `main` e publica.
+
+Três decisões que valem saber:
+
+- **`machines/` não é publicado.** É o único diretório que descreve hardware, e
+  cada máquina tem o seu — levá-lo junto num comando que roda sem atenção faria
+  uma máquina sobrescrever a configuração da outra. Se você mexeu lá, o script
+  lista os arquivos e segue sem eles.
+- **Conflito não é adivinhado.** Se o remoto estiver à frente, ele rebaseia; se
+  o rebase parar, desfaz o rebase e sai explicando, com o seu commit intacto e
+  nada pela metade. Ao contrário do `nupdate`, aqui não há lado que sempre
+  vence — os dois são trabalho seu.
+- **Ele não aplica nada.** Publicar e aplicar são coisas diferentes; aplicar é
+  o `nupdate`.
+
+Se o noctalia não estiver no PATH, o script avisa e segue sem exportar — o que
+o torna útil para publicar qualquer ajuste feito na máquina, não só o do shell.
 
 ### git · `user/app/git.nix` · `lcars.user.git.enable` · basic + personal
 
