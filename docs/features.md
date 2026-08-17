@@ -13,9 +13,8 @@ O repo vem com `personal`.
 |---|---|---|---|
 | Base do sistema (`system/core`) | `lcars.system.core.enable` | sim | sim |
 | ssh e firewall (`system/security`) | `lcars.system.security.enable` | sim | sim |
-| Plasma + fontes (`system/wm`) | `lcars.system.wm.plasma.enable` | — | sim |
-| Hyprland, compositor (`system/wm`) | `lcars.system.wm.hyprland.enable` | — | sim |
-| Config do Hyprland (`user/wm`) | `lcars.user.hyprland.enable` | — | sim |
+| niri, compositor (`system/wm`) | `lcars.system.wm.niri.enable` | — | sim |
+| Config do niri (`user/wm`) | `lcars.user.niri.enable` | — | sim |
 | Tema unificado (`system/theme`) | `lcars.system.theme.enable` | — | sim |
 | Shell noctalia (`user/wm`) | `lcars.user.noctalia.enable` | — | sim |
 | Áudio PipeWire (`system/hardware`) | `lcars.system.hardware.audio.enable` | — | sim |
@@ -33,8 +32,8 @@ ali (ou na própria máquina) não sobe. Um profile define suas flags com
 `mkDefault`, então a máquina pode desligar qualquer item individualmente sem
 abandonar o resto do preset.
 
-O caminho da flag espelha o caminho do arquivo: `lcars.system.wm.plasma` é
-`system/wm/plasma.nix`, `lcars.user.direnv` é `user/app/direnv.nix`. A
+O caminho da flag espelha o caminho do arquivo: `lcars.system.wm.niri` é
+`system/wm/niri.nix`, `lcars.user.direnv` é `user/app/direnv.nix`. A
 diferença entre os dois prefixos não é cosmética — `system/` e `user/` são
 avaliados em árvores de módulos separadas, e é por isso que as flags de `user/`
 são declaradas do lado NixOS, em `user/options.nix`, e lidas por `osConfig`.
@@ -116,71 +115,136 @@ não fica aberta na rede.
 
 ## Ambientes gráficos — só no profile `personal`
 
-**Os dois ficam ligados ao mesmo tempo** e aparecem lado a lado na tela de
-login. O Plasma abre por padrão; se o Hyprland não subir, há para onde voltar
-sem editar o repositório.
+**Só há um, e é o niri.** Plasma e Hyprland saíram na
+[#34](https://github.com/insanemor/lcars/issues/34) — a tela de login tem uma
+sessão só, e se ela não subir a volta é pelo TTY (veja o fim desta seção).
 
 ### A tela de login · `system/wm/default.nix` · option `lcars.system.wm`
 
-O SDDM e a escolha da sessão não pertencem a nenhum ambiente — se morassem
-dentro de um deles, ligar o segundo daria conflito de definição, e uma máquina
-só com Hyprland ficaria sem tela de login.
+O SDDM, a escolha da sessão, as **fontes** e o **dconf** não pertencem a
+nenhum compositor. Se morassem dentro de um, ligar um segundo daria conflito
+de definição — e, pior, desligar aquele levaria as fontes do sistema junto,
+que foi o que quase aconteceu ao remover o Plasma.
 
-- `defaultSession` — vazio decide sozinho, preferindo o Plasma. Ponha
-  `"hyprland"` na máquina para inverter
-- `sddm.wayland` — se o próprio SDDM roda em Wayland (independe da sessão que
-  você escolhe depois)
+- `defaultSession` — vazio decide sozinho; hoje só existe `"niri"`
+- `sddm.wayland` — se o próprio SDDM roda em Wayland
+- **Fontes**: `noto-fonts`, `noto-fonts-color-emoji`, `liberation_ttf`,
+  `dejavu_fonts`, mais o conjunto padrão do NixOS. O stylix acrescenta a Nerd
+  Font do terminal
+- `dconf` habilitado, para aplicativos GTK guardarem preferência
 
-### KDE Plasma · `system/wm/plasma.nix` · option `lcars.system.wm.plasma`
+### niri · `system/wm/niri.nix` + `user/wm/niri.nix`
 
-- **KDE Plasma 6**, sessão Wayland pré-selecionada
-  (`lcars.system.wm.plasma.wayland = false` troca para a X11; as duas
-  continuam na tela de login)
-- **Fontes**: `noto-fonts`, `noto-fonts-color-emoji`, `liberation_ttf`, `dejavu_fonts`, mais o conjunto padrão do NixOS
-- **Aplicativos**: só o que o módulo `plasma6` do NixOS traz. Nada é
-  acrescentado por este repo — **nem navegador**. Remova o que não quiser com
-  `lcars.system.wm.plasma.excludePackages`
-- `dconf` habilitado
+Compositor Wayland com **tiling scrollable**. Dividido nos dois lados do repo:
+o compositor é do sistema, o `config.kdl` é seu.
 
-### Hyprland · `system/wm/hyprland.nix` + `user/wm/hyprland.nix`
+#### O que "scrollable" muda
 
-Compositor Wayland com tiling. Dividido nos dois lados do repo: o compositor é
-do sistema, o `hyprland.conf` é seu.
+As janelas formam uma fita horizontal que se estende sem limite, e a tela rola
+por ela. Abrir uma janela nova **não redivide** o espaço das que já estão
+abertas — elas continuam do tamanho que estavam e saem de vista pela lateral.
 
-**Sistema** (`lcars.system.wm.hyprland.enable`) — o compositor, XWayland,
-portais XDG (sem eles um "salvar como" de aplicativo GTK não abre) e o agente
-polkit (sem ele, pedidos de senha de programa gráfico falham em silêncio).
+Isso é arquitetura, não modo de layout: nenhum ajuste de Hyprland produz esse
+comportamento, e foi o motivo da troca.
 
-Mais os utilitários que o Hyprland **não** traz e sem os quais a sessão sobe
-inutilizável: `wl-clipboard`, `brightnessctl`, `pamixer`, `playerctl`,
-`hyprpicker`, `grim`, `slurp`, `hyprpaper`.
+A unidade de navegação é a **coluna**, não a janela. Uma coluna pode ter várias
+janelas empilhadas na vertical.
 
-**Usuário** (`lcars.user.hyprland.enable`) — atalhos, regras de janela, o que
-sobe com a sessão, e o pacote `kitty`. O layout do teclado vem de
-`lcars.system.hardware.keyboard`, o mesmo do console e do SDDM.
+#### Sistema · `lcars.system.wm.niri.enable`
+
+O módulo do nixpkgs resolve bastante: registra a sessão em
+`displayManager.sessionPackages`, liga o `gnome-keyring` e monta os portais XDG
+na combinação que o upstream recomenda (gnome para screencast e captura, gtk
+para o resto).
+
+- `useNautilus` (padrão `true`) — o Nautilus como seletor de arquivos do
+  portal. Sem Plasma não há mais Dolphin, e este é o gerenciador de arquivos
+  que sobra: o portal o abre em todo "salvar como"
+- Utilitários que o niri não traz: `wl-clipboard`, `brightnessctl`, `pamixer`,
+  `playerctl`
+
+**`grim` e `slurp` não estão aqui**, ao contrário do que havia no Hyprland: a
+captura de tela é nativa do niri, com seleção de região, janela e monitor.
+
+**XWayland** não vem do módulo NixOS, que monta a sessão com
+`enableXWayland = false` — o niri não embute servidor X, usa o
+`xwayland-satellite`, um processo à parte que sobe sob demanda. Quem o põe no
+PATH é o home-manager (`xwaylandSatellitePackage`, ligado por padrão). Sem ele,
+aplicativos X11 não abrem.
+
+**Agente polkit**: não há serviço aqui, ao contrário do Hyprland. Quem atende é
+o do noctalia (`polkit_agent = true`). Um agente por vez — dois disputando o
+mesmo serviço é conflito, não redundância.
+
+#### Usuário · `lcars.user.niri.enable`
 
 | Atalho | O que faz |
 |---|---|
 | `SUPER+Enter` | terminal (kitty) |
-| `SUPER+D` | lançador (painel do noctalia) |
+| `SUPER+D` | lançador |
 | `SUPER+N` | notificações |
 | `SUPER+C` | centro de controle |
 | `SUPER+V` | histórico da área de transferência |
-| `SUPER+ESC` | menu de sessão (desligar, reiniciar, bloquear) |
+| `SUPER+ESC` | menu de sessão |
+| `SUPER+H` / `SUPER+L` | **rola entre colunas** (ou `←` `→`) |
+| `SUPER+J` / `SUPER+K` | foco **dentro** da coluna (ou `↓` `↑`) |
+| `SUPER+SHIFT+H/J/K/L` | move a janela ou a coluna |
+| `SUPER+,` / `SUPER+.` | junta a janela vizinha à coluna, ou a expulsa |
+| `SUPER+R` | cicla a largura: ⅓, ½, ⅔ |
+| `SUPER+F` | maximiza a coluna |
+| `SUPER+SHIFT+F` | tela cheia |
+| `SUPER+W` | empilha a coluna em abas |
 | `SUPER+Q` | fecha a janela |
+| `SUPER+1…9` | workspace (com `SHIFT`, leva a coluna) |
+| `SUPER+PgUp` / `PgDn` | workspace acima / abaixo |
+| `SUPER+SHIFT+S` | captura de região |
+| `Print` / `SUPER+Print` | captura da tela / da janela |
 | `SUPER+SHIFT+E` | sai da sessão |
-| `SUPER+F` | tela cheia |
-| `SUPER+setas` ou `hjkl` | move o foco |
-| `SUPER+1..9` | troca de workspace (com `SHIFT`, leva a janela) |
-| `SUPER+SHIFT+S` | captura de região para a área de transferência |
 | teclas de mídia | volume, brilho, play/pause |
 
-Os cinco primeiros painéis são comandos de IPC para o shell que já está no ar
-(`noctalia msg panel-toggle <id>`), não programas separados que abrem e fecham.
+Os painéis são comandos de IPC para o shell que já está no ar
+(`noctalia msg panel-toggle <id>`), não programas que abrem e fecham. As teclas
+de mídia levam `allow-when-locked`, porque volume e brilho fazem sentido com a
+tela bloqueada.
 
-As cores vêm do tema (abaixo) — não há paleta escrita no módulo do Hyprland.
-Estrutura e atalhos inspirados em
-[Sly-Harvey/NixOS](https://github.com/Sly-Harvey/NixOS) (MIT).
+O layout do teclado vem de `lcars.system.hardware.keyboard`, o mesmo do console
+e do SDDM — não é redefinido aqui.
+
+#### A cor, e por que ela é manual
+
+**O stylix não tem alvo para niri** (`modules/` traz hyprland, kde, gtk e qt).
+Então nada é pintado sozinho: `user/wm/niri.nix` lê `config.lib.stylix.colors`
+e escreve as cores explicitamente. O anel de foco sai como gradiente
+`base0D → base0A` — com o `simbiot-dark`, o ciano do logo indo ao lime, herdeiro
+direto da borda que o Hyprland tinha. Trocar `scheme` continua repintando
+junto; a diferença é que é este arquivo que faz, não o stylix.
+
+#### A configuração é validada no build
+
+`checkConfig` está ligado, e o `niri validate` roda ao construir o
+`config.kdl`. Um atalho para uma ação inexistente derruba o build com a linha
+e a mensagem exatas, em vez de virar tela preta:
+
+```
+Error:   x error parsing KDL
+Error:   x expected `quit`, `suspend`, or one of 133 others
+ 148 |         acao-que-nao-existe
+     :                  `-- invalid value
+```
+
+Isso exige `package` não-nulo no módulo do home-manager — é o mesmo derivation
+que o sistema instala, então não há segunda cópia no store.
+
+#### Se o niri não subir
+
+Não há segunda sessão na tela de login:
+
+```bash
+# Ctrl+Alt+F2
+cd ~/.dotfiles
+$EDITOR machines/<máquina>/default.nix   # lcars.system.wm.niri.enable = false;
+nupdate
+```
 
 ### Shell · `user/wm/noctalia.nix` · `lcars.user.noctalia.enable`
 
@@ -190,10 +254,10 @@ parede — uma peça só, em vez de waybar + rofi + swaync, que eram três módu
 com três formatos de configuração e nenhuma interface de ajuste.
 
 Sobe por unidade systemd (`programs.noctalia.systemd.enable`), não pelo
-`exec-once` do Hyprland: assim reinicia se cair e `systemctl --user status
+`spawn-at-startup` do niri: assim reinicia se cair e `systemctl --user status
 noctalia` diz o que houve. Pelo `exec-once`, falha é silêncio.
 
-Sem ele o Hyprland não tem servidor de notificação, e aí nada avisa bateria
+Sem ele o niri não tem servidor de notificação, e aí nada avisa bateria
 fraca nem download concluído — quem tentou notificar não recebe erro, então o
 silêncio parece normal.
 
@@ -244,8 +308,9 @@ mudar cor ou fonte pela GUI não gruda. Para trocar, mexa em
 `system/theme/default.nix` · option `lcars.system.theme`
 
 Um esquema [base16](https://github.com/tinted-theming/schemes) declarado uma
-vez, aplicado pelo [stylix](https://github.com/danth/stylix) em: **Hyprland,
-noctalia, kitty, hyprlock, GTK, Qt, Plasma e o console TTY**.
+vez, aplicado pelo [stylix](https://github.com/danth/stylix) em: **noctalia,
+kitty, GTK, Qt e o console TTY**. O niri fica de fora — não há alvo para ele,
+e `user/wm/niri.nix` aplica as mesmas cores à mão.
 
 | Option | Padrão | Para quê |
 |---|---|---|
@@ -254,7 +319,7 @@ noctalia, kitty, hyprlock, GTK, Qt, Plasma e o console TTY**.
 | `wallpaper` | `null` | `null` = cor sólida pintada pelo compositor, **sem daemon**; uma imagem liga o hyprpaper |
 | `fonts.monospace` | `"JetBrainsMono Nerd Font"` | Nerd Font porque a barra usa ícones que só existem nelas |
 | `fonts.size` | `11` | corpo da fonte de interface |
-| `rice` | `true` | a **geometria** das janelas do Hyprland: gradiente, cantos, blur. `false` deixa a forma padrão, ainda pintada pelo esquema |
+| `rice` | `true` | a **geometria** do compositor: anel de foco em gradiente e espaçamento maior. `false` deixa o anel sólido e discreto, ainda pintado pelo esquema |
 
 **Por que fica em `system/theme/` e não em `system/wm/`:** tema é transversal.
 Ele pinta o console TTY, o GTK e o Qt, que existem independentemente de qual
@@ -263,7 +328,7 @@ do desktop.
 
 **Por que stylix e não cor à mão.** O repo de referência fia a paleta em cada
 programa — 17 arquivos `.rasi` só para o lançador, CSS próprio para a barra,
-218 arquivos ao todo em `desktop/hyprland`. Aqui, trocar de esquema é uma
+218 arquivos ao todo. Aqui, trocar de esquema é uma
 linha, e nenhum programa fica para trás.
 
 ### `simbiot-dark`, a paleta padrão
@@ -273,7 +338,7 @@ amostradas por região da página e não escolhidas a olho:
 
 | base | Hex | De onde veio | Onde aparece |
 |---|---|---|---|
-| `base00` | `#111d23` | fundo da página | fundo de tudo, inclusive o do Hyprland |
+| `base00` | `#111d23` | fundo da página | fundo de tudo |
 | `base05` | `#b4c4c3` | texto do parágrafo | texto padrão |
 | `base07` | `#eef3f3` | títulos | texto de destaque |
 | `base0A` | `#bad350` | quadrados do arco | classe, aviso, e o fim do gradiente da borda |
@@ -294,9 +359,10 @@ cor justamente para o que deve recuar.
 
 **`base0D` é o ciano do logo, e não o verde-água, de propósito.** O stylix passa
 `base0D` como `mPrimary` para o noctalia e é ela que abre o gradiente da borda
-do Hyprland — é a cor que dá a cara do sistema. Verificado: o noctalia recebe
-`mPrimary = #29b6bf` e a borda ativa sai como
-`rgb(29b6bf) rgb(bad350) 45deg`, que é o arco da direita do site.
+do niri — é a cor que dá a cara do sistema. Verificado: o noctalia recebe
+`mPrimary = #29b6bf` e o anel de foco sai como
+`active-gradient from="#29b6bf" to="#bad350" angle=45`, que é o arco da direita
+do site.
 
 ### Usando outro esquema, ou criando o seu
 
@@ -320,9 +386,8 @@ vira `rgb(83a598) rgb(fabd2f)`, verificado.
 
 ### O papel de parede, e por que ele é uma cor
 
-Sem `wallpaper` definido, **não há daemon de papel de parede**. O fundo do
-Hyprland é `misc.background_color`, que o stylix deriva de `base00` e o
-compositor pinta sozinho.
+Sem `wallpaper` definido, **não há daemon de papel de parede**. O fundo é a
+cor que o compositor pinta sozinho, derivada de `base00`.
 
 Isso não é economia de código, é robustez: o `hyprpaper` carrega a imagem como
 textura por EGL/OpenGL, e numa VM QEMU sem GPU ele **segfaultava**
@@ -344,19 +409,13 @@ O repo de referência versiona 18 imagens; este continua sem nenhuma.
 
 ### A forma, com `rice = true`
 
-A geometria das janelas vem do mesmo repo de referência, mas **sem nenhum valor
-de cor**: borda em gradiente 45° (`base0D` → `base0A`), cantos em 10, blur
-`size 6 passes 2`, sombra desligada, `gaps_out` em 9.
+**Sem nenhum valor de cor escrito**: anel de foco em gradiente 45°
+(`base0D` → `base0A`) e `gaps` em 9. Com `rice = false`, o anel fica sólido em
+`base0D` e os gaps caem para 4 — mais discreto, mesma paleta.
 
-A forma da barra e dos painéis **não** está aqui. Era CSS da waybar e um tema
-`.rasi` do rofi; hoje é o noctalia que a define, e você a ajusta pelo centro de
-controle, exportando o resultado (veja o ciclo acima). A flag `rice` só governa
-o Hyprland.
-
-Um detalhe que vale saber para quem for mexer: **a borda em gradiente precisa
-de `mkForce`.** O stylix declara `col.active_border` sem `mkDefault`
-(`modules/hyprland/hm.nix`); sem forçar, as duas definições colidem. Se ele
-passar a usar `mkDefault`, o `mkForce` pode sair.
+A forma da barra e dos painéis **não** está aqui: quem a define é o noctalia, e
+você a ajusta pelo centro de controle, exportando o resultado (veja o ciclo
+acima). A flag `rice` governa só o compositor.
 
 ---
 
@@ -441,7 +500,7 @@ nome literal `gpg.ssh` e o git não leria a chave.
 - `support32Bit` ligado por padrão (jogos, binários proprietários antigos);
   `jack` desligado, para quem não usa Ardour ou Carla
 
-Ligado no profile `personal`. Morava dentro de `system/wm/plasma.nix`, o que
+Ligado no profile `personal`. Morava dentro do módulo do Plasma, o que
 tornava impossível ter som sem KDE — um servidor de mídia precisaria ligar o
 desktop inteiro. Agora são flags independentes, e é o profile que junta as
 duas: o módulo do Plasma **não** liga o áudio por trás.
@@ -488,7 +547,7 @@ um espelho de option.
 - Tampa fechada: suspende na bateria, ignora na tomada
 - Gerenciamento de energia à sua escolha (`powerManager`):
   - **`tlp`** (padrão) — carga limitada a 80–90% para preservar a bateria, governor `performance` na tomada e `powersave` na bateria
-  - **`ppd`** — power-profiles-daemon, que integra melhor com o Plasma
+  - **`ppd`** — power-profiles-daemon, que integra melhor com ambientes GNOME/KDE
 
 Os dois nunca ficam ligados juntos: o NixOS aborta a avaliação se isso acontecer.
 
@@ -624,15 +683,16 @@ Para não haver surpresa:
 - **Nenhum profile além de `basic` e `personal`.**
 - **Nenhum container, VPN, impressora ou bluetooth** configurado.
 - **Nenhum editor além do `vim`**, e nenhuma IDE.
-- **Nenhum navegador.** O Plasma vem puro, e nada é acrescentado. `browser` no
-  `settings.nix` só define `$BROWSER` — não instala nada. Ponha o seu em
-  `userSettings.packages`:
+- **Nenhum navegador.** `browser` no `settings.nix` só define `$BROWSER` — não
+  instala nada. Ponha o seu em `userSettings.packages`:
 
   ```nix
   userSettings.packages = [ "firefox" ];
   ```
-- **Nenhum aplicativo KDE além dos que o módulo `plasma6` traz.** Kate, Okular,
-  Ark e Spectacle são `kdePackages.<nome>` em `userSettings.packages`.
+- **Nenhuma suíte de aplicativos.** Sem Plasma não há Dolphin, Kate, Okular nem
+  Configurações do Sistema. O que sobra de gerenciador de arquivos é o
+  **Nautilus**, que vem pelo `useNautilus` do niri como seletor do portal e
+  serve como aplicativo. O resto é `userSettings.packages`.
 
 ## Nota sobre `userSettings.packages`
 

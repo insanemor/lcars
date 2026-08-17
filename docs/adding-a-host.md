@@ -24,11 +24,10 @@ caminho do arquivo:
 
 | Flag | Módulo |
 |---|---|
-| `lcars.system.wm.plasma.enable` | `system/wm/plasma.nix` |
+| `lcars.system.wm.niri.enable` | `system/wm/niri.nix` |
 | `lcars.system.hardware.laptop.enable` | `system/hardware/laptop.nix` |
 | `lcars.system.hardware.audio.enable` | `system/hardware/audio.nix` |
-| `lcars.system.wm.hyprland.enable` | `system/wm/hyprland.nix` |
-| `lcars.user.hyprland.enable` | `user/wm/hyprland.nix` |
+| `lcars.user.niri.enable` | `user/wm/niri.nix` |
 | `lcars.user.noctalia.enable` | `user/wm/noctalia.nix` |
 | `lcars.system.theme.enable` | `system/theme/default.nix` |
 | `lcars.user.direnv.enable` | `user/app/direnv.nix` |
@@ -41,7 +40,7 @@ qualquer flag individualmente:
 
 ```nix
 lcars.profile = "personal";             # quero o preset de desktop
-lcars.system.wm.plasma.enable = false;  # …mas sem interface gráfica nesta aqui
+lcars.system.wm.niri.enable = false;    # …mas sem interface gráfica nesta aqui
 lcars.user.dotfiles.enable = false;     # …e sem puxar dotfiles do 1Password
 ```
 
@@ -163,7 +162,7 @@ settings é aplicado com `mkDefault`, então declarar aqui vence:
 
 ```nix
 lcars.profile         = "basic";   # esta máquina foge do settings
-lcars.system.wm.plasma.enable = false;
+lcars.system.wm.niri.enable = false;
 ```
 
 ### O boot também é declarado aqui
@@ -196,7 +195,7 @@ Outras opções úteis:
 | `lcars.system.core.extraPackages` | nomes de pacotes nixpkgs, a nível de sistema |
 | `lcars.system.core.userPackages` | idem, no usuário — **somado** a `userSettings.packages` |
 | `lcars.system.hardware.laptop.powerManager` | `"tlp"` ou `"ppd"` |
-| `lcars.system.wm.defaultSession` | qual sessão abre por padrão: `"plasma"`, `"hyprland"`… |
+| `lcars.system.wm.defaultSession` | qual sessão abre por padrão; hoje só existe `"niri"` |
 | `lcars.system.theme.scheme` | esquema base16, ex. `"gruvbox-dark-hard"` |
 | `lcars.system.theme.wallpaper` | imagem de fundo; `null` gera um gradiente das cores |
 | `lcars.system.hardware.keyboard.layout` / `.variant` | layout XKB, valendo no console e no gráfico |
@@ -249,7 +248,7 @@ nixos-rebuild switch --flake .#<host> --elevate=sudo
        # sistema
        lcars.system.core.enable      = mkDefault true;
        lcars.system.security.enable  = mkDefault true;
-       lcars.system.wm.plasma.enable = mkDefault true;
+       lcars.system.wm.niri.enable = mkDefault true;
 
        # ambiente do usuário
        lcars.user.zsh.enable      = mkDefault true;

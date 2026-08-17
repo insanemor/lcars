@@ -1,0 +1,295 @@
+# niri.nix — a configuração do compositor.
+#
+# Opt-in por `lcars.user.niri.enable`, ligada no profile. A flag vem do config
+# do NixOS, lida por `osConfig` (veja user/options.nix).
+#
+# O modelo é diferente, e os atalhos acompanham
+# ---------------------------------------------
+# No Hyprland você movia o foco entre janelas num plano. Aqui a unidade é a
+# COLUNA: as janelas formam uma fita horizontal infinita, e a tela é uma janela
+# de visualização que rola por ela. Uma coluna pode ter mais de uma janela
+# empilhada na vertical.
+#
+# Daí a divisão dos atalhos: H e L andam entre colunas, J e K entre as janelas
+# de uma mesma coluna. Os workspaces, que no Hyprland eram uma grade de nove,
+# aqui são uma pilha vertical dinâmica — mas os atalhos numéricos continuam,
+# porque a memória dos dedos não muda de arquitetura junto.
+#
+# A cor vem do stylix, mas à mão
+# ------------------------------
+# O stylix não tem alvo para niri (conferido em `modules/`: há hyprland, kde,
+# gtk e qt, não niri). Então nada aqui é pintado sozinho, e as cores abaixo são
+# lidas de `config.lib.stylix.colors` e escritas explicitamente. Trocar
+# `lcars.system.theme.scheme` continua repintando tudo — só não é automático,
+# é este arquivo que faz.
+{
+  config,
+  osConfig,
+  lib,
+  pkgs,
+  ...
+}:
+
+let
+  cores = config.lib.stylix.colors;
+  rice = osConfig.lcars.system.theme.rice;
+
+  mod = "Mod";
+  terminal = "kitty";
+
+  # Painéis do noctalia, por IPC — o shell já está no ar, isto só o chama.
+  painel = id: [
+    "noctalia"
+    "msg"
+    "panel-toggle"
+    id
+  ];
+in
+lib.mkIf osConfig.lcars.user.niri.enable {
+  wayland.windowManager.niri = {
+    enable = true;
+
+    # O pacote aqui NÃO é para instalar o compositor — quem faz isso é o módulo
+    # NixOS (system/wm/niri.nix, via programs.niri), e é o mesmo derivation, de
+    # modo que não há segunda cópia no store.
+    #
+    # Ele está aqui pelo `checkConfig`, cujo default é `package != null`. Com o
+    # pacote em null a validação não roda, e um erro de KDL só apareceria na
+    # tela preta; com ele, `niri validate` roda no build e a configuração
+    # inválida nunca chega à máquina.
+    package = pkgs.niri;
+
+    # false, e não é descuido. As unidades systemd do niri — que é de onde sai
+    # o `graphical-session.target` de que o serviço do noctalia depende — já
+    # são instaladas pelo módulo NixOS (`systemd.packages = [ cfg.package ]`,
+    # nixpkgs, programs/wayland/niri.nix:41). Ligar aqui seria a segunda cópia.
+    #
+    # E não é só redundância: o módulo do home-manager tem uma assertion de
+    # `systemd.enable -> package != null`, então ligar isto com o pacote em
+    # null aborta a avaliação com
+    # "wayland.windowManager.niri.systemd.enable requires a non-null package".
+    # Foi o que aconteceu na primeira tentativa.
+    systemd.enable = false;
+
+    settings = {
+      # --- entrada -------------------------------------------------------
+      # O layout do teclado NÃO é definido aqui: vem de
+      # lcars.system.hardware.keyboard, o mesmo do console e do SDDM, e o niri
+      # o herda do sistema. Duplicá-lo aqui criaria duas fontes de verdade.
+      input = {
+        focus-follows-mouse = { };
+        touchpad = {
+          tap = { };
+          natural-scroll = { };
+        };
+      };
+
+      # --- forma ---------------------------------------------------------
+      layout = {
+        gaps = if rice then 9 else 4;
+
+        # O anel de foco. Com `rice`, o gradiente base0D → base0A — que no
+        # simbiot-dark é o ciano do logo indo ao lime, herdeiro direto da borda
+        # que o Hyprland tinha. Sem `rice`, uma cor sólida, ainda do esquema.
+        #
+        # Em qualquer esquema continua sendo "primária → destaque": não há cor
+        # fixa escrita aqui.
+        focus-ring = {
+          width = if rice then 2 else 1;
+          inactive-color = "#${cores.base02}";
+        }
+        // (
+          if rice then
+            {
+              active-gradient._props = {
+                from = "#${cores.base0D}";
+                to = "#${cores.base0A}";
+                angle = 45;
+              };
+            }
+          else
+            { active-color = "#${cores.base0D}"; }
+        );
+
+        # Larguras predefinidas, cicladas por Mod+R. É o que substitui o
+        # "redimensionar arrastando" num layout que rola: você escolhe entre
+        # frações da tela em vez de mirar a borda.
+        preset-column-widths._children = [
+          { proportion = 0.33333; }
+          { proportion = 0.5; }
+          { proportion = 0.66667; }
+        ];
+        default-column-width.proportion = 0.5;
+      };
+
+      # Sem decoração do cliente: quem desenha a moldura é o compositor, e é
+      # assim que o anel de foco acima fica visível em todos os aplicativos.
+      prefer-no-csd = { };
+
+      # --- o que sobe com a sessão ---------------------------------------
+      # Vazio, e é para continuar assim.
+      #
+      # O noctalia sobe por unidade systemd
+      # (`programs.noctalia.systemd.enable`, em user/wm/noctalia.nix), que
+      # reinicia o que cai e responde a `systemctl --user status noctalia`.
+      # A regra está no CLAUDE.md e já custou três entregas: antes de pôr
+      # qualquer coisa em `spawn-at-startup`, procure um serviço.
+      spawn-at-startup._children = [ ];
+
+      # --- atalhos --------------------------------------------------------
+      binds = {
+        "${mod}+Return".spawn = [ terminal ];
+        "${mod}+Q".close-window = { };
+
+        # Painéis do noctalia — os mesmos do Hyprland, mesma memória de dedos.
+        "${mod}+D".spawn = painel "launcher";
+        "${mod}+C".spawn = painel "control-center";
+        "${mod}+V".spawn = painel "clipboard";
+        "${mod}+Escape".spawn = painel "session";
+        "${mod}+N".spawn = [
+          "noctalia"
+          "msg"
+          "panel-open"
+          "control-center"
+          "notifications"
+        ];
+
+        # Foco: H e L entre colunas, J e K dentro da coluna.
+        "${mod}+H".focus-column-left = { };
+        "${mod}+L".focus-column-right = { };
+        "${mod}+J".focus-window-down = { };
+        "${mod}+K".focus-window-up = { };
+        "${mod}+Left".focus-column-left = { };
+        "${mod}+Right".focus-column-right = { };
+        "${mod}+Down".focus-window-down = { };
+        "${mod}+Up".focus-window-up = { };
+
+        # Mover a coluna pela fita.
+        "${mod}+Shift+H".move-column-left = { };
+        "${mod}+Shift+L".move-column-right = { };
+        "${mod}+Shift+J".move-window-down = { };
+        "${mod}+Shift+K".move-window-up = { };
+
+        # Juntar a janela ao lado nesta coluna, ou tirá-la para uma própria.
+        # Não há equivalente no Hyprland: é o que faz uma coluna ter mais de
+        # uma janela empilhada.
+        "${mod}+comma".consume-or-expel-window-left = { };
+        "${mod}+period".consume-or-expel-window-right = { };
+
+        # Tamanho.
+        "${mod}+R".switch-preset-column-width = { };
+        "${mod}+F".maximize-column = { };
+        "${mod}+Shift+F".fullscreen-window = { };
+        "${mod}+W".toggle-column-tabbed-display = { };
+
+        # Workspaces: pilha vertical, dinâmica. Os números continuam valendo.
+        "${mod}+Page_Down".focus-workspace-down = { };
+        "${mod}+Page_Up".focus-workspace-up = { };
+        "${mod}+Shift+Page_Down".move-column-to-workspace-down = { };
+        "${mod}+Shift+Page_Up".move-column-to-workspace-up = { };
+
+        # Captura de tela — nativa do niri, com seleção de região. É por isso
+        # que grim e slurp saíram do system/wm/niri.nix.
+        "${mod}+Shift+S".screenshot = { };
+        "Print".screenshot-screen = { };
+        "${mod}+Print".screenshot-window = { };
+
+        "${mod}+Shift+E".quit = { };
+
+        # Mídia e brilho. `allow-when-locked` porque volume e brilho fazem
+        # sentido com a tela bloqueada — é o que o teclado do notebook espera.
+        "XF86AudioRaiseVolume" = {
+          _props.allow-when-locked = true;
+          spawn = [
+            "pamixer"
+            "-i"
+            "5"
+          ];
+        };
+        "XF86AudioLowerVolume" = {
+          _props.allow-when-locked = true;
+          spawn = [
+            "pamixer"
+            "-d"
+            "5"
+          ];
+        };
+        "XF86AudioMute" = {
+          _props.allow-when-locked = true;
+          spawn = [
+            "pamixer"
+            "-t"
+          ];
+        };
+        "XF86AudioPlay" = {
+          _props.allow-when-locked = true;
+          spawn = [
+            "playerctl"
+            "play-pause"
+          ];
+        };
+        "XF86AudioNext" = {
+          _props.allow-when-locked = true;
+          spawn = [
+            "playerctl"
+            "next"
+          ];
+        };
+        "XF86AudioPrev" = {
+          _props.allow-when-locked = true;
+          spawn = [
+            "playerctl"
+            "previous"
+          ];
+        };
+        "XF86MonBrightnessUp" = {
+          _props.allow-when-locked = true;
+          spawn = [
+            "brightnessctl"
+            "set"
+            "5%+"
+          ];
+        };
+        "XF86MonBrightnessDown" = {
+          _props.allow-when-locked = true;
+          spawn = [
+            "brightnessctl"
+            "set"
+            "5%-"
+          ];
+        };
+      }
+      # Workspaces 1–9: Mod troca, Mod+Shift leva a coluna junto. Gerados em
+      # laço pelo mesmo motivo de antes — dezoito linhas escritas à mão são
+      # dezoito chances de errar um número.
+      // builtins.listToAttrs (
+        builtins.concatLists (
+          builtins.genList (
+            i:
+            let
+              n = toString (i + 1);
+            in
+            [
+              {
+                name = "${mod}+${n}";
+                value.focus-workspace._args = [ (i + 1) ];
+              }
+              {
+                name = "${mod}+Shift+${n}";
+                value.move-column-to-workspace._args = [ (i + 1) ];
+              }
+            ]
+          ) 9
+        )
+      );
+    };
+  };
+
+  # O terminal não vem com o compositor, e sem ele não há como se recuperar de
+  # nada dentro da sessão.
+  #
+  # O noctalia NÃO está aqui: quem o instala é user/wm/noctalia.nix, via
+  # programs.noctalia. Pôr nos dois lugares daria duas cópias no PATH, e a do
+  # home.packages não teria a configuração.
+  home.packages = [ pkgs.kitty ];
+}

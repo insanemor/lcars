@@ -1,8 +1,9 @@
 # system/wm — ambientes gráficos, e o que eles compartilham.
 #
-# Mais de um pode estar ligado ao mesmo tempo: os dois aparecem na tela de
-# login e você escolhe na hora. É o que torna seguro experimentar um ambiente
-# novo sem perder o que já funciona.
+# Mais de um pode estar ligado ao mesmo tempo: todos aparecem na tela de login
+# e você escolhe na hora. Hoje só o niri está aqui — Plasma e Hyprland saíram
+# na #34 —, mas a estrutura continua preparada para conviverem, e é ela que
+# torna seguro experimentar um ambiente novo sem perder o que funciona.
 #
 # Este arquivo existe porque algumas coisas são de "ter ambiente gráfico", não
 # de um WM em particular, e declará-las dentro de cada módulo geraria conflito
@@ -22,38 +23,29 @@ with lib;
 
 let
   cfg = config.lcars.system.wm;
-  algumWm = cfg.plasma.enable || cfg.hyprland.enable;
+  algumWm = cfg.niri.enable;
 
-  # Quando você não escolhe, o Plasma ganha: é o ambiente completo, e serve de
-  # rede se o outro não subir. Trocar é uma linha em machines/<host>.
-  automatica =
-    if cfg.plasma.enable then
-      (if cfg.plasma.wayland then "plasma" else "plasmax11")
-    else if cfg.hyprland.enable then
-      "hyprland"
-    else
-      "";
+  automatica = if cfg.niri.enable then "niri" else "";
 
   sessao = if cfg.defaultSession != "" then cfg.defaultSession else automatica;
 in
 {
   imports = [
-    ./plasma.nix
-    ./hyprland.nix
+    ./niri.nix
   ];
 
   options.lcars.system.wm = {
     defaultSession = mkOption {
       type = types.str;
       default = "";
-      example = "hyprland";
+      example = "niri";
       description = ''
-        Sessão pré-selecionada na tela de login. Vazio = decide sozinho,
-        preferindo o Plasma quando os dois estão ligados.
+        Sessão pré-selecionada na tela de login. Vazio = decide sozinho, e
+        hoje só há uma.
 
-        Os nomes vêm dos .desktop que cada ambiente instala: "plasma",
-        "plasmax11", "hyprland". Com o sistema no ar, `ls /run/current-system/sw/share/wayland-sessions/`
-        mostra os que existem.
+        Os nomes vêm dos .desktop que cada ambiente instala. Com o sistema no
+        ar, `ls /run/current-system/sw/share/wayland-sessions/` mostra os que
+        existem.
       '';
     };
 

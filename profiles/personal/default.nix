@@ -15,18 +15,18 @@ with lib;
     lcars.system.core.enable = mkDefault true;
     lcars.system.security.enable = mkDefault true;
 
-    lcars.system.wm.plasma.enable = mkDefault true;
     lcars.system.app.onePassword.enable = mkDefault true;
 
-    # Os dois ambientes ligados de propósito: aparecem lado a lado na tela de
-    # login e você escolhe na hora. O Plasma abre por padrão — se o Hyprland
-    # não subir, há para onde voltar sem editar o repositório.
-    # Para inverter: lcars.system.wm.defaultSession = "hyprland";
-    lcars.system.wm.hyprland.enable = mkDefault true;
+    # O niri é o ambiente gráfico, e é o único: Plasma e Hyprland saíram na
+    # #34. Como não há segunda sessão na tela de login, se ele não subir a
+    # volta é pelo TTY (Ctrl+Alt+F2), editando este arquivo ou o
+    # machines/<host> e rodando `nupdate`.
+    lcars.system.wm.niri.enable = mkDefault true;
 
-    # Tema: um esquema base16 pinta os dois ambientes, o terminal, o launcher,
-    # GTK, Qt e o console de uma vez. Trocar de esquema é uma linha —
-    # lcars.system.theme.scheme.
+    # Tema: um esquema base16 pinta o terminal, o shell, GTK, Qt e o console
+    # de uma vez. Trocar de esquema é uma linha — lcars.system.theme.scheme.
+    # O niri é a exceção: o stylix não tem alvo para ele, e user/wm/niri.nix
+    # aplica as mesmas cores à mão.
     lcars.system.theme.enable = mkDefault true;
 
     # Áudio é independente do desktop: o Plasma não o liga por trás, é aqui
@@ -51,7 +51,7 @@ with lib;
     lcars.user.git.enable = mkDefault true;
     lcars.user.direnv.enable = mkDefault true;
     lcars.user.dotfiles.enable = mkDefault true;
-    lcars.user.hyprland.enable = mkDefault true;
+    lcars.user.niri.enable = mkDefault true;
     lcars.user.noctalia.enable = mkDefault true;
   };
 }

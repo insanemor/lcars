@@ -86,9 +86,9 @@ in
       type = types.bool;
       default = true;
       description = ''
-        Aplica a geometria do rice às janelas do Hyprland: borda em
-        gradiente, cantos arredondados, blur e sombra ajustados. Desligar
-        deixa o visual padrão, ainda pintado pelo esquema.
+        Aplica a geometria do rice ao compositor: anel de foco em gradiente
+        e espaçamento maior entre janelas. Desligar deixa o anel sólido e a
+        forma discreta, ainda pintada pelo esquema.
 
         A forma da barra e dos painéis não passa por aqui: quem a define é o
         noctalia, pelo próprio arquivo de configuração (user/wm).
