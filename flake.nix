@@ -50,20 +50,30 @@
     #
     # O preço é a compilação: é um binário Rust grande, que ainda constrói o
     # libghostty-vt com o zig, e não há cache binário público. O primeiro
-    # rebuild depois de ligar a flag — e cada vez que este input for atualizado
-    # — leva alguns minutos de CPU. Se um dia entrar no nixpkgs, este input sai
-    # e o módulo passa a usar `pkgs.herdr`.
+    # rebuild depois de ligar a flag — e cada vez que esta linha subir de
+    # versão — leva alguns minutos de CPU. Se um dia entrar no nixpkgs, este
+    # input sai e o módulo passa a usar `pkgs.herdr`.
     #
-    # A URL é `git+https`, e não a forma `github:` que o resto deste arquivo
-    # usa, por um motivo prático: `github:` busca o **tarball** pelo codeload,
-    # e o do herdr responde 429/502 de forma teimosa — com token e sem, em
-    # tentativas repetidas, enquanto outros repositórios baixavam normalmente
-    # no mesmo minuto. Pelo protocolo git ele vem de primeira, e `shallow=1`
-    # dispensa o histórico, que aqui não serve para nada. Se um dia o tarball
-    # passar a responder, dá para voltar a `github:` — é trocar a linha e
-    # regerar o lock.
+    # PRESO NUMA TAG, e é o único input assim. Os outros seguem o branch
+    # principal do upstream, o que é barato quando o pacote vem pronto de um
+    # cache binário. Aqui não vem: `nix flake update` sem tag traria qualquer
+    # commit que estivesse no topo do master naquele dia — código entre
+    # releases, e uma recompilação longa para chegar nele. O upstream também
+    # publica pre-releases `preview-*`, que não queremos.
+    #
+    # Subir de versão é editar a tag aqui e regerar o lock; é para ser um ato
+    # deliberado. A documentação oficial recomenda a forma
+    # `github:herdrdev/herdr/v0.8.0` (https://herdr.dev/docs/install/), e ela
+    # seria a natural aqui — mas `github:` baixa um **tarball**, e o nix
+    # resolve a tag para o commit antes de pedi-lo: o que ele busca é o archive
+    # por rev, que o codeload responde com 429 de forma consistente. Pelo mesmo
+    # endpoint, o archive da tag responde 200 — a diferença é o rev.
+    #
+    # Daí o `git+https`: pelo protocolo git o fetch passa, e `ref=refs/tags/…`
+    # prende na mesma versão que a doc indica. `shallow=1` dispensa o
+    # histórico, que aqui não serve para nada.
     herdr = {
-      url = "git+https://github.com/ogulcancelik/herdr?shallow=1";
+      url = "git+https://github.com/herdrdev/herdr?ref=refs/tags/v0.8.0&shallow=1";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
