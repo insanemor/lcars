@@ -40,6 +40,7 @@ with lib;
 
     lcars.user.direnv.enable = mkDefault false;
     lcars.user.dotfiles.enable = mkDefault false;
+    lcars.user.kitty.enable = mkDefault false;
     lcars.user.niri.enable = mkDefault false;
     lcars.user.noctalia.enable = mkDefault false;
   };

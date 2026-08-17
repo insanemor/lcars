@@ -17,6 +17,7 @@ O repo vem com `personal`.
 | Config do niri (`user/wm`) | `lcars.user.niri.enable` | — | sim |
 | Tema unificado (`system/theme`) | `lcars.system.theme.enable` | — | sim |
 | Shell noctalia (`user/wm`) | `lcars.user.noctalia.enable` | — | sim |
+| Terminal kitty (`user/app`) | `lcars.user.kitty.enable` | — | sim |
 | Áudio PipeWire (`system/hardware`) | `lcars.system.hardware.audio.enable` | — | sim |
 | Teclado, console e gráfico (`system/hardware`) | `lcars.system.hardware.keyboard.enable` | sim | sim |
 | 1Password CLI e GUI (`system/app`) | `lcars.system.app.onePassword.enable` | — | sim |
@@ -602,9 +603,72 @@ profile — os títulos abaixo trazem a flag de cada um.
 
 ### zsh · `user/shell/zsh.nix` · `lcars.user.zsh.enable` · basic + personal
 
+- **oh-my-zsh**, com três plugins: `git`, `sudo` (ESC ESC repete com sudo) e `systemd`
+- **powerlevel10k** como prompt, do preset *rainbow*
 - Autosuggestion, syntax highlighting e completion
 - Histórico de 50 000 linhas, compartilhado entre sessões, sem duplicatas
 - Aliases: `ll`, `la`, `l`, `gs` (git status), `gp` (push), `gpl` (pull)
+
+#### A ordem de carga, que é o que pode quebrar
+
+Três camadas precisam entrar em sequência: o framework, o tema, e a
+configuração do tema. O home-manager carrega `programs.zsh.plugins` **depois**
+do oh-my-zsh e na ordem da lista, então o p10k e o `p10k.zsh` são declarados
+ali — e não em `initContent`, que roda no fim e leria a configuração antes de o
+tema existir.
+
+Conferido no `.zshrc` gerado:
+
+```
+35: source $ZSH/oh-my-zsh.sh
+39: powerlevel10k/…/powerlevel10k.zsh-theme
+40: p10k-config/p10k.zsh
+```
+
+**`oh-my-zsh.theme` fica vazio**, e não `"powerlevel10k"`: o p10k não é um tema
+do framework, é um plugin próprio. Apontá-lo ali faria o oh-my-zsh procurar um
+arquivo no diretório de temas dele, não achar, e cair no prompt padrão sem
+avisar.
+
+**A lista de plugins do oh-my-zsh não repete o que já vem por option.**
+`autosuggestion` e `syntaxHighlighting` são options do módulo, e acrescentá-los
+à lista do framework carregaria os mesmos plugins duas vezes. Verificado: cada
+um aparece uma única vez no `.zshrc`.
+
+#### O prompt · `user/shell/p10k.zsh`
+
+O preset *rainbow*, copiado do pacote para o repositório para poder ser
+editado. Para mudar: rode `p10k configure`, que escreve em `~/.p10k.zsh` — um
+arquivo que o Nix **não** gerencia —, copie por cima de
+`user/shell/p10k.zsh` e publique com `nsave`.
+
+**A cor do prompt não vem do tema.** O powerlevel10k define cor por número de
+terminal (0-255) e não lê o stylix, então trocar `lcars.system.theme.scheme`
+repinta tudo menos o prompt. É a única peça do sistema com essa característica,
+e está registrada no cabeçalho do arquivo.
+
+### Terminal · `user/app/kitty.nix` · `lcars.user.kitty.enable` · só personal
+
+O kitty já era instalado antes, por `home.packages` no módulo do compositor — e
+rodava com os defaults de fábrica, porque **instalar o pacote não é configurar
+o programa**. O stylix tem alvo para kitty, mas age sobre `programs.kitty`; sem
+o módulo habilitado, nenhum `kitty.conf` era gerado.
+
+Era por isso que a paleta pintava o sistema inteiro menos o terminal, e a Nerd
+Font não aparecia justamente onde os ícones do prompt precisam dela.
+
+Com o módulo, o `kitty.conf` sai assim:
+
+```
+font_family JetBrainsMono Nerd Font
+font_size 11
+include …/base16-simbioit-dark.conf     # background #111d23, color4 #29b6bf
+```
+
+Fonte, tamanho e todas as cores vêm de `lcars.system.theme` — nada disso está
+escrito no módulo. O que ele define é só comportamento: 10 000 linhas de
+histórico de rolagem, sem confirmação ao fechar, e sem decoração de janela
+(quem desenha a moldura é o compositor, por `prefer-no-csd`).
 - **`nupdate`** e **`nsave`** — os dois sentidos, descritos logo abaixo
 - `zsh-completions`
 

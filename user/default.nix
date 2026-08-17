@@ -17,6 +17,7 @@
   imports = [
     ./shell/zsh.nix
     ./app/git.nix
+    ./app/kitty.nix
     ./app/direnv.nix
     ./app/dotfiles.nix
     ./wm/niri.nix
