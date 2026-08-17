@@ -181,10 +181,16 @@ e `pull.rebase`; direnv com nix-direnv; e o gancho para puxar dotfiles de itens
 Document do 1Password.
 
 **No profile `personal`** — [niri](https://github.com/YaLTeR/niri) com SDDM, o
-shell [noctalia](https://github.com/noctalia-dev/noctalia-shell), áudio
-PipeWire, fontes Noto/Liberation/DejaVu, 1Password (CLI + GUI + agente SSH), e
-`ripgrep`, `fd`, `bat`, `eza`. **Não há navegador** nem suíte de aplicativos;
-acrescente o que quiser em `userSettings.packages`.
+shell [noctalia](https://github.com/noctalia-dev/noctalia-shell), o terminal
+kitty com o multiplexador [herdr](https://herdr.dev) (workspaces e painéis
+persistentes, com os atalhos do tmux), áudio PipeWire, fontes
+Noto/Liberation/DejaVu, 1Password (CLI + GUI + agente SSH), e `ripgrep`, `fd`,
+`bat`, `eza`. **Não há navegador** nem suíte de aplicativos; acrescente o que
+quiser em `userSettings.packages`.
+
+O herdr é o único programa que **compila na sua máquina**: ele não está no
+nixpkgs, vem do flake do upstream, e não há cache binário. Se isso não lhe
+serve, desligue com `lcars.user.herdr.enable = false`.
 
 O áudio é flag separada (`lcars.system.hardware.audio.enable`), não parte do
 desktop: dá para ter som sem ambiente gráfico. O teclado também é módulo

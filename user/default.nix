@@ -18,6 +18,7 @@
     ./shell/zsh.nix
     ./app/git.nix
     ./app/kitty.nix
+    ./app/herdr.nix
     ./app/direnv.nix
     ./app/dotfiles.nix
     ./wm/niri.nix

@@ -41,6 +41,32 @@
       url = "github:noctalia-dev/noctalia-shell";
     };
 
+    # Multiplexador de terminal — workspaces, painéis e sessões que sobrevivem
+    # ao fechar do terminal, no lugar do tmux. Veja user/app/herdr.nix.
+    #
+    # Vem de fora do nixpkgs porque lá ele não existe: em agosto de 2026 não há
+    # `pkgs.herdr`. O upstream mantém o próprio flake, com
+    # `packages.<system>.default`, e é ele que usamos.
+    #
+    # O preço é a compilação: é um binário Rust grande, que ainda constrói o
+    # libghostty-vt com o zig, e não há cache binário público. O primeiro
+    # rebuild depois de ligar a flag — e cada vez que este input for atualizado
+    # — leva alguns minutos de CPU. Se um dia entrar no nixpkgs, este input sai
+    # e o módulo passa a usar `pkgs.herdr`.
+    #
+    # A URL é `git+https`, e não a forma `github:` que o resto deste arquivo
+    # usa, por um motivo prático: `github:` busca o **tarball** pelo codeload,
+    # e o do herdr responde 429/502 de forma teimosa — com token e sem, em
+    # tentativas repetidas, enquanto outros repositórios baixavam normalmente
+    # no mesmo minuto. Pelo protocolo git ele vem de primeira, e `shallow=1`
+    # dispensa o histórico, que aqui não serve para nada. Se um dia o tarball
+    # passar a responder, dá para voltar a `github:` — é trocar a linha e
+    # regerar o lock.
+    herdr = {
+      url = "git+https://github.com/ogulcancelik/herdr?shallow=1";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # FUTURO — descomente para ligar um repo privado sobreposto:
     # lcars-private = {
     #   url = "git+ssh://git@github.com/<voce>/lcars-private.git";
@@ -128,7 +154,18 @@
               home-manager = {
                 useGlobalPkgs = true;
                 useUserPackages = true;
-                extraSpecialArgs = { inherit settings sys user; };
+                # `inputs` entra aqui porque nem todo programa do usuário vem
+                # do nixpkgs: user/app/herdr.nix pega o pacote do flake do
+                # próprio herdr. Sem isto, o módulo do Home Manager não teria
+                # como alcançar os inputs deste flake.
+                extraSpecialArgs = {
+                  inherit
+                    inputs
+                    settings
+                    sys
+                    user
+                    ;
+                };
                 # O módulo do noctalia declara programs.noctalia no Home
                 # Manager; user/wm/noctalia.nix é quem o liga e configura.
                 sharedModules = [
