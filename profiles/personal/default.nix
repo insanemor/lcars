@@ -51,6 +51,7 @@ with lib;
     lcars.user.git.enable = mkDefault true;
     lcars.user.direnv.enable = mkDefault true;
     lcars.user.dotfiles.enable = mkDefault true;
+    lcars.user.kitty.enable = mkDefault true;
     lcars.user.niri.enable = mkDefault true;
     lcars.user.noctalia.enable = mkDefault true;
   };

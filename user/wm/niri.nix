@@ -323,11 +323,14 @@ lib.mkIf osConfig.lcars.user.niri.enable {
     };
   };
 
-  # O terminal não vem com o compositor, e sem ele não há como se recuperar de
-  # nada dentro da sessão.
+  # Nem o terminal nem o shell estão aqui, e é deliberado: quem os instala são
+  # user/app/kitty.nix e user/wm/noctalia.nix, pelos módulos `programs.*`.
   #
-  # O noctalia NÃO está aqui: quem o instala é user/wm/noctalia.nix, via
-  # programs.noctalia. Pôr nos dois lugares daria duas cópias no PATH, e a do
-  # home.packages não teria a configuração.
-  home.packages = [ pkgs.kitty ];
+  # Um pacote em `home.packages` fica no PATH sem configuração nenhuma — foi
+  # assim que o kitty rodou por várias entregas com fonte e cores de fábrica,
+  # enquanto o resto do sistema já usava a paleta.
+  #
+  # Os atalhos acima continuam funcionando: `getExe` aponta para o caminho no
+  # store, que é dependência deste arquivo, e não depende de o pacote estar
+  # instalado no perfil.
 }

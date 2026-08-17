@@ -17,6 +17,7 @@ O repo vem com `personal`.
 | Config do niri (`user/wm`) | `lcars.user.niri.enable` | — | sim |
 | Tema unificado (`system/theme`) | `lcars.system.theme.enable` | — | sim |
 | Shell noctalia (`user/wm`) | `lcars.user.noctalia.enable` | — | sim |
+| Terminal kitty (`user/app`) | `lcars.user.kitty.enable` | — | sim |
 | Áudio PipeWire (`system/hardware`) | `lcars.system.hardware.audio.enable` | — | sim |
 | Teclado, console e gráfico (`system/hardware`) | `lcars.system.hardware.keyboard.enable` | sim | sim |
 | 1Password CLI e GUI (`system/app`) | `lcars.system.app.onePassword.enable` | — | sim |
@@ -317,7 +318,8 @@ e `user/wm/niri.nix` aplica as mesmas cores à mão.
 | `scheme` | `"simbiot-dark"` | nome de um esquema — deste repositório ou do pacote `base16-schemes` |
 | `polarity` | `"dark"` | diz aos programas se o esquema é claro ou escuro |
 | `wallpaper` | `null` | `null` = cor sólida pintada pelo compositor, **sem daemon**; uma imagem liga o hyprpaper |
-| `fonts.monospace` | `"JetBrainsMono Nerd Font"` | Nerd Font porque a barra usa ícones que só existem nelas |
+| `fonts.monospace` | `"JetBrainsMono Nerd Font"` | terminal e editor |
+| `fonts.sansSerif` | `"JetBrainsMono Nerd Font"` | **interface**: menus, diálogos, barra e painéis do noctalia |
 | `fonts.size` | `11` | corpo da fonte de interface |
 | `rice` | `true` | a **geometria** do compositor: anel de foco em gradiente e espaçamento maior. `false` deixa o anel sólido e discreto, ainda pintado pelo esquema |
 | `animations` | `true` | transições, sombras e blur. `false` remove **só o custo de GPU**, sem mudar funcionalidade |
@@ -384,6 +386,36 @@ cor sumir da paleta em silêncio).
 Nada no repositório escreve cor fixa. O gradiente da borda é `base0D → base0A`,
 então trocar de esquema troca o gradiente junto — com `gruvbox-dark-hard` ele
 vira `rgb(83a598) rgb(fabd2f)`, verificado.
+
+### A mesma fonte em tudo
+
+`sansSerif` aponta para a **mesma** Nerd Font da `monospace`, e isso é
+deliberado. Ela é monoespaçada, então a interface inteira fica com largura
+fixa — em troca, os ícones existem em toda superfície, sem depender de o
+fontconfig achar um fallback.
+
+Onde a fonte chega, verificado por avaliação:
+
+| Superfície | De onde vem |
+|---|---|
+| terminal (kitty) | `monospace` |
+| barra e painéis do noctalia | `sansSerif` |
+| menus e diálogos GTK | `sansSerif` |
+| Qt | `sansSerif` |
+
+Para o visual convencional, `lcars.system.theme.fonts.sansSerif = "Noto Sans"` —
+que já está instalado por `system/wm/default.nix`.
+
+**Uma limitação a saber:** o *pacote* declarado ao stylix é fixo
+(`nerd-fonts.jetbrains-mono`), e só o *nome* é configurável. Trocar o nome
+funciona para fontes já instaladas — Noto, Liberation e DejaVu estão —, mas não
+puxa pacote novo. Uma fonte de fora exige acrescentá-la a `fonts.packages`.
+
+Houve um caso concreto que motivou tudo isto: o `font_family` que o usuário
+tinha escolhido na GUI do noctalia era a Nerd Font, e a poda que evita conflito
+com o stylix a substituía por `Noto Sans` — porque o stylix usa `sansSerif`
+para o shell. Com as duas apontando para a mesma fonte, a escolha volta a
+valer.
 
 ### `animations = false`, para GPU fraca
 
@@ -602,9 +634,72 @@ profile — os títulos abaixo trazem a flag de cada um.
 
 ### zsh · `user/shell/zsh.nix` · `lcars.user.zsh.enable` · basic + personal
 
+- **oh-my-zsh**, com três plugins: `git`, `sudo` (ESC ESC repete com sudo) e `systemd`
+- **powerlevel10k** como prompt, do preset *rainbow*
 - Autosuggestion, syntax highlighting e completion
 - Histórico de 50 000 linhas, compartilhado entre sessões, sem duplicatas
 - Aliases: `ll`, `la`, `l`, `gs` (git status), `gp` (push), `gpl` (pull)
+
+#### A ordem de carga, que é o que pode quebrar
+
+Três camadas precisam entrar em sequência: o framework, o tema, e a
+configuração do tema. O home-manager carrega `programs.zsh.plugins` **depois**
+do oh-my-zsh e na ordem da lista, então o p10k e o `p10k.zsh` são declarados
+ali — e não em `initContent`, que roda no fim e leria a configuração antes de o
+tema existir.
+
+Conferido no `.zshrc` gerado:
+
+```
+35: source $ZSH/oh-my-zsh.sh
+39: powerlevel10k/…/powerlevel10k.zsh-theme
+40: p10k-config/p10k.zsh
+```
+
+**`oh-my-zsh.theme` fica vazio**, e não `"powerlevel10k"`: o p10k não é um tema
+do framework, é um plugin próprio. Apontá-lo ali faria o oh-my-zsh procurar um
+arquivo no diretório de temas dele, não achar, e cair no prompt padrão sem
+avisar.
+
+**A lista de plugins do oh-my-zsh não repete o que já vem por option.**
+`autosuggestion` e `syntaxHighlighting` são options do módulo, e acrescentá-los
+à lista do framework carregaria os mesmos plugins duas vezes. Verificado: cada
+um aparece uma única vez no `.zshrc`.
+
+#### O prompt · `user/shell/p10k.zsh`
+
+O preset *rainbow*, copiado do pacote para o repositório para poder ser
+editado. Para mudar: rode `p10k configure`, que escreve em `~/.p10k.zsh` — um
+arquivo que o Nix **não** gerencia —, copie por cima de
+`user/shell/p10k.zsh` e publique com `nsave`.
+
+**A cor do prompt não vem do tema.** O powerlevel10k define cor por número de
+terminal (0-255) e não lê o stylix, então trocar `lcars.system.theme.scheme`
+repinta tudo menos o prompt. É a única peça do sistema com essa característica,
+e está registrada no cabeçalho do arquivo.
+
+### Terminal · `user/app/kitty.nix` · `lcars.user.kitty.enable` · só personal
+
+O kitty já era instalado antes, por `home.packages` no módulo do compositor — e
+rodava com os defaults de fábrica, porque **instalar o pacote não é configurar
+o programa**. O stylix tem alvo para kitty, mas age sobre `programs.kitty`; sem
+o módulo habilitado, nenhum `kitty.conf` era gerado.
+
+Era por isso que a paleta pintava o sistema inteiro menos o terminal, e a Nerd
+Font não aparecia justamente onde os ícones do prompt precisam dela.
+
+Com o módulo, o `kitty.conf` sai assim:
+
+```
+font_family JetBrainsMono Nerd Font
+font_size 11
+include …/base16-simbioit-dark.conf     # background #111d23, color4 #29b6bf
+```
+
+Fonte, tamanho e todas as cores vêm de `lcars.system.theme` — nada disso está
+escrito no módulo. O que ele define é só comportamento: 10 000 linhas de
+histórico de rolagem, sem confirmação ao fechar, e sem decoração de janela
+(quem desenha a moldura é o compositor, por `prefer-no-csd`).
 - **`nupdate`** e **`nsave`** — os dois sentidos, descritos logo abaixo
 - `zsh-completions`
 
