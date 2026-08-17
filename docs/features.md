@@ -673,10 +673,33 @@ editado. Para mudar: rode `p10k configure`, que escreve em `~/.p10k.zsh` — um
 arquivo que o Nix **não** gerencia —, copie por cima de
 `user/shell/p10k.zsh` e publique com `nsave`.
 
-**A cor do prompt não vem do tema.** O powerlevel10k define cor por número de
-terminal (0-255) e não lê o stylix, então trocar `lcars.system.theme.scheme`
-repinta tudo menos o prompt. É a única peça do sistema com essa característica,
-e está registrada no cabeçalho do arquivo.
+**A cor do prompt vem do tema, mas por um caminho próprio.** O preset traz 232
+variáveis de cor, todas em índices de terminal (0-255) — e um índice é "o azul
+do terminal, seja qual for", não uma cor escolhida.
+
+O que resolve isso: o p10k **aceita hexadecimal**, o que está no código dele
+(`internal/p10k.zsh:535`). Então `user/shell/zsh.nix` gera um bloco de
+sobreposição a partir de `lib.stylix.colors` e o injeta com `mkAfter`, depois
+do preset:
+
+| Segmento | Cor |
+|---|---|
+| diretório | `base0D` — o ciano do logo |
+| git limpo | `base0B` |
+| git modificado | `base0A` — lime |
+| git com arquivo novo | `base0C` |
+| git em conflito, erro | `base08` |
+| tempo de execução, relógio | `base02` e `base01` |
+
+Trocar `scheme` repinta o prompt junto com o resto do sistema.
+
+**Por que sobrepor em vez de gerar o `p10k.zsh` inteiro:** o ciclo daquele
+arquivo é rodar `p10k configure` e copiar o resultado por cima. Se ele fosse um
+template, o assistente o sobrescreveria com índices numéricos no primeiro uso.
+Assim o preset continua seu, e a cor continua do tema.
+
+Os segmentos raros — ícone de sistema, bateria, versões de linguagem, nuvens —
+ficam com os índices do preset. Aparecem pouco e não valem a manutenção.
 
 ### Terminal · `user/app/kitty.nix` · `lcars.user.kitty.enable` · só personal
 
