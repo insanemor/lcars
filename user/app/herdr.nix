@@ -6,6 +6,14 @@
 # Opt-in por `lcars.user.herdr.enable`, ligado no profile. A flag vem do config
 # do NixOS (veja user/options.nix).
 #
+# QUEM O ABRE É O TERMINAL
+# ------------------------
+# Com a flag ligada, user/app/kitty.nix aponta o `shell` do kitty para este
+# pacote: abrir o terminal é abrir o herdr. Os painéis daqui de dentro nascem
+# do `default_shell = "zsh"` lá embaixo e não passam pelo kitty, o que é o que
+# torna o arranjo seguro. A saída para um terminal sem ele é
+# `mod+Shift+Return`, em user/wm/niri.nix.
+#
 # DE ONDE VEM O PACOTE
 # --------------------
 # Do input `herdr` do flake, não do nixpkgs — lá ele não existe. O upstream

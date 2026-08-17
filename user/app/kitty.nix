@@ -24,12 +24,39 @@
 # de `lcars.system.theme` — o mesmo lugar que serve o resto do sistema. Escrever
 # a fonte aqui criaria uma segunda fonte de verdade que ninguém lembraria de
 # atualizar.
+#
+# O SHELL DO KITTY É O HERDR
+# --------------------------
+# Quando `lcars.user.herdr.enable` também está ligado, o kitty roda o herdr no
+# lugar do shell de login: abrir o terminal é abrir o multiplexador, já com as
+# sessões de antes de pé. É o que o `tmux attach` no `.zshrc` fazia na máquina
+# antiga, e o hábito não tinha atravessado a mudança — o herdr entrou na #41
+# como programa no PATH, a um comando de distância de toda sessão.
+#
+# Não há recursão nisso: os painéis abertos DENTRO do herdr não passam pelo
+# kitty, eles nascem do `default_shell = "zsh"` do config.toml (veja
+# user/app/herdr.nix). É também por isso que o caminho escolhido foi este, e
+# não um `exec herdr` no .zshrc — lá, sem uma variável de ambiente confiável
+# marcando "já estou dentro", o risco é um loop de shells.
+#
+# A saída de emergência mora em outro arquivo: `mod+Shift+Return`, em
+# user/wm/niri.nix, abre um kitty rodando o zsh direto. O herdr é um binário
+# compilado de um input preso numa tag — se um `nupdate --inputs` o quebrar,
+# aquele atalho é o terminal que roda o rollback.
 {
   osConfig,
+  inputs,
   lib,
+  pkgs,
   ...
 }:
 
+let
+  # Mesmo pacote que user/app/herdr.nix instala, e pelo mesmo motivo: o herdr
+  # não existe no nixpkgs, vem do input do próprio upstream. Aqui ele é só o
+  # caminho no store para o `shell` abaixo — quem instala é o outro módulo.
+  herdr = lib.getExe inputs.herdr.packages.${pkgs.stdenv.hostPlatform.system}.default;
+in
 lib.mkIf osConfig.lcars.user.kitty.enable {
   programs.kitty = {
     enable = true;
@@ -45,6 +72,13 @@ lib.mkIf osConfig.lcars.user.kitty.enable {
       # A barra de título é desenhada pelo compositor, não pelo kitty — é o que
       # `prefer-no-csd` do niri pede, e o que faz o anel de foco aparecer.
       hide_window_decorations = "yes";
+    }
+    # Caminho absoluto no store, e não o nome do programa: o kitty é lançado
+    # pelo compositor, cujo PATH não é o do shell interativo. Com o herdr
+    # desligado a linha não é gerada, e o kitty volta ao shell de login da
+    # conta — é o que mantém o profile `basic` inteiro.
+    // lib.optionalAttrs osConfig.lcars.user.herdr.enable {
+      shell = herdr;
     };
   };
 }

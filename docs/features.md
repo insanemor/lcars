@@ -202,7 +202,8 @@ mesmo serviço é conflito, não redundância.
 
 | Atalho | O que faz |
 |---|---|
-| `SUPER+Enter` | terminal (kitty) |
+| `SUPER+Enter` | terminal (kitty, já dentro do herdr) |
+| `SUPER+SHIFT+Enter` | terminal sem o herdr — o zsh puro |
 | `SUPER+D` | lançador |
 | `SUPER+N` | notificações |
 | `SUPER+C` | centro de controle |
@@ -755,6 +756,17 @@ Fonte, tamanho e todas as cores vêm de `lcars.system.theme` — nada disso est�
 escrito no módulo. O que ele define é só comportamento: 10 000 linhas de
 histórico de rolagem, sem confirmação ao fechar, e sem decoração de janela
 (quem desenha a moldura é o compositor, por `prefer-no-csd`).
+
+**Com `lcars.user.herdr.enable` ligado, o `shell` do kitty é o herdr**: abrir o
+terminal é abrir o multiplexador, com as sessões de antes já de pé. Os painéis
+lá dentro rodam `zsh`, pelo `default_shell` do próprio herdr — eles não passam
+pelo kitty, e por isso não há recursão possível. Com a flag desligada a linha
+não é gerada e o kitty volta ao shell de login da conta.
+
+`SUPER+SHIFT+Enter` abre um kitty rodando o `zsh` direto: um comando na linha
+de comando faz o kitty ignorar o `shell` configurado. É a saída de emergência —
+o herdr é compilado de um input preso numa tag, e se um `nupdate --inputs` o
+quebrar, esse atalho é o terminal gráfico que ainda roda o rollback.
 - **`nupdate`** e **`nsave`** — os dois sentidos, descritos logo abaixo
 - `zsh-completions`
 
@@ -829,6 +841,11 @@ O [herdr](https://herdr.dev) ocupa o lugar do tmux: workspaces, painéis lado a
 lado e sessões que continuam de pé depois de o terminal fechar. Os atalhos são
 os do tmux de propósito — prefixo `Ctrl-a`, `|` e `-` para dividir, `hjkl` para
 andar entre painéis — para a memória muscular atravessar a troca.
+
+Ele **sobe junto com o terminal**: o kitty roda o herdr no lugar do shell
+quando as duas flags estão ligadas (veja "Terminal" acima), do mesmo jeito que
+o `tmux attach` no `.zshrc` fazia antes. `SUPER+SHIFT+Enter` continua abrindo
+um terminal sem ele.
 
 | Atalho | O que faz |
 |---|---|
