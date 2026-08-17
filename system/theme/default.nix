@@ -123,6 +123,25 @@ in
         description = "Corpo da fonte de interface, em pontos.";
       };
 
+      sansSerif = mkOption {
+        type = types.str;
+        default = "JetBrainsMono Nerd Font";
+        example = "Noto Sans";
+        description = ''
+          Fonte da interface: menus, diálogos, e a barra e os painéis do
+          noctalia — o stylix usa a sansSerif em tudo que não é terminal.
+
+          O padrão é a MESMA Nerd Font do terminal, e isso é uma escolha
+          deliberada, não um descuido: ela é monoespaçada, então a interface
+          inteira fica com largura fixa. Em troca, os ícones da barra e do
+          prompt existem em toda superfície, sem depender de o fontconfig
+          achar um fallback.
+
+          Para o visual convencional, use "Noto Sans" — que já está instalado
+          por system/wm/default.nix.
+        '';
+      };
+
       monospace = mkOption {
         type = types.str;
         default = "JetBrainsMono Nerd Font";
@@ -179,9 +198,13 @@ in
           package = pkgs.nerd-fonts.jetbrains-mono;
           name = cfg.fonts.monospace;
         };
+        # O pacote é o mesmo da monospace porque o padrão é a mesma família.
+        # Trocar apenas o NOME acima para uma fonte de outra família funciona
+        # se ela já estiver instalada — Noto Sans, Liberation e DejaVu estão,
+        # por system/wm/default.nix —, mas não puxa pacote novo.
         sansSerif = {
-          package = pkgs.noto-fonts;
-          name = "Noto Sans";
+          package = pkgs.nerd-fonts.jetbrains-mono;
+          name = cfg.fonts.sansSerif;
         };
         serif = {
           package = pkgs.noto-fonts;

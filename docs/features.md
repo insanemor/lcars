@@ -318,7 +318,8 @@ e `user/wm/niri.nix` aplica as mesmas cores à mão.
 | `scheme` | `"simbiot-dark"` | nome de um esquema — deste repositório ou do pacote `base16-schemes` |
 | `polarity` | `"dark"` | diz aos programas se o esquema é claro ou escuro |
 | `wallpaper` | `null` | `null` = cor sólida pintada pelo compositor, **sem daemon**; uma imagem liga o hyprpaper |
-| `fonts.monospace` | `"JetBrainsMono Nerd Font"` | Nerd Font porque a barra usa ícones que só existem nelas |
+| `fonts.monospace` | `"JetBrainsMono Nerd Font"` | terminal e editor |
+| `fonts.sansSerif` | `"JetBrainsMono Nerd Font"` | **interface**: menus, diálogos, barra e painéis do noctalia |
 | `fonts.size` | `11` | corpo da fonte de interface |
 | `rice` | `true` | a **geometria** do compositor: anel de foco em gradiente e espaçamento maior. `false` deixa o anel sólido e discreto, ainda pintado pelo esquema |
 | `animations` | `true` | transições, sombras e blur. `false` remove **só o custo de GPU**, sem mudar funcionalidade |
@@ -385,6 +386,36 @@ cor sumir da paleta em silêncio).
 Nada no repositório escreve cor fixa. O gradiente da borda é `base0D → base0A`,
 então trocar de esquema troca o gradiente junto — com `gruvbox-dark-hard` ele
 vira `rgb(83a598) rgb(fabd2f)`, verificado.
+
+### A mesma fonte em tudo
+
+`sansSerif` aponta para a **mesma** Nerd Font da `monospace`, e isso é
+deliberado. Ela é monoespaçada, então a interface inteira fica com largura
+fixa — em troca, os ícones existem em toda superfície, sem depender de o
+fontconfig achar um fallback.
+
+Onde a fonte chega, verificado por avaliação:
+
+| Superfície | De onde vem |
+|---|---|
+| terminal (kitty) | `monospace` |
+| barra e painéis do noctalia | `sansSerif` |
+| menus e diálogos GTK | `sansSerif` |
+| Qt | `sansSerif` |
+
+Para o visual convencional, `lcars.system.theme.fonts.sansSerif = "Noto Sans"` —
+que já está instalado por `system/wm/default.nix`.
+
+**Uma limitação a saber:** o *pacote* declarado ao stylix é fixo
+(`nerd-fonts.jetbrains-mono`), e só o *nome* é configurável. Trocar o nome
+funciona para fontes já instaladas — Noto, Liberation e DejaVu estão —, mas não
+puxa pacote novo. Uma fonte de fora exige acrescentá-la a `fonts.packages`.
+
+Houve um caso concreto que motivou tudo isto: o `font_family` que o usuário
+tinha escolhido na GUI do noctalia era a Nerd Font, e a poda que evita conflito
+com o stylix a substituía por `Noto Sans` — porque o stylix usa `sansSerif`
+para o shell. Com as duas apontando para a mesma fonte, a escolha volta a
+valer.
 
 ### `animations = false`, para GPU fraca
 
