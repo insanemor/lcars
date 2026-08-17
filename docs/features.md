@@ -714,6 +714,17 @@ do preset:
 
 Trocar `scheme` repinta o prompt junto com o resto do sistema.
 
+**Sem tema, o prompt fica com as cores do próprio preset.** A sobreposição só
+é gerada quando `lcars.system.theme.enable` está ligada — que é o caso do
+profile `personal`, e não do `basic`, onde um esquema de cores em máquina
+headless seria peso morto.
+
+A guarda não é cosmética: `config.lib.stylix` **não existe** quando o módulo do
+stylix está desligado, e ler esse atributo aborta a avaliação inteira com
+`attribute 'stylix' missing`. Como o `nupdate` avalia os dois profiles antes de
+aplicar, o profile `basic` quebrado bloqueava o rebuild também de quem usa o
+`personal` — que é exatamente o que aconteceu entre a #39 e a #42.
+
 **Por que sobrepor em vez de gerar o `p10k.zsh` inteiro:** o ciclo daquele
 arquivo é rodar `p10k configure` e copiar o resultado por cima. Se ele fosse um
 template, o assistente o sobrescreveria com índices numéricos no primeiro uso.
