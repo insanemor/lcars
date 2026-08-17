@@ -13,6 +13,7 @@
 #   2. powerlevel10k — o tema, que substitui o prompt
 #   3. p10k.zsh      — a configuração do tema, que só vale depois dele
 #   4. promptCores   — as cores do esquema, que precisam vencer o preset
+#                      (só quando há tema; veja `temaLigado` abaixo)
 #
 # Os três primeiros são `plugins`, que o home-manager carrega em ordem e depois
 # do oh-my-zsh. O quarto é `initContent` com `mkAfter`, justamente porque roda
@@ -29,6 +30,20 @@
 }:
 
 let
+  # O tema é opcional, e o prompt precisa saber disso.
+  #
+  # `config.lib.stylix` só existe quando o módulo do stylix está habilitado, e
+  # quem o habilita é system/theme, sob `lcars.system.theme.enable`. O profile
+  # basic desliga o tema de propósito — numa máquina headless um esquema de
+  # cores é peso morto — mas mantém o zsh ligado. Sem esta guarda, a avaliação
+  # do basic morria em `attribute 'stylix' missing`, e como o nupdate avalia os
+  # DOIS profiles, isso bloqueava o rebuild até de quem usa o personal.
+  #
+  # Mesmo padrão de user/wm/noctalia.nix, que já lia a flag por osConfig.
+  temaLigado = osConfig.lcars.system.theme.enable;
+
+  # Só é avaliado quando `temaLigado` — o Nix não força o que não se usa, e é
+  # justamente isso que mantém o atributo inexistente fora do caminho.
   cores = config.lib.stylix.colors.withHashtag;
 
   # As cores do prompt, a partir do esquema base16.
@@ -155,7 +170,10 @@ lib.mkIf osConfig.lcars.user.zsh.enable {
 
     # Depois de tudo: o oh-my-zsh, o tema e o preset já rodaram, e é isto que
     # dá à sobreposição a última palavra sobre a cor.
-    initContent = lib.mkAfter promptCores;
+    # Sem tema, o prompt fica com as cores do próprio preset do p10k — que
+    # funciona, só não segue o esquema. É o comportamento certo para uma
+    # máquina headless, onde não há esquema nenhum a seguir.
+    initContent = lib.mkAfter (if temaLigado then promptCores else "");
 
     shellAliases = {
       ll = "ls -alF --color";
