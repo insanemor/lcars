@@ -33,13 +33,29 @@
 let
   cores = config.lib.stylix.colors;
   rice = osConfig.lcars.system.theme.rice;
+  teclado = osConfig.lcars.system.hardware.keyboard;
 
   mod = "Mod";
-  terminal = "kitty";
+
+  # CAMINHO ABSOLUTO, e não o nome do programa.
+  #
+  # O niri resolve `spawn` no PATH que herdou do gerenciador de sessão do
+  # usuário, que não é o do shell interativo. Com nomes soltos os atalhos
+  # simplesmente não fazem nada — sem erro na tela, porque o compositor apenas
+  # não acha o binário. O próprio nixpkgs comenta o risco em
+  # programs/wayland/niri.nix, ao justificar `enableDefaultPath = false`:
+  # "breaking spawn actions that rely on it".
+  #
+  # `getExe` usa o `meta.mainProgram` do pacote, então não há nome de binário
+  # escrito à mão aqui.
+  exe = lib.getExe;
+
+  terminal = exe pkgs.kitty;
+  noctalia = exe config.programs.noctalia.package;
 
   # Painéis do noctalia, por IPC — o shell já está no ar, isto só o chama.
   painel = id: [
-    "noctalia"
+    noctalia
     "msg"
     "panel-toggle"
     id
@@ -73,10 +89,26 @@ lib.mkIf osConfig.lcars.user.niri.enable {
 
     settings = {
       # --- entrada -------------------------------------------------------
-      # O layout do teclado NÃO é definido aqui: vem de
-      # lcars.system.hardware.keyboard, o mesmo do console e do SDDM, e o niri
-      # o herda do sistema. Duplicá-lo aqui criaria duas fontes de verdade.
+      # O layout precisa ser declarado AQUI, e isto contraria o que este
+      # arquivo dizia antes.
+      #
+      # `services.xserver.xkb` configura o servidor X e o console; o NixOS não
+      # exporta XKB_DEFAULT_LAYOUT nem as irmãs para sessões Wayland
+      # (procurado em nixos/modules/ — não existe). Um compositor Wayland
+      # nativo não tem de onde herdar, e sem estas linhas o niri usa "us" puro,
+      # ignorando o que você configurou.
+      #
+      # A fonte de verdade continua sendo uma só: os valores vêm de
+      # lcars.system.hardware.keyboard, o mesmo módulo que serve o console e o
+      # SDDM. O que muda é que agora eles chegam ao compositor.
       input = {
+        keyboard.xkb = {
+          inherit (teclado) layout;
+        }
+        # Variante vazia não é o mesmo que variante ausente: o xkb trata ""
+        # como nome de variante e não encontra nada.
+        // lib.optionalAttrs (teclado.variant != "") { inherit (teclado) variant; };
+
         focus-follows-mouse = { };
         touchpad = {
           tap = { };
@@ -147,7 +179,7 @@ lib.mkIf osConfig.lcars.user.niri.enable {
         "${mod}+V".spawn = painel "clipboard";
         "${mod}+Escape".spawn = painel "session";
         "${mod}+N".spawn = [
-          "noctalia"
+          noctalia
           "msg"
           "panel-open"
           "control-center"
@@ -201,7 +233,7 @@ lib.mkIf osConfig.lcars.user.niri.enable {
         "XF86AudioRaiseVolume" = {
           _props.allow-when-locked = true;
           spawn = [
-            "pamixer"
+            (exe pkgs.pamixer)
             "-i"
             "5"
           ];
@@ -209,7 +241,7 @@ lib.mkIf osConfig.lcars.user.niri.enable {
         "XF86AudioLowerVolume" = {
           _props.allow-when-locked = true;
           spawn = [
-            "pamixer"
+            (exe pkgs.pamixer)
             "-d"
             "5"
           ];
@@ -217,35 +249,35 @@ lib.mkIf osConfig.lcars.user.niri.enable {
         "XF86AudioMute" = {
           _props.allow-when-locked = true;
           spawn = [
-            "pamixer"
+            (exe pkgs.pamixer)
             "-t"
           ];
         };
         "XF86AudioPlay" = {
           _props.allow-when-locked = true;
           spawn = [
-            "playerctl"
+            (exe pkgs.playerctl)
             "play-pause"
           ];
         };
         "XF86AudioNext" = {
           _props.allow-when-locked = true;
           spawn = [
-            "playerctl"
+            (exe pkgs.playerctl)
             "next"
           ];
         };
         "XF86AudioPrev" = {
           _props.allow-when-locked = true;
           spawn = [
-            "playerctl"
+            (exe pkgs.playerctl)
             "previous"
           ];
         };
         "XF86MonBrightnessUp" = {
           _props.allow-when-locked = true;
           spawn = [
-            "brightnessctl"
+            (exe pkgs.brightnessctl)
             "set"
             "5%+"
           ];
@@ -253,7 +285,7 @@ lib.mkIf osConfig.lcars.user.niri.enable {
         "XF86MonBrightnessDown" = {
           _props.allow-when-locked = true;
           spawn = [
-            "brightnessctl"
+            (exe pkgs.brightnessctl)
             "set"
             "5%-"
           ];
