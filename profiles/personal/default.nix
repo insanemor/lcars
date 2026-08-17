@@ -48,6 +48,7 @@ with lib;
     # Num desktop, tudo: o direnv e o gancho de dotfiles fazem diferença no
     # uso interativo.
     lcars.user.zsh.enable = mkDefault true;
+    lcars.user.atuin.enable = mkDefault true;
     lcars.user.git.enable = mkDefault true;
     lcars.user.direnv.enable = mkDefault true;
     lcars.user.dotfiles.enable = mkDefault true;

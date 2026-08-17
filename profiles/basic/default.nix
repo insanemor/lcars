@@ -33,11 +33,14 @@ with lib;
 
     # --- ambiente do usuário (user/) ----------------------------------
     # Só o que serve a quem entra por ssh para trabalhar. Ficam de fora:
-    # direnv (não há projetos aqui) e dotfiles (dependem de sessão aberta no
-    # 1Password, que numa máquina headless normalmente não existe).
+    # direnv (não há projetos aqui), dotfiles e atuin (os dois dependem de
+    # sessão aberta no 1Password, que numa máquina headless normalmente não
+    # existe — sem ela o atuin ficaria local, que é o histórico do zsh com
+    # passos a mais).
     lcars.user.zsh.enable = mkDefault true;
     lcars.user.git.enable = mkDefault true;
 
+    lcars.user.atuin.enable = mkDefault false;
     lcars.user.direnv.enable = mkDefault false;
     lcars.user.dotfiles.enable = mkDefault false;
     lcars.user.kitty.enable = mkDefault false;

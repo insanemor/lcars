@@ -31,6 +31,8 @@
   options.lcars.user = {
     zsh.enable = lib.mkEnableOption "o shell zsh do usuário — autosuggestion, syntax highlighting, histórico compartilhado e aliases";
 
+    atuin.enable = lib.mkEnableOption "o histórico de comandos no atuin — busca no Ctrl+R e sync criptografado entre máquinas, com a chave vinda do 1Password";
+
     git.enable = lib.mkEnableOption "a configuração do git — identidade vinda do settings.nix, aliases e assinatura por chave SSH";
 
     direnv.enable = lib.mkEnableOption "o direnv com nix-direnv, para shells por projeto";

@@ -24,6 +24,7 @@ O repo vem com `personal`.
 | 1Password CLI e GUI (`system/app`) | `lcars.system.app.onePassword.enable` | — | sim |
 | `ripgrep`, `fd`, `bat`, `eza` | `lcars.system.core.userPackages` | — | sim |
 | zsh (`user/shell`) | `lcars.user.zsh.enable` | sim | sim |
+| Histórico atuin (`user/shell`) | `lcars.user.atuin.enable` | — | sim |
 | git (`user/app`) | `lcars.user.git.enable` | sim | sim |
 | direnv (`user/app`) | `lcars.user.direnv.enable` | — | sim |
 | dotfiles do 1Password (`user/app`) | `lcars.user.dotfiles.enable` | — | sim |
@@ -733,6 +734,78 @@ Assim o preset continua seu, e a cor continua do tema.
 
 Os segmentos raros — ícone de sistema, bateria, versões de linguagem, nuvens —
 ficam com os índices do preset. Aparecem pouco e não valem a manutenção.
+
+### Histórico · `user/shell/atuin.nix` · `lcars.user.atuin.enable` · só personal
+
+O [atuin](https://atuin.sh) troca o `~/.zsh_history` por um SQLite que guarda,
+de cada comando, o diretório em que rodou, o código de saída e a duração — e
+sincroniza esse banco entre as suas máquinas, criptografado ponta a ponta.
+
+| Tecla | O que faz |
+|---|---|
+| `CTRL+R` | busca do atuin: tela de 25 linhas, difusa, sobre todo o histórico |
+| `↑` | **não muda** — continua o histórico do zsh, por prefixo, da sessão |
+
+A seta pra cima fica de fora por `--disable-up-arrow`, decisão deliberada: a
+tecla já está na memória muscular. E o histórico nativo do zsh continua sendo
+gravado — custa um arquivo de texto e é a rede de segurança se o atuin sair do
+caminho.
+
+O `config.toml` gerado:
+
+```toml
+auto_sync = true
+sync_address = "https://api.atuin.sh"
+sync_frequency = "5m"
+update_check = false      # o binário vem do store; não há o que atualizar
+search_mode = "fuzzy"
+filter_mode = "global"    # todas as máquinas; CTRL+R de novo alterna o filtro
+style = "compact"
+inline_height = 25
+dialect = "uk"            # data em dd/mm
+```
+
+#### O sync depende de dois arquivos — e eles vêm do 1Password
+
+O servidor público guarda blocos que não sabe ler: **a chave é o histórico**.
+Perdê-la é perder o que está lá, e uma máquina nova sem ela não decifra nada. O
+atuin quer os dois em `~/.local/share/atuin/`:
+
+- `key` — a chave de criptografia, a mesma em todas as máquinas;
+- `session` — o token de sessão obtido no login.
+
+Sem eles, o atuin roda local e **o sync falha calado**. Por isso o módulo os
+puxa do 1Password na ativação, como `user/app/dotfiles.nix` faz com os
+dotfiles: item `atuin` no vault de `userSettings.onePassword.vault`, com um
+campo `key` e um campo `session`, materializados com permissão `600`.
+
+Falha nenhuma aí derruba o `home-manager switch`. Sem `op` no PATH, sem sessão
+aberta no 1Password, ou com o item ainda não criado, sai uma linha
+(`lcars: atuin sem 'key' no 1Password …`) e o rebuild segue — o atuin fica
+local, que é um estado utilizável.
+
+**O passo que é seu.** Registrar envolve senha, e senha não entra em arquivo
+versionado nem em script de ativação. Uma vez, na máquina que já tem o
+histórico:
+
+```bash
+atuin register -u <usuário> -e <email>   # ou `atuin login`, se a conta existe
+atuin import auto                        # traz o ~/.zsh_history para o banco
+atuin sync
+atuin key                                # imprime a chave; guarde-a
+```
+
+Depois crie o item `atuin` no vault com os dois campos — `key` com a saída
+acima, `session` com o conteúdo de `~/.local/share/atuin/session`. A partir
+daí, toda máquina nova nasce sincronizada com um `op signin` e um `nupdate`.
+
+O 1Password é a fonte da verdade: um `atuin login` feito numa máquina e não
+refletido no item será desfeito pela próxima ativação, que devolve a session do
+vault por cima. É o mesmo trato do `nupdate`, em que o repositório vence.
+
+O profile `basic` fica de fora pelo mesmo motivo dos dotfiles: sem sessão no
+1Password numa máquina headless, o atuin seria o histórico do zsh com passos a
+mais.
 
 ### Terminal · `user/app/kitty.nix` · `lcars.user.kitty.enable` · só personal
 
