@@ -17,13 +17,19 @@
 # É o mesmo ciclo do noctalia, com um passo a mais: o assistente não escreve
 # direto no repositório.
 #
-# A COR AQUI NÃO VEM DO TEMA
+# AS CORES DAQUI SÃO SOBRESCRITAS
 #
-# O powerlevel10k define cor por número de terminal (0-255) e não lê o stylix,
-# então trocar `lcars.system.theme.scheme` NÃO repinta o prompt. É a única peça
-# do sistema com essa característica. Se incomodar, o caminho é gerar os
-# POWERLEVEL9K_*_FOREGROUND a partir de lib.stylix.colors — o que transformaria
-# este arquivo em template e quebraria o ciclo acima.
+# Os índices de terminal (0-255) que você vê abaixo valem para os segmentos
+# raros. Os do dia a dia — diretório, git, status, hora, prompt char — são
+# repintados depois, por um bloco que user/shell/zsh.nix gera a partir do
+# esquema base16 e injeta no fim do .zshrc.
+#
+# Isso é o que faz o prompt seguir `lcars.system.theme.scheme` como o resto do
+# sistema, sem transformar ESTE arquivo em template — o que quebraria o ciclo
+# acima, já que `p10k configure` o reescreveria com índices numéricos.
+#
+# Mudar uma cor de segmento principal aqui não tem efeito. Mude o esquema, ou
+# o mapeamento em zsh.nix.
 #
 # A partir daqui é o preset, sem uma linha alterada.
 # =====================================================================

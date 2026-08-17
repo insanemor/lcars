@@ -7,23 +7,97 @@
 #
 # A ORDEM DE CARGA IMPORTA AQUI
 # -----------------------------
-# São três camadas que precisam entrar na sequência certa:
+# São quatro camadas que precisam entrar na sequência certa:
 #
 #   1. oh-my-zsh    — o framework, com seus plugins
 #   2. powerlevel10k — o tema, que substitui o prompt
-#   3. p10k.zsh     — a configuração do tema, que só vale depois dele
+#   3. p10k.zsh      — a configuração do tema, que só vale depois dele
+#   4. promptCores   — as cores do esquema, que precisam vencer o preset
 #
-# O home-manager carrega `plugins` na ordem em que aparecem na lista, e depois
-# do oh-my-zsh. Por isso o p10k e sua configuração são declarados ali, nessa
-# ordem, e não em `initContent` — que roda depois de tudo e faria o arquivo de
-# configuração ser lido antes do tema existir.
+# Os três primeiros são `plugins`, que o home-manager carrega em ordem e depois
+# do oh-my-zsh. O quarto é `initContent` com `mkAfter`, justamente porque roda
+# no fim: é o que dá a ele a última palavra sobre a cor.
+#
+# Inverter qualquer par quebra em silêncio — o prompt cai no padrão, ou as
+# cores do preset vencem as do tema, sem erro em lugar nenhum.
 {
+  config,
   osConfig,
   lib,
   pkgs,
   ...
 }:
 
+let
+  cores = config.lib.stylix.colors.withHashtag;
+
+  # As cores do prompt, a partir do esquema base16.
+  #
+  # O powerlevel10k aceita hex — está em internal/p10k.zsh:535,
+  # `elif [[ $1 == '#'[[:xdigit:]]## ]]` — e não só os 256 índices do terminal
+  # que o preset usa. É o que permite pintar o prompt com a paleta exata em vez
+  # de "o azul do terminal, seja ele qual for".
+  #
+  # Isto entra DEPOIS do preset, sobrescrevendo só os segmentos do dia a dia. O
+  # p10k.zsh continua sendo o arquivo que você edita com `p10k configure` — se
+  # esta sobreposição fosse gerada lá dentro, o assistente a apagaria no
+  # primeiro uso.
+  #
+  # O que fica de fora e continua com os índices do preset: ícone de sistema,
+  # bateria, versões de linguagem, nuvens. Aparecem raramente e não valem a
+  # manutenção de mais trinta linhas.
+  promptCores = ''
+    # --- cores do prompt, geradas de lcars.system.theme.scheme ---------
+    # Editar aqui não adianta: este bloco é gerado por user/shell/zsh.nix.
+    # Para mudar a paleta, mude o esquema; para mudar a forma, p10k.zsh.
+    #
+    # Aspas simples nos valores: `#` inicia comentário no zsh, e ainda que
+    # dentro de uma atribuição ele não inicie, a documentação do p10k usa
+    # aspas. Não custa nada e tira a dúvida.
+
+    # diretório: o ciano da marca, com o fundo escuro por cima
+    typeset -g POWERLEVEL9K_DIR_BACKGROUND='${cores.base0D}'
+    typeset -g POWERLEVEL9K_DIR_FOREGROUND='${cores.base00}'
+    typeset -g POWERLEVEL9K_DIR_SHORTENED_FOREGROUND='${cores.base01}'
+    typeset -g POWERLEVEL9K_DIR_ANCHOR_FOREGROUND='${cores.base00}'
+
+    # git: verde limpo, lime sujo, água com arquivo novo, vermelho em conflito
+    typeset -g POWERLEVEL9K_VCS_CLEAN_BACKGROUND='${cores.base0B}'
+    typeset -g POWERLEVEL9K_VCS_MODIFIED_BACKGROUND='${cores.base0A}'
+    typeset -g POWERLEVEL9K_VCS_UNTRACKED_BACKGROUND='${cores.base0C}'
+    typeset -g POWERLEVEL9K_VCS_CONFLICTED_BACKGROUND='${cores.base08}'
+    typeset -g POWERLEVEL9K_VCS_LOADING_BACKGROUND='${cores.base03}'
+    typeset -g POWERLEVEL9K_VCS_FOREGROUND='${cores.base00}'
+
+    # o caractere do prompt: verde quando o último comando deu certo
+    typeset -g POWERLEVEL9K_PROMPT_CHAR_OK_{VIINS,VICMD,VIVIS,VIOWR}_FOREGROUND='${cores.base0B}'
+    typeset -g POWERLEVEL9K_PROMPT_CHAR_ERROR_{VIINS,VICMD,VIVIS,VIOWR}_FOREGROUND='${cores.base08}'
+
+    # status do último comando
+    typeset -g POWERLEVEL9K_STATUS_OK_BACKGROUND='${cores.base0B}'
+    typeset -g POWERLEVEL9K_STATUS_OK_FOREGROUND='${cores.base00}'
+    typeset -g POWERLEVEL9K_STATUS_OK_PIPE_BACKGROUND='${cores.base0B}'
+    typeset -g POWERLEVEL9K_STATUS_OK_PIPE_FOREGROUND='${cores.base00}'
+    typeset -g POWERLEVEL9K_STATUS_ERROR_BACKGROUND='${cores.base08}'
+    typeset -g POWERLEVEL9K_STATUS_ERROR_FOREGROUND='${cores.base00}'
+    typeset -g POWERLEVEL9K_STATUS_ERROR_PIPE_BACKGROUND='${cores.base08}'
+    typeset -g POWERLEVEL9K_STATUS_ERROR_PIPE_FOREGROUND='${cores.base00}'
+    typeset -g POWERLEVEL9K_STATUS_ERROR_SIGNAL_BACKGROUND='${cores.base08}'
+    typeset -g POWERLEVEL9K_STATUS_ERROR_SIGNAL_FOREGROUND='${cores.base00}'
+
+    # tempo de execução e relógio: discretos, na escala de fundo
+    typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_BACKGROUND='${cores.base02}'
+    typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_FOREGROUND='${cores.base05}'
+    typeset -g POWERLEVEL9K_TIME_BACKGROUND='${cores.base01}'
+    typeset -g POWERLEVEL9K_TIME_FOREGROUND='${cores.base04}'
+
+    # tarefas em segundo plano e direnv
+    typeset -g POWERLEVEL9K_BACKGROUND_JOBS_BACKGROUND='${cores.base0C}'
+    typeset -g POWERLEVEL9K_BACKGROUND_JOBS_FOREGROUND='${cores.base00}'
+    typeset -g POWERLEVEL9K_DIRENV_BACKGROUND='${cores.base0A}'
+    typeset -g POWERLEVEL9K_DIRENV_FOREGROUND='${cores.base00}'
+  '';
+in
 lib.mkIf osConfig.lcars.user.zsh.enable {
   programs.zsh = {
     enable = true;
@@ -78,6 +152,10 @@ lib.mkIf osConfig.lcars.user.zsh.enable {
         file = "p10k.zsh";
       }
     ];
+
+    # Depois de tudo: o oh-my-zsh, o tema e o preset já rodaram, e é isto que
+    # dá à sobreposição a última palavra sobre a cor.
+    initContent = lib.mkAfter promptCores;
 
     shellAliases = {
       ll = "ls -alF --color";
