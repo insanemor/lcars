@@ -10,6 +10,11 @@
 # É o motivo de ele estar aqui. Você mexe no centro de controle, olha o
 # resultado na hora, e quando gostar:
 #
+# CUIDADO: o export REESCREVE o noctalia-config.toml do zero, em ordem
+# alfabética e sem comentário nenhum. Não escreva nada lá que precise
+# sobreviver — o cabeçalho que existia foi apagado no primeiro ciclo real.
+# O que precisa durar mora aqui, neste arquivo, que o export não toca.
+#
 #     nsave        # exporta, valida, mostra o diff, pergunta e publica
 #
 # É o scripts/save.sh, o caminho de volta do nupdate. Sem ele, o que você
@@ -112,8 +117,11 @@ lib.mkIf osConfig.lcars.user.noctalia.enable {
   programs.noctalia = {
     enable = true;
 
-    # Por serviço, não por exec-once do compositor: reinicia se cair e responde
-    # a `systemctl --user status noctalia`. Veja a regra no CLAUDE.md.
+    # Por serviço, não por spawn-at-startup do compositor: reinicia se cair e
+    # responde a `systemctl --user status noctalia`. Veja a regra no CLAUDE.md.
+    #
+    # O `graphical-session.target` de que ele depende vem das unidades que o
+    # módulo NixOS do niri instala (system/wm/niri.nix).
     systemd.enable = true;
 
     settings =

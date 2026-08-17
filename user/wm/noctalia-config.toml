@@ -73,7 +73,7 @@ app_icon_colorize = true
 external_ip_enabled = true
 font_family = "JetBrainsMono Nerd Font"
 lang = "pt-BR"
-polkit_agent = false
+polkit_agent = true
 settings_show_advanced = true
 
 [theme]

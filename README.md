@@ -24,7 +24,7 @@ O que ele faz, em ordem — [`scripts/install.sh`](./scripts/install.sh) é curt
 
 Não há passo separado para o Home Manager: ele entra como módulo NixOS no mesmo rebuild.
 
-A primeira build de um desktop é longa — ela compila/baixa o Plasma, o 1Password e o mundo todo.
+A primeira build de um desktop é longa — ela compila/baixa o niri, o 1Password e o mundo todo.
 
 Ao final, o usuário fica com a senha inicial `lcars`. **Troque com `passwd` no primeiro login** — o sshd deste flake só aceita chave, mas o login local aceita senha.
 
@@ -115,7 +115,7 @@ Manager renomeia o antigo para `<nome>.hm-bak` em vez de apagá-lo — nada é
 perdido.
 
 Acontece na primeira vez que o tema é aplicado: o stylix gerencia
-`~/.gtkrc-2.0` e `~/.config/gtk-{3,4}.0/settings.ini`, que o Plasma já havia
+`~/.gtkrc-2.0` e `~/.config/gtk-{3,4}.0/settings.ini`, que outro programa já havia
 escrito. Compare e apague quando não precisar mais:
 
 ```bash
@@ -180,42 +180,29 @@ autosuggestion, syntax highlighting e histórico compartilhado; git com aliases
 e `pull.rebase`; direnv com nix-direnv; e o gancho para puxar dotfiles de itens
 Document do 1Password.
 
-**No profile `personal`** — KDE Plasma 6 **e Hyprland** com SDDM, o shell
-[noctalia](https://github.com/noctalia-dev/noctalia-shell) sobre o Hyprland,
-áudio PipeWire, fontes Noto/Liberation/DejaVu, 1Password (CLI + GUI + agente
-SSH), e `ripgrep`, `fd`, `bat`, `eza`. O Plasma vem "puro", sem aplicativos
-extras — **inclusive sem navegador**; acrescente o seu em
-`userSettings.packages`.
+**No profile `personal`** — [niri](https://github.com/YaLTeR/niri) com SDDM, o
+shell [noctalia](https://github.com/noctalia-dev/noctalia-shell), áudio
+PipeWire, fontes Noto/Liberation/DejaVu, 1Password (CLI + GUI + agente SSH), e
+`ripgrep`, `fd`, `bat`, `eza`. **Não há navegador** nem suíte de aplicativos;
+acrescente o que quiser em `userSettings.packages`.
 
 O áudio é flag separada (`lcars.system.hardware.audio.enable`), não parte do
-desktop: dá para ter som sem KDE. O teclado também é módulo próprio, ligado
-nos dois profiles — layout US internacional por padrão, valendo de uma vez no
-console, na sessão gráfica e no Hyprland.
+desktop: dá para ter som sem ambiente gráfico. O teclado também é módulo
+próprio, ligado nos dois profiles — layout US internacional por padrão,
+valendo de uma vez no console, na tela de login e na sessão.
 
-### Dois ambientes gráficos ao mesmo tempo
+### O niri, e por que ele é diferente
 
-Plasma e Hyprland ficam ligados juntos e **aparecem lado a lado na tela de
-login** — você escolhe na hora. O Plasma abre por padrão; se o Hyprland não
-subir, há para onde voltar sem editar o repositório.
+**Tiling scrollable.** As janelas formam uma fita horizontal que se estende sem
+limite, e a tela rola por ela. Abrir uma janela nova **não** redivide o espaço
+das que já estão abertas, como fazem os tiling tradicionais — as outras
+continuam do tamanho que estavam, e saem de vista pela lateral.
 
-Para inverter, na sua máquina:
+Isso é arquitetura, não modo de layout: nenhum ajuste de Hyprland ou de Plasma
+produz esse comportamento.
 
-```nix
-# machines/<máquina>/default.nix
-lcars.system.wm.defaultSession = "hyprland";
-```
-
-Para ficar só com um, desligue o outro:
-
-```nix
-lcars.system.wm.plasma.enable = false;
-```
-
-O SDDM não pertence a nenhum dos dois: mora em `system/wm/default.nix` e sobe
-com qualquer ambiente ligado — senão uma máquina só com Hyprland ficaria sem
-tela de login.
-
-**Atalhos do Hyprland**, todos com `SUPER` (tecla Windows):
+A unidade de navegação é a **coluna**, não a janela. Uma coluna pode ter várias
+janelas empilhadas na vertical, e é isso que explica a divisão dos atalhos:
 
 | Atalho | O que faz |
 |---|---|
@@ -225,13 +212,41 @@ tela de login.
 | `SUPER+C` | centro de controle |
 | `SUPER+V` | histórico da área de transferência |
 | `SUPER+ESC` | menu de sessão |
+| `SUPER+H` / `SUPER+L` | **rola entre colunas** (ou `←` `→`) |
+| `SUPER+J` / `SUPER+K` | move o foco **dentro** da coluna (ou `↓` `↑`) |
+| `SUPER+SHIFT+H/J/K/L` | move a janela ou a coluna |
+| `SUPER+,` / `SUPER+.` | junta a janela vizinha à coluna, ou a expulsa |
+| `SUPER+R` | cicla a largura da coluna: ⅓, ½, ⅔ |
+| `SUPER+F` | maximiza a coluna |
+| `SUPER+SHIFT+F` | tela cheia |
+| `SUPER+W` | empilha a coluna em abas |
 | `SUPER+Q` | fecha a janela |
+| `SUPER+1…9` | workspace (com `SHIFT`, leva a coluna) |
+| `SUPER+PgUp` / `PgDn` | workspace acima / abaixo |
+| `SUPER+SHIFT+S` | captura de região |
+| `Print` / `SUPER+Print` | captura da tela / da janela |
 | `SUPER+SHIFT+E` | sai da sessão |
-| `SUPER+F` | tela cheia |
-| `SUPER+setas` ou `hjkl` | move o foco |
-| `SUPER+1…9` | troca de workspace (com `SHIFT`, leva a janela) |
-| `SUPER+SHIFT+S` | captura de região para a área de transferência |
-| `SUPER+botão esq/dir` | arrasta / redimensiona a janela |
+| teclas de mídia | volume, brilho, play/pause |
+
+Três coisas que mudam de hábito vindo de um tiling tradicional: os workspaces
+são uma **pilha vertical** dinâmica, não uma grade fixa; a captura de tela é
+**nativa** do compositor, sem grim nem slurp; e não se redimensiona janela
+arrastando a borda — usa-se `SUPER+R` para escolher entre larguras
+predefinidas.
+
+**Só há uma sessão na tela de login.** Plasma e Hyprland saíram
+([#34](https://github.com/insanemor/lcars/issues/34)), então se o niri não
+subir, a volta é pelo TTY:
+
+```bash
+# Ctrl+Alt+F2, e depois
+cd ~/.dotfiles
+$EDITOR machines/<máquina>/default.nix   # lcars.system.wm.niri.enable = false;
+nupdate
+```
+
+O SDDM não pertence ao compositor: mora em `system/wm/default.nix` e sobe com
+qualquer ambiente que esteja ligado.
 
 Barra, lançador, notificações, centro de controle e menu de sessão são painéis
 do **noctalia**, um shell só no lugar de waybar + rofi + swaync. Ele tem centro
@@ -247,8 +262,10 @@ Detalhes em [docs/features.md](./docs/features.md#o-ciclo-gui--export--commit).
 
 O tema não é configurado programa por programa. Um esquema
 [base16](https://github.com/tinted-theming/schemes) é declarado uma vez e o
-[stylix](https://github.com/danth/stylix) o aplica em Hyprland, noctalia,
-kitty, GTK, Qt, Plasma e no console TTY.
+[stylix](https://github.com/danth/stylix) o aplica em noctalia, kitty, GTK, Qt
+e no console TTY. O niri é a exceção: o stylix não tem alvo para ele, e
+`user/wm/niri.nix` lê as mesmas cores de `lib.stylix.colors` e as escreve à
+mão — trocar de esquema continua repintando tudo junto.
 
 Padrão: **`simbiot-dark`**, as cores do site da SimbioIT — fundo azul-petróleo
 `#111d23`, o ciano do logo `#29b6bf` como cor primária da interface, e o lime
@@ -314,7 +331,7 @@ A árvore é dividida por **papel**, não por mecanismo do Nix:
 │
 ├── profiles/       # presets: conjuntos nomeados de flags
 │   ├── basic/      # headless: base + ssh
-│   └── personal/   # desktop completo: Plasma + 1Password + ferramentas
+│   └── personal/   # desktop completo: niri + noctalia + 1Password
 │
 ├── flake.lock      # versões dos inputs, pinadas — commitado de propósito
 ├── system/         # módulos NixOS, opt-in via lcars.system.<caminho>.enable
@@ -322,12 +339,12 @@ A árvore é dividida por **papel**, não por mecanismo do Nix:
 │   ├── security/   # sshd e firewall
 │   ├── hardware/   # laptop.nix, vm.nix
 │   ├── theme/      # o esquema de cores, via stylix
-│   ├── wm/         # plasma.nix, hyprland.nix, e a tela de login
+│   ├── wm/         # niri.nix e a tela de login (SDDM, fontes, dconf)
 │   └── app/        # 1password/
 │
 ├── user/           # módulos do Home Manager, opt-in via lcars.user.<módulo>.enable
 │   ├── options.nix # as flags acima — declaradas do lado NixOS, veja abaixo
-│   ├── wm/         # hyprland.nix, noctalia.nix (+ noctalia-config.toml)
+│   ├── wm/         # niri.nix, noctalia.nix (+ noctalia-config.toml)
 │   ├── shell/      # zsh.nix
 │   ├── app/        # git.nix, direnv.nix, dotfiles.nix
 │   └── personal/   # escape hatch via private.nix em $HOME (sem flag)
@@ -342,7 +359,7 @@ O encadeamento é: **a máquina escolhe um profile, o profile liga flags, as fla
 ```nix
 # machines/meu-pc/default.nix
 lcars.profile = "personal";             # desktop completo
-lcars.system.wm.plasma.enable = false;  # …exceto o Plasma
+lcars.system.wm.niri.enable = false;    # …exceto o ambiente gráfico
 lcars.user.dotfiles.enable = false;     # …e sem puxar dotfiles do 1Password
 ```
 

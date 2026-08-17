@@ -15,8 +15,7 @@ with lib;
     lcars.system.core.enable = mkDefault true;
     lcars.system.security.enable = mkDefault true;
 
-    lcars.system.wm.plasma.enable = mkDefault false;
-    lcars.system.wm.hyprland.enable = mkDefault false;
+    lcars.system.wm.niri.enable = mkDefault false;
 
     # Sem tema: numa máquina headless, um esquema de cores para GTK e Qt é
     # peso morto. O console usa a paleta padrão do kernel.
@@ -41,7 +40,7 @@ with lib;
 
     lcars.user.direnv.enable = mkDefault false;
     lcars.user.dotfiles.enable = mkDefault false;
-    lcars.user.hyprland.enable = mkDefault false;
+    lcars.user.niri.enable = mkDefault false;
     lcars.user.noctalia.enable = mkDefault false;
   };
 }
