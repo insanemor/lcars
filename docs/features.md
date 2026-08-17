@@ -74,6 +74,26 @@ num notebook ou numa VM, mude para `true` e rode o rebuild.
   que preencher — antes de o instalador do GRUB falhar de forma mais obscura
 - Swapfile opcional via `lcars.system.core.swapFileSize` (desligado por padrão, para não colidir com o swap que o `hardware-configuration.nix` já traga)
 
+**Firmware** — o que faz o hardware existir para o kernel
+- `hardware.enableRedistributableFirmware` — os blobs de GPU, Wi-Fi, bluetooth
+  e placas de rede. Sem eles o driver não fica "sem aceleração": ele **aborta**,
+  e o dispositivo não aparece no sistema
+- Microcode de CPU ligado para AMD **e** Intel. Os dois porque o repo não sabe
+  em que máquina vai rodar, e isso não é descobrível em tempo de avaliação; o
+  kernel carrega o que serve à CPU que encontrar
+- Ficou de fora o `services.fwupd` — atualizar firmware de placa-mãe é decisão
+  de máquina, não de base
+
+  Isto está aqui, e não no `hardware-configuration.nix`, por um motivo que
+  custou uma tarde: aquele arquivo é gerado por máquina e está no `.gitignore`.
+  O `nixos-generate-config` escreve as três options nele, então elas existiam
+  por acidente em quem gerou o arquivo com elas — e faltavam no resto. O caso
+  concreto foi uma Radeon RX 6900 XT passada a uma VM: instalação sem um erro,
+  sessão do niri de pé, monitor preto, e no journal
+  `amdgpu: Direct firmware load for amdgpu/sienna_cichlid_smc.bin failed with
+  error -2` seguido de `Fatal error during GPU init`. A placa nunca virou
+  `/dev/dri/card*`
+
 **Rede**
 - NetworkManager
 

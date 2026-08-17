@@ -190,6 +190,48 @@ in
       }
     ];
 
+    # --- firmware -------------------------------------------------------
+    # Os blobs que o kernel carrega em tempo de boot: GPU, Wi-Fi, bluetooth,
+    # placas de rede. Sem eles o driver não fica "sem aceleração" — ele
+    # ABORTA, e o hardware simplesmente não existe para o sistema.
+    #
+    # O caso que trouxe esta linha para cá foi uma Radeon RX 6900 XT passada
+    # a uma VM: instalação sem um erro, sessão do niri de pé, e o monitor
+    # ligado à placa preto. No journal do convidado:
+    #
+    #   amdgpu: Direct firmware load for amdgpu/sienna_cichlid_smc.bin
+    #           failed with error -2
+    #   amdgpu: Fatal error during GPU init
+    #
+    # Erro -2 é ENOENT: o arquivo não estava lá. A placa nunca virou
+    # /dev/dri/card*, e o compositor enxergava só a saída virtual.
+    #
+    # Por que ninguém tinha notado: o `nixos-generate-config` escreve esta
+    # option no hardware-configuration.nix, que é gerado por máquina e está
+    # no .gitignore. Ou seja, funcionava por acidente em quem gerou o arquivo
+    # com ela, e faltava em quem não gerou. Isto vale para toda máquina, e é
+    # por isso que mora aqui.
+    hardware.enableRedistributableFirmware = true;
+
+    # O microcode NÃO vem junto — e é fácil acreditar que vem, porque já veio.
+    # Hoje, no nixos-unstable, o default é `false` puro:
+    #
+    #   # nixos/modules/hardware/cpu/amd-microcode.nix
+    #   hardware.cpu.amd.updateMicrocode = lib.mkOption {
+    #     default = false;
+    #
+    # Quem o ligava era, de novo, o hardware-configuration.nix gerado — que
+    # escreve `mkDefault config.hardware.enableRedistributableFirmware` e cria
+    # a impressão de herança. Verificado por avaliação: com o firmware ligado
+    # acima e sem as duas linhas abaixo, o microcode continua desligado.
+    #
+    # Os dois fabricantes ficam ligados porque este repo não sabe em que CPU
+    # vai rodar, e não há como descobrir em tempo de avaliação. O custo é um
+    # par de megabytes de initrd: o kernel carrega o que serve à CPU que
+    # encontrar e ignora o resto.
+    hardware.cpu.amd.updateMicrocode = true;
+    hardware.cpu.intel.updateMicrocode = true;
+
     # --- preferências do usuário ---------------------------------------
     # Os programas em si precisam estar instalados (userSettings.packages ou
     # systemSettings.extraPackages) — aqui só dizemos qual usar.
