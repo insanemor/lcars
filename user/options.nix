@@ -39,6 +39,8 @@
 
     kitty.enable = lib.mkEnableOption "o terminal — a fonte e as cores vêm do stylix, via lcars.system.theme";
 
+    herdr.enable = lib.mkEnableOption "o multiplexador de terminal — workspaces, painéis e sessões persistentes, com os atalhos herdados do tmux (prefixo Ctrl-a)";
+
     niri.enable = lib.mkEnableOption "a configuração do niri — atalhos, forma e cores (o compositor é lcars.system.wm.niri)";
 
     noctalia.enable = lib.mkEnableOption "o shell do desktop — barra, launcher, notificações, lock e dock numa peça só; substitui waybar, rofi e swaync";

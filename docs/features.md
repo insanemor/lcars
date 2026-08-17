@@ -18,6 +18,7 @@ O repo vem com `personal`.
 | Tema unificado (`system/theme`) | `lcars.system.theme.enable` | — | sim |
 | Shell noctalia (`user/wm`) | `lcars.user.noctalia.enable` | — | sim |
 | Terminal kitty (`user/app`) | `lcars.user.kitty.enable` | — | sim |
+| Multiplexador herdr (`user/app`) | `lcars.user.herdr.enable` | — | sim |
 | Áudio PipeWire (`system/hardware`) | `lcars.system.hardware.audio.enable` | — | sim |
 | Teclado, console e gráfico (`system/hardware`) | `lcars.system.hardware.keyboard.enable` | sim | sim |
 | 1Password CLI e GUI (`system/app`) | `lcars.system.app.onePassword.enable` | — | sim |
@@ -791,6 +792,58 @@ segue com a referência em cache, em vez de abortar. Dá para commitar offline; 
 Se o noctalia não estiver no PATH, o script avisa e segue sem exportar — o que
 o torna útil para publicar qualquer ajuste feito na máquina, não só o do shell.
 
+### Multiplexador · `user/app/herdr.nix` · `lcars.user.herdr.enable` · só personal
+
+O [herdr](https://herdr.dev) ocupa o lugar do tmux: workspaces, painéis lado a
+lado e sessões que continuam de pé depois de o terminal fechar. Os atalhos são
+os do tmux de propósito — prefixo `Ctrl-a`, `|` e `-` para dividir, `hjkl` para
+andar entre painéis — para a memória muscular atravessar a troca.
+
+| Atalho | O que faz |
+|---|---|
+| `prefix + \|` / `prefix + -` | divide o painel na vertical / na horizontal |
+| `prefix + hjkl` ou `Alt+setas` | move o foco entre painéis |
+| `prefix + SHIFT+HJKL` | troca os painéis de lugar |
+| `prefix + z` | zoom no painel atual |
+| `prefix + r` | modo resize (`hjkl` redimensiona, `Esc` sai) |
+| `prefix + c` / `prefix + SHIFT+X` | nova aba / fecha a aba |
+| `SHIFT+←` / `SHIFT+→` | troca de aba, sem prefixo |
+| `prefix + 1..9` | vai direto para a aba |
+| `prefix + SHIFT+N` / `SHIFT+D` / `SHIFT+W` | nova workspace / fecha / renomeia |
+| `CTRL+↑` / `CTRL+↓` | troca de workspace, sem prefixo |
+| `prefix + g` | picker de workspace |
+| `prefix + SHIFT+G` | lazygit num popup de 90% |
+| `prefix + b` / `prefix + SHIFT+B` | painel de browser em split / em overlay |
+| `prefix + SHIFT+R` | recarrega a configuração |
+| `prefix + ?` | a tabela completa, dentro do programa |
+
+**O pacote vem de fora do nixpkgs**, onde o herdr não existe: o input `herdr`
+do flake aponta para o repositório do upstream, que mantém o próprio
+`packages.<system>.default`. Isso quer dizer **compilar** — Rust, mais o
+libghostty-vt pelo zig, sem cache binário — no primeiro rebuild depois de ligar
+a flag e a cada `nupdate --inputs` que mexa neste input. O `herdr update` do
+próprio programa não funciona aqui, e nem deveria: quem manda na versão é o
+`flake.lock`.
+
+O `config.toml` é gerado pelo módulo, com as cores tiradas do esquema base16 do
+stylix — os 19 tokens de tema do herdr são sobrescritos, então trocar
+`lcars.system.theme.scheme` repinta o multiplexador junto com o resto.
+
+Duas consequências de o arquivo ser gerado, que valem conhecer:
+
+- ele nasce com `onboarding = false`. Não é preferência: sem isso o herdr
+  tentaria gravar essa linha no arquivo, que é um link read-only para o store,
+  na primeira vez que subisse;
+- `herdr config reset-keys` e a tela de settings **vão falhar** ao tentar
+  salvar. O caminho é editar `user/app/herdr.nix` e rodar `nupdate`, como em
+  todo dotfile gerado deste repo.
+
+Os **plugins** do herdr (browser, file viewer, claude-usage) são baixados em
+tempo de execução por `herdr plugin`, num diretório que o Nix não gerencia. Os
+atalhos `prefix + b` já apontam para o `official.browser` com o chromium do
+nixpkgs, mas ficam inertes até o plugin ser instalado uma vez, à mão — o mesmo
+vale para o token `$claude_usage` da sidebar.
+
 ### git · `user/app/git.nix` · `lcars.user.git.enable` · basic + personal
 
 - Nome e email vindos de `settings.nix`
@@ -836,7 +889,9 @@ Para não haver surpresa:
 - **Nenhum container, VPN, impressora ou bluetooth** configurado.
 - **Nenhum editor além do `vim`**, e nenhuma IDE.
 - **Nenhum navegador.** `browser` no `settings.nix` só define `$BROWSER` — não
-  instala nada. Ponha o seu em `userSettings.packages`:
+  instala nada. (O módulo do herdr traz um chromium para o closure, mas ele
+  fica fora do PATH: serve de motor ao painel de browser, não de navegador.)
+  Ponha o seu em `userSettings.packages`:
 
   ```nix
   userSettings.packages = [ "firefox" ];
