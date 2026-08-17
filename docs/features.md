@@ -320,6 +320,7 @@ e `user/wm/niri.nix` aplica as mesmas cores à mão.
 | `fonts.monospace` | `"JetBrainsMono Nerd Font"` | Nerd Font porque a barra usa ícones que só existem nelas |
 | `fonts.size` | `11` | corpo da fonte de interface |
 | `rice` | `true` | a **geometria** do compositor: anel de foco em gradiente e espaçamento maior. `false` deixa o anel sólido e discreto, ainda pintado pelo esquema |
+| `animations` | `true` | transições, sombras e blur. `false` remove **só o custo de GPU**, sem mudar funcionalidade |
 
 **Por que fica em `system/theme/` e não em `system/wm/`:** tema é transversal.
 Ele pinta o console TTY, o GTK e o Qt, que existem independentemente de qual
@@ -383,6 +384,39 @@ cor sumir da paleta em silêncio).
 Nada no repositório escreve cor fixa. O gradiente da borda é `base0D → base0A`,
 então trocar de esquema troca o gradiente junto — com `gruvbox-dark-hard` ele
 vira `rgb(83a598) rgb(fabd2f)`, verificado.
+
+### `animations = false`, para GPU fraca
+
+Separada da `rice` de propósito, porque são eixos diferentes de custo:
+
+| | O que é | Custa |
+|---|---|---|
+| `rice` | forma — gradiente, espaçamento | desenhado uma vez |
+| `animations` | transição, sombra, blur | redesenha a tela a cada quadro |
+
+Quem tem GPU fraca quer desligar o segundo sem abrir mão do primeiro. As quatro
+combinações são válidas e independentes.
+
+Com `animations = false`:
+
+- **niri** ganha `animations { off }` — a janela aparece no lugar em vez de
+  deslizar, o workspace troca instantaneamente;
+- **noctalia** perde `shell.animation.enabled`, `shell.shadow.alpha`,
+  `bar.shadow`, `dock.shadow`, `backdrop.blur_intensity` e
+  `lockscreen.blurred_desktop`.
+
+**Nada de funcionalidade muda.** Painéis, janelas e o scroll do niri continuam
+iguais; some a transição, não o comportamento.
+
+O caso que motivou a flag: uma VM cuja aceleração 3D é traduzida por VirGL
+sobre uma Radeon de 2010. Ali, redesenhar a tela a cada movimento do mouse é o
+gargalo, e nenhum aumento de CPU ou RAM resolve.
+
+As chaves do noctalia entram pela mesma mecânica de poda que as do stylix — o
+TOML e o Nix não podem definir a mesma chave, então quem vai sobrescrever poda
+antes. A fusão é `recursiveUpdate`, e não `//`, porque os efeitos vivem a dois
+níveis: uma fusão rasa apagaria as outras chaves de `shell` vindas do seu
+export.
 
 ### O papel de parede, e por que ele é uma cor
 
