@@ -54,6 +54,20 @@ let
   terminal = exe pkgs.kitty;
   noctalia = exe config.programs.noctalia.package;
 
+  # O terminal sem o multiplexador. O kitty abre no herdr porque
+  # user/app/kitty.nix aponta o `shell` para ele; passar um comando na linha
+  # de comando faz o kitty ignorar aquela linha e rodar o que se pediu — aqui,
+  # o zsh puro.
+  #
+  # Não é preferência, é a saída de emergência: o herdr é um binário compilado
+  # de um input preso numa tag, e se um `nupdate --inputs` o quebrar, este é o
+  # atalho que ainda dá um terminal gráfico para rodar o rollback. Sem ele
+  # sobraria o TTY.
+  terminalPuro = [
+    terminal
+    (exe pkgs.zsh)
+  ];
+
   # Painéis do noctalia, por IPC — o shell já está no ar, isto só o chama.
   painel = id: [
     noctalia
@@ -177,6 +191,7 @@ lib.mkIf osConfig.lcars.user.niri.enable {
       # --- atalhos --------------------------------------------------------
       binds = {
         "${mod}+Return".spawn = [ terminal ];
+        "${mod}+Shift+Return".spawn = terminalPuro;
         "${mod}+Q".close-window = { };
 
         # Painéis do noctalia — os mesmos do Hyprland, mesma memória de dedos.
