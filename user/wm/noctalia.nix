@@ -112,6 +112,65 @@ let
   # Só poda quando o stylix está de fato no ar. Com o tema desligado ninguém
   # define essas chaves, e removê-las jogaria fora escolha sua sem substituto.
   temaLigado = osConfig.lcars.system.theme.enable;
+
+  # --- efeitos ----------------------------------------------------------
+  # Com `lcars.system.theme.animations = false`, os efeitos caros saem. O que
+  # eles custam não é uniforme: animação e blur redesenham a tela inteira em
+  # GPU, e numa placa fraca — ou numa VM cuja aceleração é traduzida por VirGL
+  # — é o que se sente primeiro.
+  #
+  # Nada aqui muda funcionalidade: os painéis abrem e fecham igual, só sem a
+  # transição.
+  animacoes = osConfig.lcars.system.theme.animations;
+
+  efeitos = [
+    [
+      "shell"
+      "animation"
+      "enabled"
+    ]
+    [
+      "shell"
+      "shadow"
+      "alpha"
+    ]
+    [
+      "bar"
+      "shadow"
+    ]
+    [
+      "dock"
+      "shadow"
+    ]
+    [
+      "backdrop"
+      "blur_intensity"
+    ]
+    [
+      "lockscreen"
+      "blurred_desktop"
+    ]
+  ];
+
+  semEfeitos = {
+    shell = {
+      animation.enabled = false;
+      shadow.alpha = 0.0;
+    };
+    bar.shadow = false;
+    dock.shadow = false;
+    backdrop.blur_intensity = 0.0;
+    lockscreen.blurred_desktop = false;
+  };
+
+  # A poda serve aos dois casos pelo mesmo motivo: o TOML e o Nix não podem
+  # definir a mesma chave, senão o módulo aborta por conflito. Quem vai
+  # sobrescrever, poda antes.
+  podar = attrs: caminhos: builtins.foldl' removerCaminho attrs caminhos;
+
+  base = podar exportado (
+    (lib.optionals temaLigado gerenciadosPeloStylix) ++ (lib.optionals (!animacoes) efeitos)
+  );
 in
 lib.mkIf osConfig.lcars.user.noctalia.enable {
   programs.noctalia = {
@@ -124,7 +183,9 @@ lib.mkIf osConfig.lcars.user.noctalia.enable {
     # módulo NixOS do niri instala (system/wm/niri.nix).
     systemd.enable = true;
 
-    settings =
-      if temaLigado then builtins.foldl' removerCaminho exportado gerenciadosPeloStylix else exportado;
+    # `recursiveUpdate` e não `//`: os efeitos vivem a dois níveis
+    # (`shell.animation.enabled`), e a fusão rasa apagaria as outras chaves de
+    # `shell` que vieram do seu export.
+    settings = if animacoes then base else lib.recursiveUpdate base semEfeitos;
   };
 }

@@ -33,6 +33,7 @@
 let
   cores = config.lib.stylix.colors;
   rice = osConfig.lcars.system.theme.rice;
+  animacoes = osConfig.lcars.system.theme.animations;
   teclado = osConfig.lcars.system.hardware.keyboard;
 
   mod = "Mod";
@@ -157,6 +158,11 @@ lib.mkIf osConfig.lcars.user.niri.enable {
       # Sem decoração do cliente: quem desenha a moldura é o compositor, e é
       # assim que o anel de foco acima fica visível em todos os aplicativos.
       prefer-no-csd = { };
+
+      # Transições do compositor. `off` não tira funcionalidade: a janela
+      # aparece no lugar em vez de deslizar até ele, e o workspace troca
+      # instantaneamente. Numa GPU fraca é o que se sente.
+      animations = lib.optionalAttrs (!animacoes) { off = { }; };
 
       # --- o que sobe com a sessão ---------------------------------------
       # Vazio, e é para continuar assim.

@@ -98,6 +98,24 @@ in
       '';
     };
 
+    # Separada da `rice` de propósito: forma e custo de GPU são eixos
+    # diferentes. Gradiente e espaçamento são desenhados uma vez; animação e
+    # blur redesenham a tela a cada quadro. Quem tem GPU fraca quer desligar o
+    # segundo sem abrir mão do primeiro.
+    animations = mkOption {
+      type = types.bool;
+      default = true;
+      description = ''
+        Animações e efeitos que custam GPU: transições do compositor,
+        sombras e blur do shell.
+
+        Desligar não muda funcionalidade nenhuma — as janelas e os painéis
+        abrem e fecham igual, só sem a transição. O ganho aparece em máquina
+        com GPU fraca, ou numa VM cuja aceleração é traduzida (VirGL), onde
+        redesenhar a tela inteira a cada quadro é o gargalo.
+      '';
+    };
+
     fonts = {
       size = mkOption {
         type = types.int;
