@@ -962,10 +962,20 @@ de login da conta (`bash` quando desligada). Veja "Base do sistema" acima.
 "Histórico" acima). Aceita `--inputs` para atualizar o nixpkgs junto e
 `--no-check` para pular a avaliação.
 
-**Em conflito, o repositório vence** — sem perguntar, sem parar. O que você
+**Em conflito, o repositório vence** — mas só quando `origin/main` tem
+histórico que o local não tem. Se o local estiver igual ou à frente (uma
+entrega já mergeada, ainda sem `push`), a sincronização é pulada por
+completo: sem stash, sem reset. Quando há de fato histórico novo, o que você
 editou vai para um `git stash` nomeado e commits locais descartados ficam no
 `reflog`; as duas coisas são rede de segurança, não confirmação.
 `machines/<host>/` é preservado sempre, porque não existe no repositório.
+
+**Antes do rebuild**, todo `*.hm-bak` deixado por uma ativação anterior é
+renomeado com timestamp. O home-manager recusa sobrescrever um `.hm-bak` que
+já existe (veja `backupFileExtension` em "Base do sistema", acima) — sem essa
+etapa, a segunda colisão do mesmo arquivo derruba a ativação do usuário
+*depois* do sistema já ter sido trocado pelo rebuild, e o sintoma some longe
+da causa ([#37](https://github.com/insanemor/lcars/issues/37)).
 
 Antes de tudo isso, um `atuin sync` silencioso; e depois de tudo, o login do
 atuin, se faltar. Os dois estão em "Histórico", acima.
