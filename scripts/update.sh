@@ -14,6 +14,8 @@
 #   2. (com --inputs) nix flake update
 #   3. avalia os .nix — erro de código aparece em segundos, não no meio do build
 #   4. nixos-rebuild switch
+#   5. autentica o atuin, se ainda não houver sessão — aqui, e não num módulo,
+#      porque só este script roda na sua sessão (veja o bloco no fim)
 #
 # SOBRE CONFLITOS: o repositório sempre vence. Se você editou um arquivo que
 # também mudou no repositório, a sua versão é descartada — sem perguntar, sem
@@ -179,6 +181,85 @@ if nixos-rebuild --help 2>&1 | grep -q -- --elevate; then
 else
   nixos-rebuild switch --flake ".#$HOST" --use-remote-sudo
 fi
+
+# --- 5. atuin: autenticar, se ainda não estiver -----------------------
+# POR QUE ISTO ESTÁ AQUI, E NÃO NUM MÓDULO
+# ----------------------------------------
+# Porque este script roda no SEU terminal, e a ativação do home-manager não.
+#
+# O login do atuin morou em `home.activation.atuinLogin` da #48 à #57, e nunca
+# funcionou: aquilo roda na unit `home-manager-<user>.service`, que não tem a
+# sua sessão gráfica — nem as variáveis, nem o socket, nem alguém para
+# autorizar o popup que o 1Password mostra ao liberar o CLI. O journal só dizia
+# "sem login no 1Password", com o `op` presente e funcionando no terminal ao
+# lado. Não era configuração: era o contexto do processo.
+#
+# Aqui é diferente. Quem chamou o nupdate foi você, com sessão aberta e o
+# 1Password destravado — o popup aparece e você clica. Uma vez por máquina; nas
+# vezes seguintes, `atuin status` responde e este bloco não faz nada.
+#
+# Nada abaixo pode mudar o resultado do nupdate. O sistema já foi construído e
+# ativado; um login que não deu certo não invalida um rebuild que deu.
+autentica_atuin() {
+  command -v atuin >/dev/null 2>&1 || return 0
+  atuin status >/dev/null 2>&1 && return 0   # já logado nesta máquina
+
+  # O `op` do wrapper primeiro — é o setgid do grupo `onepassword-cli`, o único
+  # que o aplicativo aceita. Mesma ordem de user/shell/atuin.nix (#56).
+  local op="" candidato
+  for candidato in /run/wrappers/bin/op "$(command -v op 2>/dev/null || true)"; do
+    if [[ -n "$candidato" && -x "$candidato" ]]; then
+      op="$candidato"
+      break
+    fi
+  done
+  if [[ -z "$op" ]]; then
+    note "atuin sem login, e o 'op' não foi encontrado — histórico fica local"
+    return 0
+  fi
+
+  # O vault sai do settings.nix, para não haver um segundo lugar onde o nome
+  # possa divergir — foi assim que a #50 aconteceu.
+  local vault
+  vault="$(grep -oP 'vault = "\K[^"]+' settings.nix 2>/dev/null || true)"
+  if [[ -z "$vault" ]]; then
+    note "não achei o vault em settings.nix — pulando o login do atuin"
+    return 0
+  fi
+
+  step "autenticando o atuin (o 1Password pode pedir autorização)"
+
+  # O stderr do `op` é guardado: é ele quem sabe o que houve. A mensagem
+  # genérica de "não consegui ler" já mandou conferir o lugar errado uma vez
+  # (#50), e não vai mandar de novo.
+  local tmp erro=""
+  tmp="$(mktemp -d)"
+  local u p k
+  u="$("$op" read "op://$vault/atuin/username" 2>>"$tmp/erro" || true)"
+  p="$("$op" read "op://$vault/atuin/password" 2>>"$tmp/erro" || true)"
+  k="$("$op" read "op://$vault/atuin/key" 2>>"$tmp/erro" || true)"
+  [[ -s "$tmp/erro" ]] && erro="$(head -1 "$tmp/erro")"
+  rm -rf "$tmp"
+
+  if [[ -z "$u" || -z "$p" || -z "$k" ]]; then
+    note "não consegui ler op://$vault/atuin — histórico fica local"
+    [[ -n "$erro" ]] && note "  op disse: $erro"
+    return 0
+  fi
+
+  # A senha vai no argv porque `atuin login` não a lê de outro jeito — nem
+  # stdin, nem variável de ambiente (conferido no --help da 18.18.1). Fica
+  # visível no `ps` desta máquina enquanto o comando roda, por volta de um
+  # segundo, uma vez por máquina.
+  if atuin login -u "$u" -p "$p" -k "$k" >/dev/null 2>&1; then
+    ok "atuin autenticado — o histórico desta máquina passa a sincronizar"
+    atuin sync >/dev/null 2>&1 || true
+  else
+    note "'atuin login' falhou (senha, chave ou servidor) — histórico fica local"
+  fi
+}
+
+autentica_atuin
 
 printf '\n'
 ok "pronto — $HOST atualizada"
