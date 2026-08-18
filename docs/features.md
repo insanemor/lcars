@@ -842,9 +842,11 @@ atuin status       # confere
 ```
 
 O `$vault` é o `userSettings.onePassword.vault` do `settings.nix`, e precisa ser
-o nome como ele aparece em `op vault list` — na #50 o repositório dizia
-`Dotfiles` e a conta tinha `Dotifiles`, e o único sintoma foi o login não
-acontecer.
+o nome exato que aparece em `op vault list`. Um nome que não existe na conta não
+dá erro de avaliação: o login simplesmente não acontece, e a única pista é a
+linha `lcars:   op disse: …` do rebuild. Foi assim na #50 — o repositório dizia
+`Dotfiles`, a conta tinha `Dotifiles` — e de novo na #52, com os nomes trocados
+de lado depois de o vault ser renomeado.
 
 O profile `basic` fica de fora pelo mesmo motivo dos dotfiles: sem sessão no
 1Password numa máquina headless, o atuin seria o histórico do zsh com passos a
