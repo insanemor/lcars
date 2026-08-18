@@ -13,8 +13,9 @@
 #   1. sincroniza ~/.dotfiles com o repositório
 #   2. (com --inputs) nix flake update
 #   3. avalia os .nix — erro de código aparece em segundos, não no meio do build
-#   4. nixos-rebuild switch
-#   5. autentica o atuin, se ainda não houver sessão — aqui, e não num módulo,
+#   4. renomeia .hm-bak que colidiriam com a ativação do home-manager (#37)
+#   5. nixos-rebuild switch
+#   6. autentica o atuin, se ainda não houver sessão — aqui, e não num módulo,
 #      porque só este script roda na sua sessão (veja o bloco no fim)
 #
 # SOBRE CONFLITOS: o repositório sempre vence, mas só quando ele tem
@@ -189,7 +190,42 @@ if [[ "$CHECK" == "yes" && -x ./scripts/check.sh ]]; then
   fi
 fi
 
-# --- 4. aplicar -------------------------------------------------------
+# --- 4. renomear backups do home-manager que colidiriam -------------------
+# flake.nix define `backupFileExtension = "hm-bak"`: quando o home-manager
+# encontra um arquivo que ele não criou no caminho de um que quer escrever,
+# guarda o original como `<nome>.hm-bak` em vez de abortar. O problema
+# aparece na SEGUNDA colisão do mesmo arquivo — o home-manager se recusa a
+# sobrescrever um `.hm-bak` que já existe, e falha assim:
+#
+#   Existing file '/home/ins/.config/niri/config.kdl.hm-bak' would be
+#   clobbered by backing up '/home/ins/.config/niri/config.kdl'
+#
+# e nesse ponto o `nixos-rebuild switch` já trocou o sistema — só a ativação
+# do usuário falhou. O sintoma aparece longe da causa: atalhos que não
+# funcionam, tema que não mudou, sem nenhuma pista de que o culpado é um
+# arquivo de backup esquecido (#37).
+#
+# Renomeia com timestamp em vez de apagar — o ponto de um backup é poder
+# olhar depois, e um `.hm-bak` de ontem continua legível ao lado do de hoje.
+# `.cache` fica de fora da busca: é a pasta mais pesada de $HOME e o
+# home-manager nunca escreve lá.
+renomeia_hm_bak() {
+  local achou=no f ts novo
+  while IFS= read -r -d '' f; do
+    achou=yes
+    ts="$(date +%F-%H%M%S)"
+    novo="${f}.${ts}"
+    [[ -e "$novo" ]] && novo="${novo}.$$"
+    mv "$f" "$novo"
+    note "backup antigo renomeado: $f → $novo"
+  done < <(find "$HOME" -path "$HOME/.cache" -prune -o -name '*.hm-bak' -print0 2>/dev/null)
+  [[ "$achou" == yes ]] && note "nomes liberados — a ativação não deve mais recusar o backup"
+}
+
+step "verificando backups antigos do home-manager"
+renomeia_hm_bak
+
+# --- 5. aplicar -------------------------------------------------------
 # NÃO use `sudo nixos-rebuild`. Um flake git+file:// faz o Nix ler a árvore
 # pelo git, e sob sudo quem faz isso é o root — que escreve em .git/objects e
 # deixa os objetos com dono dele. Enquanto só há leitura ninguém nota; no
@@ -206,7 +242,7 @@ else
   nixos-rebuild switch --flake ".#$HOST" --use-remote-sudo
 fi
 
-# --- 5. atuin: autenticar, se ainda não estiver -----------------------
+# --- 6. atuin: autenticar, se ainda não estiver -----------------------
 # POR QUE ISTO ESTÁ AQUI, E NÃO NUM MÓDULO
 # ----------------------------------------
 # Porque este script roda no SEU terminal, e a ativação do home-manager não.

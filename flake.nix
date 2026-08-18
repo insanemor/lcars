@@ -244,8 +244,16 @@
                 # ~/.config/gtk-3.0/settings.ini para tematizar apps GTK.
                 #
                 # Com a extensão definida, o arquivo antigo vira <nome>.hm-bak
-                # e a ativação segue. Nada é perdido: o conteúdo anterior fica
-                # ali do lado.
+                # e a ativação segue.
+                #
+                # NA SEGUNDA colisão do mesmo arquivo, isto sozinho não basta: o
+                # home-manager se recusa a sobrescrever um `.hm-bak` que já
+                # existe, e a ativação do usuário falha — com o sistema já
+                # trocado pelo rebuild. É o `nupdate` (scripts/update.sh) quem
+                # evita isso, renomeando com timestamp qualquer `.hm-bak`
+                # encontrado ANTES do rebuild (#37). Quem rodar
+                # `home-manager switch` direto, sem passar pelo `nupdate`, não
+                # tem essa proteção.
                 backupFileExtension = "hm-bak";
 
                 # Tudo do usuário num atributo só. Separar em
