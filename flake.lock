@@ -199,6 +199,24 @@
         "url": "https://github.com/ogulcancelik/herdr-browser"
       }
     },
+    "herdr-nvim": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1786633944,
+        "narHash": "sha256-8rauWsiFvp847ku4OCrhECQGoQUUiZdKOZtjQ2xShYg=",
+        "ref": "main",
+        "rev": "40aadeab3cef3702ef5e05069181c7168084794f",
+        "revCount": 97,
+        "type": "git",
+        "url": "https://github.com/ChmaraX/herdr-nvim"
+      },
+      "original": {
+        "ref": "main",
+        "rev": "40aadeab3cef3702ef5e05069181c7168084794f",
+        "type": "git",
+        "url": "https://github.com/ChmaraX/herdr-nvim"
+      }
+    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -316,6 +334,7 @@
       "inputs": {
         "herdr": "herdr",
         "herdr-browser": "herdr-browser",
+        "herdr-nvim": "herdr-nvim",
         "home-manager": "home-manager",
         "nixpkgs": "nixpkgs",
         "noctalia": "noctalia",
