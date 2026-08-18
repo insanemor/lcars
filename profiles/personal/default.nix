@@ -42,6 +42,7 @@ with lib;
       "fd"
       "bat"
       "eza"
+      "gh"
     ];
 
     # --- ambiente do usuário (user/) ----------------------------------
