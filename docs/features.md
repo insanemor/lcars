@@ -662,7 +662,43 @@ profile — os títulos abaixo trazem a flag de cada um.
 - **powerlevel10k** como prompt, do preset *rainbow*
 - Autosuggestion, syntax highlighting e completion
 - Histórico de 50 000 linhas, compartilhado entre sessões, sem duplicatas
-- Aliases: `ll`, `la`, `l`, `gs` (git status), `gp` (push), `gpl` (pull)
+- Aliases: `ll`, `la`, `l`, `lt`, `ls`, `cat`, `gs` (git status), `gp` (push), `gpl` (pull) — veja abaixo
+
+#### `ls` e `cat` chamam o eza e o bat — onde eles existem
+
+Os substitutos modernos estavam instalados e ociosos: o dedo digita `ls` e
+`cat`, e o `eza`/`bat` só entravam quando alguém lembrava. Agora atendem pelo
+nome de sempre:
+
+| Alias | Com eza/bat instalados | Sem eles |
+|---|---|---|
+| `ls` | `eza --icons --group-directories-first` | não existe (o `ls` normal) |
+| `ll` | o mesmo, com `-l --all --git` | `ls -alF --color` |
+| `la` | o mesmo, com `--all` | `ls -A --color` |
+| `l` | o mesmo, curto | `ls -CF --color` |
+| `lt` | `eza --icons --tree --level=2` | não existe |
+| `cat` | `bat` | não existe (o `cat` normal) |
+
+O `--git` põe o estado de cada arquivo no repositório ao lado do nome, e fora
+de um repositório a coluna nem aparece. O `bat` detecta quando não está falando
+com um terminal: em pipe ou redirecionamento ele vira o `cat`, sem cor, sem
+número de linha e sem paginador — `cat x | grep y` e `cat x > y` continuam
+funcionando.
+
+**Os aliases são condicionais**, e isso não é preciosismo: os quatro pacotes só
+existem no profile `personal` (`lcars.system.core.userPackages`, com default
+`[ ]`). Um `alias ls=eza` incondicional deixaria uma máquina `basic` sem `ls`.
+O módulo lê a lista efetiva — `userPackages` somada a `userSettings.packages` —
+e só gera o alias de quem está lá.
+
+**Para chamar o original**, `\ls` ou `command ls`; a contrabarra desliga o alias
+naquela invocação.
+
+**`grep` e `find` ficaram de fora, de propósito.** O `rg` usa `-r` para
+*replace* onde o `grep` usa para recursivo, e ignora o que está no
+`.gitignore` — uma busca "não acharia" o que o grep acha. E `find . -name
+"*.nix"` não tem tradução direta em `fd` (seria `fd -e nix`). Os dois seguem
+disponíveis pelos próprios nomes, que é como valem a pena.
 
 #### A ordem de carga, que é o que pode quebrar
 
@@ -1126,6 +1162,11 @@ por isso não tem flag: é a sua porta dos fundos, não parte do preset.
 ### Ferramentas de linha de comando · profile `personal`
 
 `ripgrep`, `fd`, `bat`, `eza` — definidos em `profiles/personal/default.nix`.
+
+O `bat` e o `eza` atendem também por `cat`, `ls`, `ll`, `la`, `l` e `lt`, por
+aliases que só existem quando os pacotes estão na lista — veja a seção do zsh.
+O `ripgrep` e o `fd` ficam nos próprios nomes, `rg` e `fd`, porque a sintaxe
+deles não é compatível com a do `grep` e a do `find`.
 
 ---
 
