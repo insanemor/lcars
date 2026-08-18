@@ -47,6 +47,8 @@
 
     nvim.enable = lib.mkEnableOption "o neovim como editor gráfico do usuário, com o plugin herdr-nvim carregado por init.lua — a sidebar do herdr abre este nvim no painel";
 
+    claudeCode.enable = lib.mkEnableOption "o CLI do Claude Code — só o pacote no PATH; a configuração segue em ~/.claude, fora do store";
+
     niri.enable = lib.mkEnableOption "a configuração do niri — atalhos, forma e cores (o compositor é lcars.system.wm.niri)";
 
     noctalia.enable = lib.mkEnableOption "o shell do desktop — barra, launcher, notificações, lock e dock numa peça só; substitui waybar, rofi e swaync";

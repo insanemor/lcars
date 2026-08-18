@@ -64,8 +64,9 @@ lib.mkIf osConfig.lcars.user.vivaldi.enable {
       # H.264, AAC e afins, do `vivaldi-ffmpeg-codecs` (LGPL 2.1, livre).
       proprietaryCodecs = true;
 
-      # O CDM da Google, que destrava streaming com DRM. É unfree, e por isso
-      # aparece por nome em system/unfree.nix junto com o próprio Vivaldi.
+      # O CDM da Google, que destrava streaming com DRM. É unfree, como o
+      # próprio Vivaldi — os dois avaliam porque system/unfree.nix liga o
+      # `allowUnfree` global.
       enableWidevine = true;
     };
 

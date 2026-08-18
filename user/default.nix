@@ -24,6 +24,7 @@
     ./app/direnv.nix
     ./app/dotfiles.nix
     ./app/nvim.nix
+    ./app/claude-code.nix
     ./wm/niri.nix
     ./wm/noctalia.nix
   ];

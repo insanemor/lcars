@@ -20,6 +20,7 @@ O repo vem com `personal`.
 | Terminal kitty (`user/app`) | `lcars.user.kitty.enable` | — | sim |
 | Multiplexador herdr (`user/app`) | `lcars.user.herdr.enable` | — | sim |
 | Editor neovim + herdr-nvim (`user/app`) | `lcars.user.nvim.enable` | — | sim |
+| Claude Code CLI (`user/app`) | `lcars.user.claudeCode.enable` | — | sim |
 | Navegador Vivaldi (`user/app`) | `lcars.user.vivaldi.enable` | — | sim |
 | Áudio PipeWire (`system/hardware`) | `lcars.system.hardware.audio.enable` | — | sim |
 | Teclado, console e gráfico (`system/hardware`) | `lcars.system.hardware.keyboard.enable` | sim | sim |
@@ -519,7 +520,7 @@ acima). A flag `rice` governa só o compositor.
 - As **três** chaves de host do `github.com` (RSA, ECDSA, ED25519) em `programs.ssh.knownHosts`, para não haver prompt de host desconhecido no primeiro clone — e para recusar quem não for o GitHub
 - `ssh` do sistema apontando para `~/.1password/agent.sock` via `IdentityAgent`
 - `gpg.ssh.program` do git apontando para o `op-ssh-sign`, quando há chave de assinatura (`user/app/git.nix`)
-- Software proprietário liberado nome a nome: o módulo acrescenta os três pacotes do 1Password a `lcars.system.unfreePackages`, e `system/unfree.nix` escreve o `allowUnfreePredicate` a partir dessa lista — `allowUnfree` global **não** é ligado
+- Software proprietário: nada a declarar no módulo — `system/unfree.nix` liga `nixpkgs.config.allowUnfree = true` para o sistema inteiro (era liberação nome a nome até a #66)
 
 O agente SSH em si é um recurso do aplicativo, ligado em **Settings →
 Developer**. Não existe módulo NixOS para ele; o que o repo faz é apontar o ssh
@@ -1032,7 +1033,7 @@ ser decididas na derivação, e nenhuma delas cabe num nome de pacote numa lista
 | O quê | Por quê |
 |---|---|
 | `proprietaryCodecs = true` | H.264 e AAC, do `vivaldi-ffmpeg-codecs`. Sem eles, metade do YouTube e todo MP4 local ficam mudos ou pretos. O pacote é LGPL 2.1 — livre, apesar do nome do argumento. |
-| `enableWidevine = true` | O CDM da Google, que destrava streaming com DRM: Netflix, Prime, Spotify Web. É **unfree**, e aparece por nome em `system/unfree.nix`. |
+| `enableWidevine = true` | O CDM da Google, que destrava streaming com DRM: Netflix, Prime, Spotify Web. É **unfree**, e avalia porque `system/unfree.nix` liga o `allowUnfree` global. |
 | `--ozone-platform-hint=auto` | Wayland nativo sob o niri. Sem a flag, o Chromium escolhe X11 e o navegador sobe em XWayland, com fonte borrada em tela HiDPI. |
 
 O módulo do Home Manager usado é `programs.vivaldi`, que sai do mesmo
@@ -1218,6 +1219,23 @@ nix flake update herdr-nvim --refresh    # atualiza o rev no lock
 git diff flake.lock
 nupdate                                  # traz a nova versão
 ```
+
+### Claude Code · `user/app/claude-code.nix` · `lcars.user.claudeCode.enable` · só personal
+
+O CLI do Claude Code, pelo pacote `claude-code` do nixpkgs, em
+`home.packages`. É **unfree**, e avalia porque `system/unfree.nix` liga o
+`allowUnfree` global.
+
+Só o binário: nenhum arquivo de configuração é gerado. O Home Manager tem um
+módulo `programs.claude-code`, que escreveria `settings.json`, agents, commands
+e servidores MCP — e ele foi deixado de fora de propósito. O que ele escreve
+vira symlink read-only do store, e aí toda mudança feita pelo próprio Claude
+Code (ou pelo `/config`) passa a exigir um rebuild. Deste jeito, `~/.claude`
+continua sendo um diretório comum, editável por quem o usa.
+
+A versão é a do nixpkgs pinado no `flake.lock`; o `claude update` embutido não
+funciona sobre uma instalação do Nix, porque o binário está no store. Para
+subir de versão é `nix flake update` e `nupdate`, como o resto do sistema.
 
 ### git · `user/app/git.nix` · `lcars.user.git.enable` · basic + personal
 

@@ -56,6 +56,7 @@ with lib;
     lcars.user.vivaldi.enable = mkDefault true;
     lcars.user.herdr.enable = mkDefault true;
     lcars.user.nvim.enable = mkDefault true;
+    lcars.user.claudeCode.enable = mkDefault true;
     lcars.user.niri.enable = mkDefault true;
     lcars.user.noctalia.enable = mkDefault true;
   };

@@ -88,11 +88,11 @@ symlink read-only do store estar fora de questão.
 **Portanto: três cliques por máquina nova, uma vez.** É o mesmo custo do
 pareamento inicial da conta, e pela mesma razão.
 
-O 1Password é software proprietário. O módulo acrescenta exatamente esses três
-pacotes a `lcars.system.unfreePackages`, a lista de onde `system/unfree.nix`
-monta o `allowUnfreePredicate` — sem ligar `allowUnfree` global. A lista existe
-porque `nixpkgs.config` mescla por atributo: dois módulos escrevendo o
-predicate direto apagariam um ao outro em silêncio.
+O 1Password é software proprietário, e não há nada a declarar no módulo por
+causa disso: `system/unfree.nix` liga `nixpkgs.config.allowUnfree = true` para
+o sistema inteiro. Até a #66 a liberação era nome a nome, por uma lista que
+cada módulo alimentava; o histórico dessa decisão — e de como revertê-la —
+está no comentário daquele arquivo.
 
 ## OpNix
 
