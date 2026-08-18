@@ -52,13 +52,26 @@ mkIf osConfig.lcars.user.dotfiles.enable {
     lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       mkdir -p ${escapeShellArg cacheDir}
 
-      if ! command -v op >/dev/null 2>&1; then
-        echo "lcars: 'op' não está no PATH — pulando dotfiles do 1Password"
-      elif [ -z "''${OP_SERVICE_ACCOUNT_TOKEN:-}" ] && ! op whoami >/dev/null 2>&1; then
+      # O `op` por caminho absoluto, o do wrapper primeiro. Esta ativação roda
+      # numa unit systemd cujo PATH não tem /run/wrappers/bin, então
+      # `command -v op` falha sempre — e, entre os dois binários possíveis, só
+      # o wrapper (setgid do grupo `onepassword-cli`) é aceito pelo aplicativo.
+      # A história completa está em user/shell/atuin.nix e na #56.
+      op=""
+      for candidato in /run/wrappers/bin/op "$(command -v op 2>/dev/null || true)"; do
+        if [ -n "$candidato" ] && [ -x "$candidato" ]; then
+          op="$candidato"
+          break
+        fi
+      done
+
+      if [ -z "$op" ]; then
+        echo "lcars: 'op' não encontrado (nem /run/wrappers/bin/op, nem no PATH) — pulando dotfiles do 1Password"
+      elif [ -z "''${OP_SERVICE_ACCOUNT_TOKEN:-}" ] && ! "$op" whoami >/dev/null 2>&1; then
         echo "lcars: sem login no 1Password — pulando dotfiles"
       else
         ${concatMapStringsSep "\n  " (item: ''
-          if op read ${escapeShellArg item.opPath} > ${escapeShellArg "${item.cachePath}.tmp"} 2>/dev/null; then
+          if "$op" read ${escapeShellArg item.opPath} > ${escapeShellArg "${item.cachePath}.tmp"} 2>/dev/null; then
             mv ${escapeShellArg "${item.cachePath}.tmp"} ${escapeShellArg item.cachePath}
           else
             rm -f ${escapeShellArg "${item.cachePath}.tmp"}

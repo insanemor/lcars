@@ -166,11 +166,38 @@ lib.mkIf osConfig.lcars.user.atuin.enable {
     # era verdadeira, e toda ativação caía no login (#49). Ler o meta.db aqui
     # seria trocar um palpite por outro: o formato é interno do atuin, e o
     # comando é a interface pública.
+
+    # O `op`, por caminho absoluto — e o do WRAPPER, primeiro.
+    #
+    # Duas razões, e a segunda só apareceu depois de a primeira ser resolvida:
+    #
+    # 1. Esta ativação roda numa unit systemd (home-manager-<user>.service),
+    #    cujo PATH não tem `/run/wrappers/bin` nem `/run/current-system/sw/bin`.
+    #    `command -v op` ali falha sempre, por melhor que o 1Password esteja
+    #    configurado — era o que o journal da VM mostrava na #56.
+    #
+    # 2. Entre os dois `op` possíveis, serve o do wrapper.
+    #    `programs._1password` instala em /run/wrappers/bin/op um wrapper setgid
+    #    do grupo `onepassword-cli`, e é esse grupo que o aplicativo verifica
+    #    para aceitar falar com o CLI. O binário do store é achado do mesmo
+    #    jeito e recusado pelo app — trocaria "não está no PATH" por
+    #    "no account found".
+    #
+    # O fallback para o PATH existe para quem rodar este módulo sem
+    # `programs._1password` — fora do NixOS, ou com o CLI vindo de outro lugar.
+    op=""
+    for candidato in /run/wrappers/bin/op "$(command -v op 2>/dev/null || true)"; do
+      if [ -n "$candidato" ] && [ -x "$candidato" ]; then
+        op="$candidato"
+        break
+      fi
+    done
+
     if timeout 15 ${atuin} status >/dev/null 2>&1; then
       : # já logado nesta máquina — não relogar a cada rebuild
-    elif ! command -v op >/dev/null 2>&1; then
-      echo "lcars: 'op' não está no PATH — atuin fica local, sem sync"
-    elif [ -z "''${OP_SERVICE_ACCOUNT_TOKEN:-}" ] && ! op whoami >/dev/null 2>&1; then
+    elif [ -z "$op" ]; then
+      echo "lcars: 'op' não encontrado (nem /run/wrappers/bin/op, nem no PATH) — atuin fica local, sem sync"
+    elif [ -z "''${OP_SERVICE_ACCOUNT_TOKEN:-}" ] && ! "$op" whoami >/dev/null 2>&1; then
       echo "lcars: sem login no 1Password — atuin fica local, sem sync"
     else
       # Os três de uma vez. O stderr do `op` é guardado num arquivo, e não
@@ -184,9 +211,9 @@ lib.mkIf osConfig.lcars.user.atuin.enable {
       #
       # O stderr do `op` não carrega segredo: traz o caminho pedido e o motivo.
       op_tmp="$(mktemp -d)"
-      atuin_user="$(op read ${lib.escapeShellArg "${item}/username"} 2>>"$op_tmp/erro" || true)"
-      atuin_pass="$(op read ${lib.escapeShellArg "${item}/password"} 2>>"$op_tmp/erro" || true)"
-      atuin_key="$(op read ${lib.escapeShellArg "${item}/key"} 2>>"$op_tmp/erro" || true)"
+      atuin_user="$("$op" read ${lib.escapeShellArg "${item}/username"} 2>>"$op_tmp/erro" || true)"
+      atuin_pass="$("$op" read ${lib.escapeShellArg "${item}/password"} 2>>"$op_tmp/erro" || true)"
+      atuin_key="$("$op" read ${lib.escapeShellArg "${item}/key"} 2>>"$op_tmp/erro" || true)"
 
       if [ -z "$atuin_user" ] || [ -z "$atuin_pass" ] || [ -z "$atuin_key" ]; then
         echo "lcars: não consegui ler ${item} no 1Password — atuin fica local, sem sync"
