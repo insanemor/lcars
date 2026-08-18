@@ -16,6 +16,7 @@
 {
   imports = [
     ./shell/zsh.nix
+    ./shell/atuin.nix
     ./app/git.nix
     ./app/kitty.nix
     ./app/herdr.nix

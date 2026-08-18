@@ -183,7 +183,9 @@ Document do 1Password.
 **No profile `personal`** — [niri](https://github.com/YaLTeR/niri) com SDDM, o
 shell [noctalia](https://github.com/noctalia-dev/noctalia-shell), o terminal
 kitty com o multiplexador [herdr](https://herdr.dev) (workspaces e painéis
-persistentes, com os atalhos do tmux), áudio PipeWire, fontes
+persistentes, com os atalhos do tmux), o histórico de comandos no
+[atuin](https://atuin.sh) (busca no `CTRL+R`, sincronizado entre máquinas com a
+chave vinda do 1Password), áudio PipeWire, fontes
 Noto/Liberation/DejaVu, 1Password (CLI + GUI + agente SSH), e `ripgrep`, `fd`,
 `bat`, `eza`. **Não há navegador** nem suíte de aplicativos; acrescente o que
 quiser em `userSettings.packages`.
@@ -351,7 +353,7 @@ A árvore é dividida por **papel**, não por mecanismo do Nix:
 ├── user/           # módulos do Home Manager, opt-in via lcars.user.<módulo>.enable
 │   ├── options.nix # as flags acima — declaradas do lado NixOS, veja abaixo
 │   ├── wm/         # niri.nix, noctalia.nix (+ noctalia-config.toml)
-│   ├── shell/      # zsh.nix
+│   ├── shell/      # zsh.nix, atuin.nix
 │   ├── app/        # git.nix, direnv.nix, dotfiles.nix
 │   └── personal/   # escape hatch via private.nix em $HOME (sem flag)
 │
