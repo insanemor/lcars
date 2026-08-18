@@ -71,11 +71,17 @@ mkIf osConfig.lcars.user.dotfiles.enable {
         echo "lcars: sem login no 1Password — pulando dotfiles"
       else
         ${concatMapStringsSep "\n  " (item: ''
-          if "$op" read ${escapeShellArg item.opPath} > ${escapeShellArg "${item.cachePath}.tmp"} 2>/dev/null; then
+          if "$op" read ${escapeShellArg item.opPath} > ${escapeShellArg "${item.cachePath}.tmp"} 2>${escapeShellArg "${item.cachePath}.tmp.err"}; then
             mv ${escapeShellArg "${item.cachePath}.tmp"} ${escapeShellArg item.cachePath}
+            rm -f ${escapeShellArg "${item.cachePath}.tmp.err"}
           else
             rm -f ${escapeShellArg "${item.cachePath}.tmp"}
-            echo "lcars: falha ao ler ${item.rel} do 1Password"
+            erro=""
+            if [ -s ${escapeShellArg "${item.cachePath}.tmp.err"} ]; then
+              erro="$(head -1 ${escapeShellArg "${item.cachePath}.tmp.err"})"
+            fi
+            rm -f ${escapeShellArg "${item.cachePath}.tmp.err"}
+            echo "lcars: falha ao ler ${item.rel} do 1Password''${erro:+ — $erro}"
           fi
         '') items}
       fi
