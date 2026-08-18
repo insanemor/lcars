@@ -38,10 +38,23 @@
 # O QUE NÃO ESTÁ AQUI
 # -------------------
 # Os plugins do herdr (file viewer, browser, claude-usage) são baixados em
-# tempo de execução por `herdr plugin`, num diretório mutável que o Nix não
-# gerencia. Os atalhos do browser existem abaixo, mas ficam inertes até o
-# plugin ser instalado uma vez, à mão. O mesmo vale para o token
-# `$claude_usage` da sidebar.
+# tempo de execução por `herdr plugin`, para ~/.config/herdr/plugins — um
+# diretório mutável que o Nix não gerencia. Os atalhos do browser existem
+# abaixo, mas ficam inertes até o plugin ser instalado uma vez, à mão:
+#
+#     herdr plugin install ogulcancelik/herdr-browser --yes
+#
+# O mesmo vale para o token `$claude_usage` da sidebar.
+#
+# COMANDO `shell` QUE FALHA NÃO DIZ NADA
+# --------------------------------------
+# Vale para os atalhos daqui e para qualquer um que se acrescente: um
+# `[[keys.command]]` com `type = "shell"` é spawnado com stdin, stdout e stderr
+# em /dev/null, e o herdr não olha o código de saída — ele só reporta se o
+# próprio spawn falhar (src/app/input/navigate.rs:880). Um comando errado, um
+# plugin ausente ou uma opção inválida dão exatamente o mesmo resultado na
+# tela: nada. Foi assim que a #55 passou despercebida. Ao mexer num destes
+# comandos, rode-o à mão num painel antes de confiar nele.
 {
   config,
   osConfig,
@@ -67,6 +80,14 @@ let
   # absoluto e NÃO entra no PATH: é um motor de renderização para o painel, não
   # um navegador para usar. (Vivaldi não serve — falha com "timed out waiting
   # for CDP Page.enable".)
+  #
+  # O caminho chega ao plugin por `--env HERDR_BROWSER_CHROME=` no comando,
+  # jamais como `VAR=valor cmd` na frente dele. Quem lança o processo do plugin
+  # é o SERVIDOR do herdr, não o CLI: o CLI só manda uma mensagem pelo socket, e
+  # o servidor monta o ambiente do zero, a partir do que veio pela API mais as
+  # variáveis HERDR_* (src/app/api/plugins/panes.rs:232). Um prefixo de ambiente
+  # morre no processo do CLI, sem nunca alcançar o plugin — era o que acontecia
+  # até a #55.
   chromium = lib.getExe pkgs.chromium;
 
   # As cores, do esquema base16 do stylix — o mesmo que pinta o terminal, o
@@ -119,6 +140,13 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     herdr
     # No PATH porque é ferramenta de uso direto, não só o alvo do popup.
     pkgs.lazygit
+
+    # Runtime do plugin browser, e o único caso aqui em que o pacote precisa
+    # estar no PATH sem ser para o usuário chamar: o manifesto do plugin roda
+    # o painel com `["bun", "run", "src/viewer.ts"]`, pelo nome, e quem procura
+    # esse executável é o servidor do herdr. Caminho absoluto não resolveria —
+    # o comando está fixo no manifesto, que é do upstream do plugin.
+    pkgs.bun
   ];
 
   xdg.configFile."herdr/config.toml".text = ''
@@ -215,20 +243,26 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
 
     # =================================================================
     #  Plugin browser (official.browser) — Chromium desenhado dentro do
-    #  painel. Depende do plugin, que o Nix não instala: da primeira vez,
-    #  instale-o à mão com `herdr plugin install` (a sintaxe está em
-    #  `herdr plugin --help`) e confira com `herdr plugin list`.
+    #  painel. Depende do plugin, que o Nix não instala. Da primeira vez, numa
+    #  máquina nova:
+    #
+    #      herdr plugin install ogulcancelik/herdr-browser --yes
+    #      herdr plugin list
+    #
+    #  O `bun` que ele roda vem do módulo (veja home.packages), e o Chromium
+    #  vai por `--env`, que é o único jeito de a variável chegar ao processo do
+    #  plugin.
     # =================================================================
     [[keys.command]]
     key         = "prefix+b"
     type        = "shell"
-    command     = 'HERDR_BROWSER_CHROME=${chromium} "''${HERDR_BIN_PATH}" plugin pane open --plugin official.browser --entrypoint browser --placement split --direction right --focus'
+    command     = '"''${HERDR_BIN_PATH}" plugin pane open --plugin official.browser --entrypoint browser --placement split --direction right --focus --env HERDR_BROWSER_CHROME=${chromium}'
     description = "browser em split (chromium)"
 
     [[keys.command]]
     key         = "prefix+shift+b"
     type        = "shell"
-    command     = 'HERDR_BROWSER_CHROME=${chromium} "''${HERDR_BIN_PATH}" plugin pane open --plugin official.browser --entrypoint browser --placement overlay --focus'
+    command     = '"''${HERDR_BIN_PATH}" plugin pane open --plugin official.browser --entrypoint browser --placement overlay --focus --env HERDR_BROWSER_CHROME=${chromium}'
     description = "browser em overlay (chromium)"
 
     ${tema}

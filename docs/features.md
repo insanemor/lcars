@@ -1049,10 +1049,28 @@ Duas consequências de o arquivo ser gerado, que valem conhecer:
   todo dotfile gerado deste repo.
 
 Os **plugins** do herdr (browser, file viewer, claude-usage) são baixados em
-tempo de execução por `herdr plugin`, num diretório que o Nix não gerencia. Os
-atalhos `prefix + b` já apontam para o `official.browser` com o chromium do
-nixpkgs, mas ficam inertes até o plugin ser instalado uma vez, à mão — o mesmo
-vale para o token `$claude_usage` da sidebar.
+tempo de execução por `herdr plugin`, para `~/.config/herdr/plugins` — um
+diretório que o Nix não gerencia. Os atalhos `prefix + b` já apontam para o
+`official.browser` com o chromium do nixpkgs, mas ficam inertes até o plugin
+ser instalado uma vez, à mão, em cada máquina:
+
+```bash
+herdr plugin install ogulcancelik/herdr-browser --yes
+herdr plugin list
+```
+
+O módulo já resolve as duas dependências que esse plugin tem: o **`bun`**, que
+ele usa para rodar o painel, vai no PATH do usuário, e o **Chromium** chega por
+`--env HERDR_BROWSER_CHROME=`. Essa flag não é detalhe de estilo — quem lança o
+processo do plugin é o servidor do herdr, não o CLI, então uma variável posta
+na frente do comando nunca chegaria lá.
+
+O mesmo "instale à mão" vale para o token `$claude_usage` da sidebar.
+
+Um aviso que economiza tempo: um `[[keys.command]]` com `type = "shell"` que
+falha **não mostra nada** — o herdr o spawna com a saída em `/dev/null` e não
+olha o código de retorno. Se um atalho desses parecer inerte, rode o comando à
+mão num painel para ver o erro.
 
 ### git · `user/app/git.nix` · `lcars.user.git.enable` · basic + personal
 
