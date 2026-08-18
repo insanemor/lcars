@@ -76,6 +76,22 @@ lib.mkIf osConfig.lcars.user.vivaldi.enable {
       # escolhe X11 sempre, e sob o niri isso significa XWayland.
       "--ozone-platform-hint=auto"
     ];
+
+    # "1Password – Password Manager", da Chrome Web Store. O id é público —
+    # é o mesmo da URL da loja e da página oficial de deploy do 1Password —
+    # e é só isso que esta linha declara: um manifest em
+    # ~/.config/vivaldi/External Extensions/ apontando pro update URL da
+    # loja, que faz o Vivaldi buscar e instalar a extensão sozinho. Nenhuma
+    # senha, nenhuma conta, nenhum token passa por aqui.
+    #
+    # O pareamento da extensão com o app do 1Password não é nativeMessagingHosts
+    # — o 1Password não fala esse protocolo. A ponte é o wrapper setgid
+    # 1Password-BrowserSupport, que `programs._1password-gui` já cria em
+    # system/app/1password/default.nix. Depois do rebuild, só falta clicar em
+    # "conectar" dentro da extensão — interativo, como o login do Vivaldi Sync.
+    extensions = [
+      { id = "aeblfdkhhhdcdjpifhhbdiojplfjncoa"; }
+    ];
   };
 
   # Quem abre um link no sistema. Até a #60 isto não era declarado em lugar
