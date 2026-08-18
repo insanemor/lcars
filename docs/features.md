@@ -769,17 +769,11 @@ dialect = "uk"            # data em dd/mm
 #### O login é feito pela ativação, com o item do 1Password
 
 O servidor público guarda blocos que não sabe ler: **a chave é o histórico**.
-Perdê-la é perder o que está lá, e uma máquina nova sem ela não decifra nada. O
-atuin quer dois arquivos em `~/.local/share/atuin/`:
+Perdê-la é perder o que está lá, e uma máquina nova sem ela não decifra nada.
+Sem chave e sem login, o atuin roda local e **o sync falha calado**.
 
-- `key` — a chave de criptografia, a mesma em todas as máquinas;
-- `session` — o token de sessão obtido no login.
-
-Sem eles, o atuin roda local e **o sync falha calado**. O módulo resolve os dois
-de uma vez: quando não existe `session`, a ativação faz o login, e é o próprio
-`atuin login` que grava os dois arquivos.
-
-O que ele precisa é um item chamado `atuin`, no vault de
+A ativação resolve os dois de uma vez: quando o atuin não está logado, ela faz
+o login. O que ela precisa é um item chamado `atuin`, no vault de
 `userSettings.onePassword.vault`, com três campos:
 
 | Campo | O que é |
@@ -789,21 +783,32 @@ O que ele precisa é um item chamado `atuin`, no vault de
 | `key` | a saída de `atuin key` — o campo que você acrescenta |
 
 Os dois primeiros são os de qualquer item de login, então na prática só falta a
-chave. Com a `session` já presente, a ativação não faz nada: não reloga a cada
-rebuild nem bate no servidor à toa.
+chave. Já logado, a ativação não faz nada: não reloga a cada rebuild nem bate no
+1Password à toa.
+
+**Quem responde "estou logado?" é o `atuin status`**, e não um arquivo. Ele sai
+com 1 e diz `You are not logged in to a sync server` quando não há login, e
+imprime endereço e usuário quando há — é também o comando para você conferir
+depois de um `nupdate`. A #48 perguntava a `~/.local/share/atuin/session`, que a
+18.18 **não cria**: num `HOME` limpo ela deixa só os bancos (`history.db`,
+`meta.db`, `records.db`), e o estado de login vive dentro do `meta.db`. A guarda
+nunca era verdadeira, e toda ativação caía no login (#49).
 
 Falha nenhuma aí derruba o `home-manager switch`. Sem `op` no PATH, sem sessão
 aberta no 1Password, com campo faltando, ou com o servidor do atuin fora do ar,
 sai uma linha (`lcars: item op://… incompleto no 1Password …`) e o rebuild
-segue — o atuin fica local, que é um estado utilizável. O login tem tempo
-limite de 30 s, para uma chamada de rede não pendurar o rebuild.
+segue — o atuin fica local, que é um estado utilizável. As duas chamadas de rede
+têm tempo limite (15 s no `status`, 30 s no `login`), para nenhuma delas
+pendurar o rebuild.
 
 **A senha aparece no `ps`.** O `atuin login` não lê a senha de stdin nem de
 variável de ambiente — `-p` é a única forma. Enquanto o comando roda, ela está
 no argv, visível a quem puder ler `/proc` desta máquina: cerca de um segundo,
 uma vez por máquina. Foi um risco aceito na #48, em troca de a máquina nova não
-precisar de passo manual nenhum. A rota alternativa, se um dia deixar de valer,
-é guardar a `session` pronta no vault e só copiá-la.
+precisar de passo manual nenhum. Se um dia deixar de valer a troca, a saída é
+tirar o login da ativação e fazê-lo à mão uma vez por máquina — guardar um
+arquivo de sessão pronto no vault não serve, porque a 18.18 não guarda a sessão
+em arquivo.
 
 **O passo que é seu.** Criar a conta envolve senha, e senha não entra em arquivo
 versionado. Uma vez, na máquina que já tem o histórico:
@@ -815,8 +820,25 @@ atuin sync
 atuin key                                # imprime a chave; vai para o item
 ```
 
+⚠️ **`atuin key` numa máquina sem chave não reclama — ele gera uma chave nova**
+e a imprime como se fosse a sua. Numa máquina que ainda não logou, isso cria uma
+segunda chave, que não decifra nada do que está no servidor. Rode-o só onde a
+chave certa já existe; a saída vai para o 1Password, nunca o contrário.
+
 Depois acrescente a `key` ao item `atuin` do vault. A partir daí, toda máquina
 nova nasce sincronizada com um `op signin` e um `nupdate`.
+
+Se, depois do `nupdate`, o `atuin status` disser que não há login — a ativação
+roda dentro do `nixos-rebuild`, e pode não ter sessão do 1Password ali —, o
+mesmo login sai à mão num terminal seu, com o 1Password destravado:
+
+```bash
+atuin login -u "$(op read op://Dotfiles/atuin/username)" \
+            -p "$(op read op://Dotfiles/atuin/password)" \
+            -k "$(op read op://Dotfiles/atuin/key)"
+atuin sync -f      # numa máquina nova, baixa todo o histórico do servidor
+atuin status       # confere
+```
 
 O profile `basic` fica de fora pelo mesmo motivo dos dotfiles: sem sessão no
 1Password numa máquina headless, o atuin seria o histórico do zsh com passos a
