@@ -84,14 +84,16 @@ let
     auto_switch = false
 
     [theme.custom]
-    # superfícies: a escala de fundo do esquema, do mais fundo ao mais claro
-    panel_bg      = "${cores.base00}"
-    sidebar_bg    = "${cores.base01}"
-    surface0      = "${cores.base01}"
-    surface1      = "${cores.base02}"
-    surface_dim   = "${cores.base01}"
-    active_row_bg = "${cores.base02}"
-    selection_bg  = "${cores.base02}"
+    # superfícies: a escala de fundo do esquema, do mais fundo ao mais claro.
+    # São estes quatro, e só: o herdr pinta a sidebar e a linha ativa a partir
+    # deles, e calcula o fundo de seleção sozinho (automatic_selection_bg, em
+    # src/ui/panes.rs). Havia aqui `sidebar_bg`, `active_row_bg` e
+    # `selection_bg`, que o CustomThemeColors não tem — o herdr os ignorava e
+    # avisava "config.toml has unknown keys" no topo da tela (#54).
+    panel_bg    = "${cores.base00}"
+    surface0    = "${cores.base01}"
+    surface1    = "${cores.base02}"
+    surface_dim = "${cores.base01}"
 
     # texto: do apagado ao normal
     overlay0 = "${cores.base03}"
