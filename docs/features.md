@@ -766,47 +766,73 @@ inline_height = 25
 dialect = "uk"            # data em dd/mm
 ```
 
-#### O sync depende de dois arquivos — e eles vêm do 1Password
+#### O login é feito pela ativação, com o item do 1Password
 
 O servidor público guarda blocos que não sabe ler: **a chave é o histórico**.
 Perdê-la é perder o que está lá, e uma máquina nova sem ela não decifra nada. O
-atuin quer os dois em `~/.local/share/atuin/`:
+atuin quer dois arquivos em `~/.local/share/atuin/`:
 
 - `key` — a chave de criptografia, a mesma em todas as máquinas;
 - `session` — o token de sessão obtido no login.
 
-Sem eles, o atuin roda local e **o sync falha calado**. Por isso o módulo os
-puxa do 1Password na ativação, como `user/app/dotfiles.nix` faz com os
-dotfiles: item `atuin` no vault de `userSettings.onePassword.vault`, com um
-campo `key` e um campo `session`, materializados com permissão `600`.
+Sem eles, o atuin roda local e **o sync falha calado**. O módulo resolve os dois
+de uma vez: quando não existe `session`, a ativação faz o login, e é o próprio
+`atuin login` que grava os dois arquivos.
+
+O que ele precisa é um item chamado `atuin`, no vault de
+`userSettings.onePassword.vault`, com três campos:
+
+| Campo | O que é |
+|---|---|
+| `username` | o usuário da conta atuin |
+| `password` | a senha |
+| `key` | a saída de `atuin key` — o campo que você acrescenta |
+
+Os dois primeiros são os de qualquer item de login, então na prática só falta a
+chave. Com a `session` já presente, a ativação não faz nada: não reloga a cada
+rebuild nem bate no servidor à toa.
 
 Falha nenhuma aí derruba o `home-manager switch`. Sem `op` no PATH, sem sessão
-aberta no 1Password, ou com o item ainda não criado, sai uma linha
-(`lcars: atuin sem 'key' no 1Password …`) e o rebuild segue — o atuin fica
-local, que é um estado utilizável.
+aberta no 1Password, com campo faltando, ou com o servidor do atuin fora do ar,
+sai uma linha (`lcars: item op://… incompleto no 1Password …`) e o rebuild
+segue — o atuin fica local, que é um estado utilizável. O login tem tempo
+limite de 30 s, para uma chamada de rede não pendurar o rebuild.
 
-**O passo que é seu.** Registrar envolve senha, e senha não entra em arquivo
-versionado nem em script de ativação. Uma vez, na máquina que já tem o
-histórico:
+**A senha aparece no `ps`.** O `atuin login` não lê a senha de stdin nem de
+variável de ambiente — `-p` é a única forma. Enquanto o comando roda, ela está
+no argv, visível a quem puder ler `/proc` desta máquina: cerca de um segundo,
+uma vez por máquina. Foi um risco aceito na #48, em troca de a máquina nova não
+precisar de passo manual nenhum. A rota alternativa, se um dia deixar de valer,
+é guardar a `session` pronta no vault e só copiá-la.
+
+**O passo que é seu.** Criar a conta envolve senha, e senha não entra em arquivo
+versionado. Uma vez, na máquina que já tem o histórico:
 
 ```bash
 atuin register -u <usuário> -e <email>   # ou `atuin login`, se a conta existe
 atuin import auto                        # traz o ~/.zsh_history para o banco
 atuin sync
-atuin key                                # imprime a chave; guarde-a
+atuin key                                # imprime a chave; vai para o item
 ```
 
-Depois crie o item `atuin` no vault com os dois campos — `key` com a saída
-acima, `session` com o conteúdo de `~/.local/share/atuin/session`. A partir
-daí, toda máquina nova nasce sincronizada com um `op signin` e um `nupdate`.
-
-O 1Password é a fonte da verdade: um `atuin login` feito numa máquina e não
-refletido no item será desfeito pela próxima ativação, que devolve a session do
-vault por cima. É o mesmo trato do `nupdate`, em que o repositório vence.
+Depois acrescente a `key` ao item `atuin` do vault. A partir daí, toda máquina
+nova nasce sincronizada com um `op signin` e um `nupdate`.
 
 O profile `basic` fica de fora pelo mesmo motivo dos dotfiles: sem sessão no
 1Password numa máquina headless, o atuin seria o histórico do zsh com passos a
 mais.
+
+#### `nupdate` e `nsave` sincronizam antes
+
+Os dois scripts rodam um `atuin sync` logo no começo — silencioso quando dá
+certo, e incapaz de parar o comando quando não dá (sem atuin, sem login ou sem
+rede, sai uma linha amarela e a vida segue). No `nsave -n` ele não roda: o dry
+run promete não alterar nada, e um sync altera o servidor.
+
+Isso **não** é resgate de desastre. O banco vive em `~/.local/share/atuin/`,
+fora do store, e o `nixos-rebuild` não encosta nele — o histórico não corre
+risco num build. O que os dois comandos fecham é a janela entre o último
+`auto_sync` (de 5 em 5 minutos, e só quando um comando roda) e agora.
 
 ### Terminal · `user/app/kitty.nix` · `lcars.user.kitty.enable` · só personal
 
@@ -858,6 +884,8 @@ editou vai para um `git stash` nomeado e commits locais descartados ficam no
 `reflog`; as duas coisas são rede de segurança, não confirmação.
 `machines/<host>/` é preservado sempre, porque não existe no repositório.
 
+Antes de tudo isso, um `atuin sync` silencioso — veja "Histórico" acima.
+
 #### `nsave` — publicar o que você ajustou aqui
 
 `scripts/save.sh`. O caminho de volta, e o par natural do ciclo do noctalia:
@@ -870,10 +898,10 @@ nsave -y                    # sem perguntar
 nsave --no-export           # não roda o export do noctalia
 ```
 
-Na ordem: exporta a configuração do noctalia por cima do arquivo versionado,
-**valida o TOML** (inválido para aqui, antes de qualquer commit), consulta o
-remoto, mostra o que mudou aqui e o que ainda não subiu, espera você confirmar,
-commita em `main` e publica.
+Na ordem: sincroniza o histórico do atuin (fora do `-n`), exporta a configuração
+do noctalia por cima do arquivo versionado, **valida o TOML** (inválido para
+aqui, antes de qualquer commit), consulta o remoto, mostra o que mudou aqui e o
+que ainda não subiu, espera você confirmar, commita em `main` e publica.
 
 Quatro decisões que valem saber:
 

@@ -9,6 +9,7 @@
 # O alias `nupdate` está em user/shell/zsh.nix e aponta para cá.
 #
 # A sequência:
+#   0. sincroniza o histórico do atuin, se ele estiver instalado
 #   1. sincroniza ~/.dotfiles com o repositório
 #   2. (com --inputs) nix flake update
 #   3. avalia os .nix — erro de código aparece em segundos, não no meio do build
@@ -54,6 +55,21 @@ note() { printf '%s    %s%s\n' "$yellow" "$*" "$off"; }
 
 [[ -d "$REPO/.git" ]] || die "não achei um repositório git em $REPO"
 cd "$REPO"
+
+# O histórico de comandos sobe antes de mexer no sistema.
+#
+# Não é resgate de desastre: o banco do atuin fica em ~/.local/share/atuin, fora
+# do store, e o rebuild não encosta nele. É só fechar a janela entre o último
+# `auto_sync` (de 5 em 5 minutos, e só quando um comando roda) e agora.
+#
+# Silencioso quando dá certo, e incapaz de parar o script: sem atuin instalado,
+# sem login ou sem rede, o `|| true` segue em frente. `set -e` está ligado.
+sync_historico() {
+  command -v atuin >/dev/null 2>&1 || return 0
+  atuin sync >/dev/null 2>&1 || note "atuin sync falhou — seguindo (histórico fica local)"
+}
+
+sync_historico
 
 # O alvo do rebuild é o nome do diretório em machines/, e networking.hostName
 # recebe esse mesmo nome (flake.nix) — então o hostname da máquina é o alvo.
