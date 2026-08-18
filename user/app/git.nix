@@ -31,7 +31,7 @@ lib.mkIf osConfig.lcars.user.git.enable {
       pull.rebase = true;
       rerere.enabled = true;
       push.autoSetupRemote = true;
-      
+
       user = {
         Name = user.fullName;
         Email = user.email;
@@ -63,7 +63,6 @@ lib.mkIf osConfig.lcars.user.git.enable {
     // lib.optionalAttrs (assina && comOnePassword) {
       gpg.ssh.program = "${pkgs._1password-gui}/bin/op-ssh-sign";
     };
-
 
   };
 }

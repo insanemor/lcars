@@ -285,20 +285,40 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
   # este módulo o sobrescreva.
   home.sessionVariables.BROWSER = lib.getExe navegador;
 
-  # Registra o plugin browser a cada ativação. Roda na unit
-  # home-manager-<user>.service, e pode: não depende da sessão gráfica nem do
-  # 1Password — só de HOME, para achar ~/.config/herdr. (A lição contrária, do
-  # que NÃO pode morar aqui, está em user/shell/atuin.nix.)
+  # Ativações dos plugins do herdr. Os dois têm o mesmo formato: idempotente,
+  # rodam na unit home-manager-<user>.service, só precisam de HOME para achar
+  # ~/.config/herdr, e o servidor do herdr não precisa estar de pé — o
+  # `plugin link` grava o registro direto quando o servidor não responde, e
+  # atualiza via socket quando responde. (A lição contrária, do que NÃO pode
+  # morar aqui, está em user/shell/atuin.nix.)
   #
-  # Se o servidor do herdr estiver de pé, o CLI fala com ele pelo socket; se
-  # não, grava o registro direto. Os dois caminhos existem no upstream, e o
-  # segundo é o normal durante um `nupdate`.
-  home.activation.herdrPluginBrowser = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    if ! saida=$(${lib.getExe herdr} plugin link ${pluginBrowser} 2>&1); then
-      echo "lcars: falha ao registrar o plugin browser do herdr — prefix+b não vai abrir"
-      echo "$saida"
-    fi
-  '';
+  # O do browser é incondicional: ele é requisito para o prefix+b funcionar
+  # e o `lcars.user.herdr.enable` que envolve este arquivo já garante que
+  # só roda quando o herdr existe. O do herdr-nvim é opt-in pela mesma flag
+  # do `programs.neovim`: se o nvim está desligado, não há painel para abrir
+  # e o link é ruído.
+  home.activation =
+    let
+      pluginBrowserAtivacao = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        if ! saida=$(${lib.getExe herdr} plugin link ${pluginBrowser} 2>&1); then
+          echo "lcars: falha ao registrar o plugin browser do herdr — prefix+b não vai abrir"
+          echo "$saida"
+        fi
+      '';
+
+      pluginHerdrNvimAtivacao = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        if ! saida=$(${lib.getExe herdr} plugin link ${inputs.herdr-nvim} 2>&1); then
+          echo "lcars: falha ao registrar o plugin herdr-nvim — prefix+e e prefix+o não vão funcionar"
+          echo "$saida"
+        fi
+      '';
+    in
+    {
+      herdrPluginBrowser = pluginBrowserAtivacao;
+    }
+    // lib.optionalAttrs osConfig.lcars.user.nvim.enable {
+      herdrPluginHerdrNvim = pluginHerdrNvimAtivacao;
+    };
 
   xdg.configFile."herdr/config.toml".text = ''
     # ATENÇÃO: arquivo gerado por user/app/herdr.nix. Editar aqui não adianta —
@@ -413,6 +433,34 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     type        = "shell"
     command     = '"''${HERDR_BIN_PATH}" plugin pane open --plugin official.browser --entrypoint browser --placement overlay --focus --env HERDR_BROWSER_CHROME=${chromium}'
     description = "browser em overlay (chromium)"
+
+    # =================================================================
+    #  Plugin herdr-nvim (chmarax.herdr-nvim) — sidebar de nvim dentro
+    #  do painel, com file picker ancorado nos arquivos que o agente
+    #  tocou. Não há passo manual: o plugin vem do input `herdr-nvim` e
+    #  é registrado na ativação (veja home.activation.herdrPluginHerdrNvim
+    #  abaixo). Confira com `herdr plugin list`.
+    #
+    #  `type = "plugin_action"`: delega ao herdr o caminho completo até o
+    #  binário do plugin (a `entrypoint`), com o nome da ação — é a
+    #  forma que a README do upstream documenta (seção "Install",
+    #  binding keys). Sem o prefixo `chmarax.herdr-nvim.` o herdr não
+    #  saberia em qual plugin procurar a ação.
+    #
+    #  A descrição da segunda entrada bate com a da README: o picker
+    #  lista arquivos por agente e abre o escolhido na sidebar.
+    # =================================================================
+    [[keys.command]]
+    key         = "prefix+e"
+    type        = "plugin_action"
+    command     = "chmarax.herdr-nvim.toggle"
+    description = "nvim sidebar (toggle)"
+
+    [[keys.command]]
+    key         = "prefix+o"
+    type        = "plugin_action"
+    command     = "chmarax.herdr-nvim.pick-file"
+    description = "abrir arquivo do output do agente na sidebar"
 
     ${tema}
 

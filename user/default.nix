@@ -23,6 +23,7 @@
     ./app/herdr.nix
     ./app/direnv.nix
     ./app/dotfiles.nix
+    ./app/nvim.nix
     ./wm/niri.nix
     ./wm/noctalia.nix
   ];

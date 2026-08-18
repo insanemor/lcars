@@ -19,6 +19,7 @@ O repo vem com `personal`.
 | Shell noctalia (`user/wm`) | `lcars.user.noctalia.enable` | — | sim |
 | Terminal kitty (`user/app`) | `lcars.user.kitty.enable` | — | sim |
 | Multiplexador herdr (`user/app`) | `lcars.user.herdr.enable` | — | sim |
+| Editor neovim + herdr-nvim (`user/app`) | `lcars.user.nvim.enable` | — | sim |
 | Navegador Vivaldi (`user/app`) | `lcars.user.vivaldi.enable` | — | sim |
 | Áudio PipeWire (`system/hardware`) | `lcars.system.hardware.audio.enable` | — | sim |
 | Teclado, console e gráfico (`system/hardware`) | `lcars.system.hardware.keyboard.enable` | sim | sim |
@@ -1176,6 +1177,47 @@ Um aviso que economiza tempo: um `[[keys.command]]` com `type = "shell"` que
 falha **não mostra nada** — o herdr o spawna com a saída em `/dev/null` e não
 olha o código de retorno. Se um atalho desses parecer inerte, rode o comando à
 mão num painel para ver o erro.
+
+### neovim + herdr-nvim · `user/app/nvim.nix` · `lcars.user.nvim.enable` · só personal
+
+O nvim sobe via `programs.neovim` do Home Manager com o pacote do nixpkgs —
+fonte, tamanho e paleta herdam da integração padrão do HM com o stylix, e
+não há override aqui. O init.lua escrito pelo HM (`~/.config/nvim/init.lua`)
+faz duas coisas só:
+
+1. `vim.opt.runtimepath:prepend("${inputs.herdr-nvim}")` — injeta a árvore
+   Lua do plugin, direto do store.
+2. `require("herdr-nvim").setup({})` — defaults do upstream.
+
+Sem canal de plugins: o plugin é carregado pelo runtimepath e o lazy.nvim
+fica para entrega à parte.
+
+#### O lado herdr
+
+O plugin é, ao mesmo tempo, plugin do herdr — e é por isso que o
+`user/app/herdr.nix` traz dois atalhos no `config.toml`:
+
+| Atalho | Ação | O que faz |
+|---|---|---|
+| `prefix+e` | `chmarax.herdr-nvim.toggle` | abre (ou fecha) a sidebar de nvim |
+| `prefix+o` | `chmarax.herdr-nvim.pick-file` | picker ancorado nos arquivos que o agente tocou |
+
+O registro na ativação também mora em `user/app/herdr.nix`, na forma de
+`home.activation.herdrPluginHerdrNvim` — segue a mesma receita do
+`herdrPluginBrowser`: idempotente, opt-in pela mesma flag do módulo
+(`osConfig.lcars.user.nvim.enable`), e o servidor do herdr não precisa estar
+de pé.
+
+#### Subir de versão
+
+O `herdr-nvim` é um `flake = false` preso num commit do upstream. Para
+mover:
+
+```sh
+nix flake update herdr-nvim --refresh    # atualiza o rev no lock
+git diff flake.lock
+nupdate                                  # traz a nova versão
+```
 
 ### git · `user/app/git.nix` · `lcars.user.git.enable` · basic + personal
 

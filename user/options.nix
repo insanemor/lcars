@@ -45,6 +45,8 @@
 
     herdr.enable = lib.mkEnableOption "o multiplexador de terminal — workspaces, painéis e sessões persistentes, com os atalhos herdados do tmux (prefixo Ctrl-a)";
 
+    nvim.enable = lib.mkEnableOption "o neovim como editor gráfico do usuário, com o plugin herdr-nvim carregado por init.lua — a sidebar do herdr abre este nvim no painel";
+
     niri.enable = lib.mkEnableOption "a configuração do niri — atalhos, forma e cores (o compositor é lcars.system.wm.niri)";
 
     noctalia.enable = lib.mkEnableOption "o shell do desktop — barra, launcher, notificações, lock e dock numa peça só; substitui waybar, rofi e swaync";
