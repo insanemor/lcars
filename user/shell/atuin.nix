@@ -23,22 +23,27 @@
 # chave nunca sai daqui.
 #
 # Isso tem uma consequência prática: **a chave é o histórico**. Perdê-la é
-# perder o que está no servidor, e uma máquina nova sem ela não decifra nada. O
-# atuin guarda dois arquivos em ~/.local/share/atuin/:
+# perder o que está no servidor, e uma máquina nova sem ela não decifra nada.
+# Sem chave e sem login, o atuin roda local e o sync falha calado.
 #
-#   key      — a chave de criptografia, a MESMA em todas as máquinas
-#   session  — o token de sessão, obtido no login
-#
-# Sem os dois, o atuin roda local e o sync falha calado.
-#
-# A ativação resolve os dois de uma vez: quando não há `session`, ela faz o
-# login, com usuário, senha e chave lidos do 1Password (veja o bloco lá
-# embaixo). O próprio `atuin login` grava os dois arquivos. Uma máquina nova
-# nasce sincronizada com um `op signin` e um `nupdate`.
+# A ativação resolve os dois de uma vez: quando o atuin não está logado, ela
+# faz o login, com usuário, senha e chave lidos do 1Password (veja o bloco lá
+# embaixo). Uma máquina nova nasce sincronizada com um `op signin` e um
+# `nupdate`.
 #
 # A #46 fazia diferente — copiava `key` e `session` do vault, o que só
 # funcionava se alguém já tivesse gerado a session à mão e a guardado lá. O
 # passo manual não sumia, só mudava de lugar.
+#
+# "ESTOU LOGADO?" É PERGUNTA PARA O ATUIN, NÃO PARA O DISCO
+# ---------------------------------------------------------
+# `atuin status` responde: sai com 1 e diz "You are not logged in to a sync
+# server" quando não há login, e imprime endereço e usuário quando há.
+#
+# A #48 perguntava a um arquivo, `~/.local/share/atuin/session`, e errava. A
+# 18.18 não cria esse arquivo — num HOME limpo ela deixa apenas os bancos
+# (`history.db`, `meta.db`, `records.db`), e o estado de login vive dentro do
+# meta.db. A guarda nunca era verdadeira e toda ativação caía no login (#49).
 #
 # O ITEM NO 1PASSWORD
 # -------------------
@@ -57,6 +62,13 @@
 #   atuin import auto                        # traz o ~/.zsh_history
 #   atuin key                                # imprime a chave; vai para o item
 #
+# CUIDADO COM `atuin key` NUMA MÁQUINA SEM CHAVE
+# ----------------------------------------------
+# Ele não reclama: **gera uma chave nova** e a imprime, como se estivesse
+# mostrando a sua. Numa máquina que ainda não logou, isso cria uma segunda
+# chave, que não decifra nada do que está no servidor. Rode `atuin key` só onde
+# a chave certa já existe, e leve a saída para o 1Password — nunca o contrário.
+#
 # A SENHA APARECE NO `ps` — POR UM SEGUNDO, UMA VEZ POR MÁQUINA
 # -------------------------------------------------------------
 # `atuin login` não lê a senha de stdin nem de variável de ambiente: `-p` é a
@@ -65,8 +77,9 @@
 #
 # É um risco real e pequeno — máquina pessoal, um login por máquina, cerca de
 # um segundo — e foi aceito de propósito, na #48, em troca de a máquina nova não
-# precisar de nenhum passo manual. Se um dia deixar de valer a troca, a rota
-# alternativa é guardar a `session` já pronta no vault e só copiá-la.
+# precisar de nenhum passo manual. Se um dia deixar de valer a troca, a saída é
+# tirar o login daqui e fazê-lo à mão, uma vez por máquina; copiar um arquivo de
+# sessão pronto não é alternativa, porque a 18.18 não guarda a sessão em arquivo.
 {
   config,
   osConfig,
@@ -145,7 +158,15 @@ lib.mkIf osConfig.lcars.user.atuin.enable {
   home.activation.atuinLogin = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     mkdir -p ${lib.escapeShellArg dataDir}
 
-    if [ -s ${lib.escapeShellArg "${dataDir}/session"} ]; then
+    # Quem responde se há login é o próprio atuin: `status` sai com 1 e diz
+    # "You are not logged in to a sync server" quando não há.
+    #
+    # A #48 perguntava a um arquivo, `~/.local/share/atuin/session`, e errava:
+    # a 18.18 não cria esse arquivo — o estado vive no meta.db. A guarda nunca
+    # era verdadeira, e toda ativação caía no login (#49). Ler o meta.db aqui
+    # seria trocar um palpite por outro: o formato é interno do atuin, e o
+    # comando é a interface pública.
+    if timeout 15 ${atuin} status >/dev/null 2>&1; then
       : # já logado nesta máquina — não relogar a cada rebuild
     elif ! command -v op >/dev/null 2>&1; then
       echo "lcars: 'op' não está no PATH — atuin fica local, sem sync"
