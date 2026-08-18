@@ -173,14 +173,26 @@ lib.mkIf osConfig.lcars.user.atuin.enable {
     elif [ -z "''${OP_SERVICE_ACCOUNT_TOKEN:-}" ] && ! op whoami >/dev/null 2>&1; then
       echo "lcars: sem login no 1Password — atuin fica local, sem sync"
     else
-      # Os três de uma vez. Se qualquer um faltar, não há login a tentar, e o
-      # `op read` cala a boca sozinho — a mensagem daqui é mais útil que a dele.
-      atuin_user="$(op read ${lib.escapeShellArg "${item}/username"} 2>/dev/null || true)"
-      atuin_pass="$(op read ${lib.escapeShellArg "${item}/password"} 2>/dev/null || true)"
-      atuin_key="$(op read ${lib.escapeShellArg "${item}/key"} 2>/dev/null || true)"
+      # Os três de uma vez. O stderr do `op` é guardado num arquivo, e não
+      # jogado em /dev/null: é ele quem sabe o que houve.
+      #
+      # Foi a lição da #50. O vault do settings.nix tinha um nome que não
+      # existia na conta, e o `op` dizia exatamente isso —
+      # `"Dotfiles" isn't a vault in this account` —, mas a frase estava sendo
+      # descartada. O que sobrava era um "item incompleto" genérico, mandando
+      # conferir campos que estavam certos o tempo todo.
+      #
+      # O stderr do `op` não carrega segredo: traz o caminho pedido e o motivo.
+      op_tmp="$(mktemp -d)"
+      atuin_user="$(op read ${lib.escapeShellArg "${item}/username"} 2>>"$op_tmp/erro" || true)"
+      atuin_pass="$(op read ${lib.escapeShellArg "${item}/password"} 2>>"$op_tmp/erro" || true)"
+      atuin_key="$(op read ${lib.escapeShellArg "${item}/key"} 2>>"$op_tmp/erro" || true)"
 
       if [ -z "$atuin_user" ] || [ -z "$atuin_pass" ] || [ -z "$atuin_key" ]; then
-        echo "lcars: item ${item} incompleto no 1Password (quero username, password e key) — atuin fica local, sem sync"
+        echo "lcars: não consegui ler ${item} no 1Password — atuin fica local, sem sync"
+        if [ -s "$op_tmp/erro" ]; then
+          echo "lcars:   op disse: $(head -1 "$op_tmp/erro")"
+        fi
       # `timeout` porque isto é uma chamada de rede no meio de um rebuild: com o
       # servidor mudo, o switch ficaria pendurado esperando.
       elif timeout 30 ${atuin} login \
@@ -189,6 +201,8 @@ lib.mkIf osConfig.lcars.user.atuin.enable {
       else
         echo "lcars: 'atuin login' falhou (senha, chave ou servidor) — atuin fica local, sem sync"
       fi
+
+      rm -rf "$op_tmp"
 
       # A senha sai da memória do shell assim que deixa de ser necessária. É
       # higiene, não proteção: enquanto o login rodou, ela esteve no argv.
