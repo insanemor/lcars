@@ -35,16 +35,34 @@
 # resposta certa é editar este arquivo e rodar `nupdate`, que é o mesmo trato
 # de todo dotfile gerado neste repo.
 #
+# O PLUGIN BROWSER VEM DO FLAKE, NÃO DE UM `plugin install`
+# ---------------------------------------------------------
+# `herdr plugin install <owner>/<repo>` baixa o plugin em tempo de execução
+# para ~/.config/herdr/plugins/github/…, e é um passo manual por máquina — o
+# atalho `prefix + b` existiria em toda instalação nova e não faria nada até
+# alguém lembrar do comando. Foi assim até a #58.
+#
+# O que o Nix pode fazer, e faz abaixo: o plugin entra como input do flake
+# (`herdr-browser`, preso a um commit no flake.lock) e a ativação do Home
+# Manager o registra com `herdr plugin link`, apontando para o caminho no
+# store. O registro em si — ~/.config/herdr/plugins.json — continua sendo um
+# arquivo mutável que o herdr reescreve; por isso a ativação, e não um
+# `xdg.configFile`, que viraria um link read-only no caminho de algo que o
+# programa precisa escrever.
+#
+# É idempotente: a gravação remove a entrada de mesmo plugin_id antes de
+# reinserir (src/cli/plugin.rs:905), então rodar a cada `nupdate` é seguro, e
+# um caminho de store novo simplesmente substitui o antigo.
+#
+# Quem já tinha rodado o `plugin install` à mão não precisa fazer nada: o link
+# sobrescreve a entrada. O checkout antigo fica órfão em
+# ~/.config/herdr/plugins/github/ e pode ser apagado.
+#
 # O QUE NÃO ESTÁ AQUI
 # -------------------
-# Os plugins do herdr (file viewer, browser, claude-usage) são baixados em
-# tempo de execução por `herdr plugin`, para ~/.config/herdr/plugins — um
-# diretório mutável que o Nix não gerencia. Os atalhos do browser existem
-# abaixo, mas ficam inertes até o plugin ser instalado uma vez, à mão:
-#
-#     herdr plugin install ogulcancelik/herdr-browser --yes
-#
-# O mesmo vale para o token `$claude_usage` da sidebar.
+# Os outros plugins do herdr (file viewer, claude-usage) — nenhum atalho os
+# usa hoje. Se um dia entrarem, seguem este mesmo molde. É por isso que o token
+# `$claude_usage` da sidebar continua inerte até alguém instalá-lo à mão.
 #
 # COMANDO `shell` QUE FALHA NÃO DIZ NADA
 # --------------------------------------
@@ -89,6 +107,18 @@ let
   # morre no processo do CLI, sem nunca alcançar o plugin — era o que acontecia
   # até a #55.
   chromium = lib.getExe pkgs.chromium;
+
+  # O plugin browser, direto do input — é uma árvore de arquivos, não um
+  # pacote: `flake = false` no flake.nix. O que o `plugin link` quer é
+  # exatamente isto, o diretório que tem o herdr-plugin.toml na raiz.
+  #
+  # O diretório é READ-ONLY, por estar no store. O plugin aguenta: o perfil do
+  # Chromium e o resto do estado vão para o state dir do herdr
+  # (~/.local/state/herdr/plugins/…, veja src/plugin_paths.rs:21), e a
+  # configuração para o config dir — nada é escrito na raiz do plugin. Se um
+  # dia o upstream passar a escrever lá, a saída é a ativação copiar esta
+  # árvore para um caminho mutável e linkar de lá.
+  pluginBrowser = inputs.herdr-browser;
 
   # As cores, do esquema base16 do stylix — o mesmo que pinta o terminal, o
   # prompt, GTK e Qt. O herdr aceita hex em todos os tokens (veja
@@ -148,6 +178,21 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     # o comando está fixo no manifesto, que é do upstream do plugin.
     pkgs.bun
   ];
+
+  # Registra o plugin browser a cada ativação. Roda na unit
+  # home-manager-<user>.service, e pode: não depende da sessão gráfica nem do
+  # 1Password — só de HOME, para achar ~/.config/herdr. (A lição contrária, do
+  # que NÃO pode morar aqui, está em user/shell/atuin.nix.)
+  #
+  # Se o servidor do herdr estiver de pé, o CLI fala com ele pelo socket; se
+  # não, grava o registro direto. Os dois caminhos existem no upstream, e o
+  # segundo é o normal durante um `nupdate`.
+  home.activation.herdrPluginBrowser = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    if ! saida=$(${lib.getExe herdr} plugin link ${pluginBrowser} 2>&1); then
+      echo "lcars: falha ao registrar o plugin browser do herdr — prefix+b não vai abrir"
+      echo "$saida"
+    fi
+  '';
 
   xdg.configFile."herdr/config.toml".text = ''
     # ATENÇÃO: arquivo gerado por user/app/herdr.nix. Editar aqui não adianta —
@@ -243,11 +288,9 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
 
     # =================================================================
     #  Plugin browser (official.browser) — Chromium desenhado dentro do
-    #  painel. Depende do plugin, que o Nix não instala. Da primeira vez, numa
-    #  máquina nova:
-    #
-    #      herdr plugin install ogulcancelik/herdr-browser --yes
-    #      herdr plugin list
+    #  painel. Não há passo manual: o plugin vem do input `herdr-browser` e é
+    #  registrado na ativação (veja o cabeçalho). Confira com
+    #  `herdr plugin list`.
     #
     #  O `bun` que ele roda vem do módulo (veja home.packages), e o Chromium
     #  vai por `--env`, que é o único jeito de a variável chegar ao processo do
