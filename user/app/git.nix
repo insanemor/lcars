@@ -31,8 +31,20 @@ lib.mkIf osConfig.lcars.user.git.enable {
       pull.rebase = true;
       rerere.enabled = true;
       push.autoSetupRemote = true;
-      user.Name = user.fullName;
-      user.Email = user.email;
+      
+      user = {
+        Name = user.fullName;
+        Email = user.email;
+      }      
+
+      aliases = {
+        co = "checkout";
+        br = "branch";
+        ci = "commit";
+        st = "status";
+        lg = "log --oneline --graph --decorate";
+      };
+
     }
     # Assinar com uma chave que vive DENTRO do cofre exige o `op-ssh-sign`: o
     # `ssh-keygen -Y sign` padrão espera um arquivo de chave privada em disco, e
@@ -52,12 +64,6 @@ lib.mkIf osConfig.lcars.user.git.enable {
       gpg.ssh.program = "${pkgs._1password-gui}/bin/op-ssh-sign";
     };
 
-    aliases = {
-      co = "checkout";
-      br = "branch";
-      ci = "commit";
-      st = "status";
-      lg = "log --oneline --graph --decorate";
-    };
+
   };
 }
