@@ -35,7 +35,7 @@ lib.mkIf osConfig.lcars.user.git.enable {
       user = {
         Name = user.fullName;
         Email = user.email;
-      }      
+      };
 
       aliases = {
         co = "checkout";
