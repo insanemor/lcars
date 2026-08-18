@@ -19,23 +19,20 @@ in
 lib.mkIf osConfig.lcars.user.git.enable {
   programs.git = {
     enable = true;
-    userName = user.fullName;
-    userEmail = user.email;
-
-    # Só configura assinatura quando existe uma chave. Sem `gpgKey` no
-    # settings.nix, ou com ele em null, o bloco inteiro sai da config — em vez
-    # de declarar `format = "ssh"` sem chave nenhuma.
+    
     signing = lib.mkIf assina {
       format = "ssh";
       key = gpgKey;
       signByDefault = true;
     };
 
-    extraConfig = {
+    settings = {
       init.defaultBranch = "main";
       pull.rebase = true;
       rerere.enabled = true;
       push.autoSetupRemote = true;
+      userName = user.fullName;
+      userEmail = user.email;
     }
     # Assinar com uma chave que vive DENTRO do cofre exige o `op-ssh-sign`: o
     # `ssh-keygen -Y sign` padrão espera um arquivo de chave privada em disco, e
