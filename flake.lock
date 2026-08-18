@@ -139,6 +139,24 @@
         "type": "github"
       }
     },
+    "ghzinga": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1785067263,
+        "narHash": "sha256-siIpLSaGUvYJIDx6jjYq7A8lh2bnBzfcBeF+2AzV3E4=",
+        "ref": "refs/tags/v0.5.0",
+        "rev": "30cf4ac79c69140cdac1c8bcf7caa54be34f361b",
+        "shallow": true,
+        "type": "git",
+        "url": "https://github.com/osolmaz/ghzinga"
+      },
+      "original": {
+        "ref": "refs/tags/v0.5.0",
+        "shallow": true,
+        "type": "git",
+        "url": "https://github.com/osolmaz/ghzinga"
+      }
+    },
     "gnome-shell": {
       "flake": false,
       "locked": {
@@ -199,6 +217,42 @@
         "url": "https://github.com/ogulcancelik/herdr-browser"
       }
     },
+    "herdr-ctx": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1784632892,
+        "narHash": "sha256-wW0k68HPORLFqOYdDc385jLA3CBWf9hEuzj+lJIjn7M=",
+        "ref": "main",
+        "rev": "4ae1110131ea6a5d3ec81d31d359fe43199ae1f0",
+        "revCount": 1,
+        "type": "git",
+        "url": "https://github.com/aorumbayev/herdr-ctx"
+      },
+      "original": {
+        "ref": "main",
+        "rev": "4ae1110131ea6a5d3ec81d31d359fe43199ae1f0",
+        "type": "git",
+        "url": "https://github.com/aorumbayev/herdr-ctx"
+      }
+    },
+    "herdr-file-viewer": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1786828789,
+        "narHash": "sha256-2vI98QRm6vXDe8IkJBPAqFsQH86zX1oJVwCaoOVYrQs=",
+        "ref": "refs/tags/v1.16.0",
+        "rev": "647f03236d9aa20de0b07c9de0a951e13a1e59bf",
+        "shallow": true,
+        "type": "git",
+        "url": "https://github.com/smarzban/herdr-file-viewer"
+      },
+      "original": {
+        "ref": "refs/tags/v1.16.0",
+        "shallow": true,
+        "type": "git",
+        "url": "https://github.com/smarzban/herdr-file-viewer"
+      }
+    },
     "herdr-nvim": {
       "flake": false,
       "locked": {
@@ -215,6 +269,24 @@
         "rev": "40aadeab3cef3702ef5e05069181c7168084794f",
         "type": "git",
         "url": "https://github.com/ChmaraX/herdr-nvim"
+      }
+    },
+    "herdr-reviewr": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1787066104,
+        "narHash": "sha256-l44G4OrnE0ty3Gj97cEdJUC36fi2QGUtT1aZ7OmHeAc=",
+        "ref": "refs/tags/v0.32.1",
+        "rev": "a4224541751a5030986e159aedb69e6508716e15",
+        "shallow": true,
+        "type": "git",
+        "url": "https://github.com/persiyanov/herdr-reviewr"
+      },
+      "original": {
+        "ref": "refs/tags/v0.32.1",
+        "shallow": true,
+        "type": "git",
+        "url": "https://github.com/persiyanov/herdr-reviewr"
       }
     },
     "home-manager": {
@@ -332,9 +404,13 @@
     },
     "root": {
       "inputs": {
+        "ghzinga": "ghzinga",
         "herdr": "herdr",
         "herdr-browser": "herdr-browser",
+        "herdr-ctx": "herdr-ctx",
+        "herdr-file-viewer": "herdr-file-viewer",
         "herdr-nvim": "herdr-nvim",
+        "herdr-reviewr": "herdr-reviewr",
         "home-manager": "home-manager",
         "nixpkgs": "nixpkgs",
         "noctalia": "noctalia",

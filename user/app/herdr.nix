@@ -58,11 +58,47 @@
 # sobrescreve a entrada. O checkout antigo fica órfão em
 # ~/.config/herdr/plugins/github/ e pode ser apagado.
 #
-# O QUE NÃO ESTÁ AQUI
-# -------------------
-# Os outros plugins do herdr (file viewer, claude-usage) — nenhum atalho os
-# usa hoje. Se um dia entrarem, seguem este mesmo molde. É por isso que o token
-# `$claude_usage` da sidebar continua inerte até alguém instalá-lo à mão.
+# QUATRO PLUGINS A MAIS, E DOIS MOLDES DIFERENTES
+# ------------------------------------------------
+# herdr-ctx é TypeScript/bun, igual ao browser: entra como está, sem build,
+# `plugin link` aponta pro input direto.
+#
+# herdr-file-viewer, herdr-reviewr e ghzinga já não são árvore-de-source
+# solta — são binários Rust. `herdr plugin install` os baixaria pronto (ou
+# compilaria na hora) de um jeito que o Nix não gerencia; a alternativa aqui é
+# `rustPlatform.buildRustPackage` a partir do source do input, usando
+# `cargoLock.lockFile` — nenhum dos três Cargo.lock tem dependência git, então
+# cada crate se verifica pelo próprio checksum do lockfile, sem cargoHash
+# descoberto por tentativa.
+#
+# O detalhe que muda de plugin pra plugin é COMO o binário buildado chega ao
+# lugar que o manifesto espera, porque `plugin link` pula o [[build]] do
+# upstream (que é quem, no caminho normal, colocaria o binário ali):
+#
+#   - ghzinga: as ações chamam `gzg` pelo nome (plugins/herdr/herdr-plugin.toml),
+#     então basta o binário estar no PATH — home.packages, abaixo — e o link
+#     aponta direto pro subdiretório plugins/herdr do próprio input.
+#   - herdr-file-viewer: o manifesto abre o binário por caminho RELATIVO
+#     (`./target/release/herdr-file-viewer`, lido por scripts/open-file-viewer.sh
+#     a partir da raiz do plugin).
+#   - herdr-reviewr: o binário é lido de `$HERDR_PLUGIN_ROOT/bin/herdr-reviewr`
+#     — variável que o herdr injeta em runtime, apontando pra onde a gente linkou.
+#
+# Nos dois últimos casos a receita é a mesma do pluginBrowser (ver abaixo):
+# `runCommand` copia a árvore do input pro $out — GRAVÁVEL, ao contrário do
+# store original — e symlinka o binário buildado pelo Nix no caminho que o
+# script/manifesto espera.
+#
+# UM CAVEAT NÃO VERIFICADO: link handlers entre plugins diferentes
+# ------------------------------------------------------------------
+# O ghzinga registra um link_handler pra `github.com/.../issues|pull/N`. O
+# nosso pluginBrowser (mais abaixo) já registra um catch-all `^https?://` pra
+# tudo que não é localhost — incluindo links de issue/PR. Qual dos dois ganha
+# quando os dois batem depende da ordem de resolução do herdr entre plugins
+# DIFERENTES, que não está documentada e não dá pra confirmar sem rodar o
+# programa de verdade. Se o Ctrl+clique num link de issue/PR abrir no browser
+# em vez do painel do ghzinga, é isso — ajustar o pattern do pluginBrowser
+# pra excluir `github.com/.../\(issues\|pull\)/` resolveria.
 #
 # COMANDO `shell` QUE FALHA NÃO DIZ NADA
 # --------------------------------------
@@ -211,6 +247,99 @@ let
     MANIFESTO
   '';
 
+  # --- herdr-ctx: indicador de context window do Claude na sidebar ---------
+  # TypeScript/bun, sem build — igual ao pluginBrowser antes do link handler
+  # extra: o input entra como está, e `plugin link` aponta pra árvore no
+  # store.
+  #
+  # Diferente do browser, este manifesto não declara [[actions]]/[[panes]]
+  # nenhum — ele só existe pra rodar `src/report.ts` a partir do status-line
+  # do Claude Code e escrever o token `$ctx` via `herdr pane
+  # report-metadata`. Ligar isso ao Claude Code (`bun src/setup.ts`, que
+  # escreve em ~/.claude/settings.json) é um passo manual — ver o comentário
+  # perto de `home.activation`, mais abaixo.
+  pluginCtx = inputs.herdr-ctx;
+
+  # --- herdr-file-viewer: visualizador git-aware, binário Rust -------------
+  # cargoLock.lockFile em vez de cargoHash: o Cargo.lock do upstream não tem
+  # dependência git nenhuma, então cada crate se verifica pelo próprio
+  # checksum do lockfile.
+  #
+  # doCheck = false: a suíte de testes do upstream inclui benchmarks de
+  # performance e testes de TUI via `expectrl` (abre um pty de verdade) —
+  # não é o que este pacote está entregando, e trava num sandbox de build
+  # sem terminal.
+  herdrFileViewerBin = pkgs.rustPlatform.buildRustPackage {
+    pname = "herdr-file-viewer";
+    version = "1.16.0";
+    src = inputs.herdr-file-viewer;
+    cargoLock.lockFile = "${inputs.herdr-file-viewer}/Cargo.lock";
+    doCheck = false;
+  };
+
+  # O manifesto abre o binário por caminho RELATIVO
+  # (`./target/release/herdr-file-viewer`, lido por
+  # scripts/open-file-viewer.sh a partir da raiz do plugin) — não é
+  # "resolve pelo PATH" como o ghzinga. Como `plugin link` pula o
+  # [[build]] do upstream (que baixaria ou compilaria o binário nesse
+  # caminho), a árvore que apontamos precisa já vir com ele. Mesma receita
+  # do pluginBrowser: copia o input pro $out — GRAVÁVEL, ao contrário do
+  # store original — e symlinka o binário buildado pelo Nix onde o script
+  # espera achá-lo.
+  pluginFileViewer = pkgs.runCommand "herdr-file-viewer-com-binario" { } ''
+    cp -r ${inputs.herdr-file-viewer} $out
+    chmod -R u+w $out
+    mkdir -p $out/target/release
+    ln -s ${herdrFileViewerBin}/bin/herdr-file-viewer $out/target/release/herdr-file-viewer
+  '';
+
+  # --- herdr-reviewr: sidebar de code review, binário Rust ------------------
+  # Mesmo trato do file-viewer: cargoLock.lockFile (o Cargo.lock também não
+  # tem dependência git) e doCheck desligado pela mesma razão — a suíte do
+  # upstream não é o alvo deste pacote.
+  herdrReviewrBin = pkgs.rustPlatform.buildRustPackage {
+    pname = "herdr-reviewr";
+    version = "0.32.1";
+    src = inputs.herdr-reviewr;
+    cargoLock.lockFile = "${inputs.herdr-reviewr}/Cargo.lock";
+    doCheck = false;
+  };
+
+  # herdr/pane.sh (a ação por trás de toggle/open/close) lê o binário de
+  # `$HERDR_PLUGIN_ROOT/bin/herdr-reviewr` — variável que o herdr injeta em
+  # runtime, apontando pra onde a gente linkou. Mesma receita: copia a
+  # árvore e symlinka o binário no bin/ que o script espera.
+  pluginReviewr = pkgs.runCommand "herdr-reviewr-com-binario" { } ''
+    cp -r ${inputs.herdr-reviewr} $out
+    chmod -R u+w $out
+    mkdir -p $out/bin
+    ln -s ${herdrReviewrBin}/bin/herdr-reviewr $out/bin/herdr-reviewr
+  '';
+
+  # --- ghzinga: TUI de issue/PR do GitHub num painel do herdr --------------
+  # O binário `gzg` (e o `ghzinga` standalone, pro uso direto no terminal)
+  # vêm do mesmo Cargo.toml. Mesma receita de cargoLock.lockFile.
+  #
+  # doCheck = false: parte da suíte do upstream bate na API do GitHub de
+  # verdade (fixtures em tests/) — não passa num sandbox de build sem rede
+  # de saída liberada pro domínio certo.
+  ghzingaBin = pkgs.rustPlatform.buildRustPackage {
+    pname = "ghzinga";
+    version = "0.5.0";
+    src = inputs.ghzinga;
+    cargoLock.lockFile = "${inputs.ghzinga}/Cargo.lock";
+    doCheck = false;
+  };
+
+  # O plugin do herdr é só o subdiretório plugins/herdr/ do mesmo repo — um
+  # herdr-plugin.toml cujas ações chamam `gzg` PELO NOME (não por caminho):
+  # `command = ["gzg", "herdr-plugin", "open"/"viewer"]`. Então, ao
+  # contrário do file-viewer e do reviewr, não precisa de runCommand nenhum
+  # — só do binário no PATH (home.packages, abaixo) e do link apontando
+  # direto pro subdiretório do input, que já é read-only e não precisa
+  # virar gravável porque nada escreve ali.
+  pluginGhzinga = "${inputs.ghzinga}/plugins/herdr";
+
   # As cores, do esquema base16 do stylix — o mesmo que pinta o terminal, o
   # prompt, GTK e Qt. O herdr aceita hex em todos os tokens (veja
   # src/config/theme.rs no upstream), então a paleta inteira é sobrescrita e
@@ -272,6 +401,19 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     # No PATH para poder ser chamado à mão: `lcars-browser <url>` abre a URL no
     # painel de dentro do herdr, e no navegador de fora.
     navegador
+
+    # Renderizadores opcionais do herdr-file-viewer: sem eles o painel ainda
+    # abre, mas cai pro fallback simples (sem markdown renderizado, diff sem
+    # cor, sem syntax highlighting). glow = markdown, git-delta (pacote
+    # `delta`) = diff, bat = highlighting.
+    pkgs.glow
+    pkgs.delta
+    pkgs.bat
+
+    # `gzg` precisa estar no PATH: é assim que o plugin do ghzinga o invoca
+    # (plugins/herdr/herdr-plugin.toml chama `gzg` pelo nome, não por
+    # caminho) — e também serve pro uso direto, `gzg owner/repo#123`.
+    ghzingaBin
   ];
 
   # O `$BROWSER` da sessão do usuário passa a ser o wrapper — é o que redireciona
@@ -285,18 +427,18 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
   # este módulo o sobrescreva.
   home.sessionVariables.BROWSER = lib.getExe navegador;
 
-  # Ativações dos plugins do herdr. Os dois têm o mesmo formato: idempotente,
+  # Ativações dos plugins do herdr. Todas têm o mesmo formato: idempotente,
   # rodam na unit home-manager-<user>.service, só precisam de HOME para achar
   # ~/.config/herdr, e o servidor do herdr não precisa estar de pé — o
   # `plugin link` grava o registro direto quando o servidor não responde, e
   # atualiza via socket quando responde. (A lição contrária, do que NÃO pode
   # morar aqui, está em user/shell/atuin.nix.)
   #
-  # O do browser é incondicional: ele é requisito para o prefix+b funcionar
-  # e o `lcars.user.herdr.enable` que envolve este arquivo já garante que
-  # só roda quando o herdr existe. O do herdr-nvim é opt-in pela mesma flag
-  # do `programs.neovim`: se o nvim está desligado, não há painel para abrir
-  # e o link é ruído.
+  # Browser, ctx, file-viewer, reviewr e ghzinga são incondicionais: cada um
+  # é requisito só do próprio atalho, e o `lcars.user.herdr.enable` que
+  # envolve este arquivo já garante que só rodam quando o herdr existe. O do
+  # herdr-nvim é opt-in pela mesma flag do `programs.neovim`: se o nvim está
+  # desligado, não há painel para abrir e o link é ruído.
   home.activation =
     let
       pluginBrowserAtivacao = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
@@ -312,9 +454,61 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
           echo "$saida"
         fi
       '';
+
+      # O `plugin link` aqui só registra o plugin — não é o bastante pro
+      # token $ctx funcionar. O reporter precisa estar plugado no
+      # status-line do Claude Code, e isso é um passo MANUAL, de propósito:
+      # o script que faz essa ligação (`bun src/setup.ts`, do próprio
+      # plugin) escreve em ~/.claude/settings.json com prompts interativos
+      # — não dá pra rodar de forma idempotente numa ativação do Home
+      # Manager, e esse arquivo é deliberadamente mutável e fora do Nix
+      # (veja user/app/claude-code.nix), então rodar o setup à mão não
+      # briga com o padrão do repo.
+      #
+      # Depois de um `nupdate` com a flag ligada, rode uma vez:
+      #
+      #   bun "$(herdr plugin list --json | jq -r '.result.plugins[] |
+      #     select(.plugin_id == "herdr-ctx") | .plugin_root')"/src/setup.ts
+      #
+      # O script pergunta se quer acrescentar o snippet `$ctx` ao
+      # config.toml — RECUSE: o token já está declarado em
+      # `[ui.sidebar.agents]`, mais abaixo, e o config.toml daqui é um
+      # symlink read-only para o store; a escrita falharia mesmo que você
+      # aceitasse.
+      pluginCtxAtivacao = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        if ! saida=$(${lib.getExe herdr} plugin link ${pluginCtx} 2>&1); then
+          echo "lcars: falha ao registrar o plugin herdr-ctx — o token \$ctx não vai aparecer na sidebar"
+          echo "$saida"
+        fi
+      '';
+
+      pluginFileViewerAtivacao = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        if ! saida=$(${lib.getExe herdr} plugin link ${pluginFileViewer} 2>&1); then
+          echo "lcars: falha ao registrar o plugin herdr-file-viewer — prefix+f não vai abrir"
+          echo "$saida"
+        fi
+      '';
+
+      pluginReviewrAtivacao = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        if ! saida=$(${lib.getExe herdr} plugin link ${pluginReviewr} 2>&1); then
+          echo "lcars: falha ao registrar o plugin herdr-reviewr — prefix+v não vai abrir"
+          echo "$saida"
+        fi
+      '';
+
+      pluginGhzingaAtivacao = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        if ! saida=$(${lib.getExe herdr} plugin link ${pluginGhzinga} 2>&1); then
+          echo "lcars: falha ao registrar o plugin do ghzinga — Ctrl+clique em link de issue/PR não vai abrir no painel"
+          echo "$saida"
+        fi
+      '';
     in
     {
       herdrPluginBrowser = pluginBrowserAtivacao;
+      herdrPluginCtx = pluginCtxAtivacao;
+      herdrPluginFileViewer = pluginFileViewerAtivacao;
+      herdrPluginReviewr = pluginReviewrAtivacao;
+      herdrPluginGhzinga = pluginGhzingaAtivacao;
     }
     // lib.optionalAttrs osConfig.lcars.user.nvim.enable {
       herdrPluginHerdrNvim = pluginHerdrNvimAtivacao;
@@ -350,6 +544,8 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     #    recarregar config = prefix + Shift+r  (default do herdr)
     #    modo resize       = prefix + r        (hjkl redimensiona, Esc sai)
     #    lazygit           = prefix + Shift+g  (popup 90%)
+    #    file viewer       = prefix + f        (aba: prefix + Shift+f)
+    #    review de agente  = prefix + v        (abre/fecha)
     #
     #  A tabela completa, dentro do programa: prefix + ?
     # =================================================================
@@ -462,6 +658,45 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     command     = "chmarax.herdr-nvim.pick-file"
     description = "abrir arquivo do output do agente na sidebar"
 
+    # =================================================================
+    #  Plugin herdr-file-viewer — visualizador git-aware num painel.
+    #  Não há passo manual: o plugin é montado em pluginFileViewer (binário
+    #  Nix symlinkado dentro da árvore do source) e registrado na ativação
+    #  (home.activation.herdrPluginFileViewer). Confira com
+    #  `herdr plugin list`.
+    #
+    #  Os ids de ação (`open-file-viewer`, `open-file-viewer-tab`) e o
+    #  atalho prefix+f vêm do próprio README do upstream — ver
+    #  herdr-plugin.toml do plugin.
+    # =================================================================
+    [[keys.command]]
+    key         = "prefix+f"
+    type        = "plugin_action"
+    command     = "herdr-file-viewer.open-file-viewer"
+    description = "file viewer (split)"
+
+    [[keys.command]]
+    key         = "prefix+shift+f"
+    type        = "plugin_action"
+    command     = "herdr-file-viewer.open-file-viewer-tab"
+    description = "file viewer (aba)"
+
+    # =================================================================
+    #  Plugin herdr-reviewr (persiyanov.reviewr) — sidebar de code review:
+    #  comenta no diff de um agente e manda de volta pro chat. Não há passo
+    #  manual: o plugin é montado em pluginReviewr e registrado na ativação
+    #  (home.activation.herdrPluginReviewr).
+    #
+    #  prefix+shift+r já é o `reload_config` default do herdr (ver
+    #  comentário no topo de [keys]), então o toggle do reviewr vai em
+    #  prefix+v — livre, sem colidir com nada da tabela.
+    # =================================================================
+    [[keys.command]]
+    key         = "prefix+v"
+    type        = "plugin_action"
+    command     = "persiyanov.reviewr.toggle"
+    description = "reviewr: abre/fecha o painel de review"
+
     ${tema}
 
     # =================================================================
@@ -473,14 +708,21 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     new_cwd       = "follow"
 
     # =================================================================
-    #  Sidebar. O token `$claude_usage` vem do plugin unit1.claude-usage,
-    #  instalado à mão; sem ele a linha fica vazia e o resto continua.
+    #  Sidebar. `$ctx` vem do plugin herdr-ctx (pluginCtx, registrado na
+    #  ativação) e mostra o uso da context window do Claude por painel —
+    #  mas só depois do passo manual descrito no comentário de
+    #  home.activation.herdrPluginCtx, mais acima: sem ele o reporter nunca
+    #  roda e o token fica sempre vazio (comportamento normal do herdr pra
+    #  metadata ausente, não erro).
+    #
+    #  `$claude_usage` vem do plugin unit1.claude-usage, que este módulo
+    #  NÃO instala — segue inerte até alguém linká-lo à mão, como antes.
     # =================================================================
     [ui.sidebar.agents]
     row_gap = 0
     rows = [
       ["state_icon", "workspace", "tab"],
-      ["agent", "state_text"],
+      ["agent", "state_text", "$ctx"],
     ]
 
     [ui.sidebar.spaces]
