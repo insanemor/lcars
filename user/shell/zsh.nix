@@ -26,6 +26,7 @@
   osConfig,
   lib,
   pkgs,
+  user,
   ...
 }:
 
@@ -41,6 +42,22 @@ let
   #
   # Mesmo padrão de user/wm/noctalia.nix, que já lia a flag por osConfig.
   temaLigado = osConfig.lcars.system.theme.enable;
+
+  # OS SUBSTITUTOS SÓ VIRAM ALIAS SE ESTIVEREM INSTALADOS
+  # -----------------------------------------------------
+  # `eza` e `bat` vêm da lista de pacotes do usuário, que system/core monta
+  # somando `lcars.system.core.userPackages` (o profile) a
+  # `userSettings.packages` (você). O profile `personal` põe os dois; o `basic`
+  # não põe nenhum, porque `userPackages` tem default `[ ]`.
+  #
+  # Sem esta checagem, um `alias ls = "eza"` deixaria uma máquina headless SEM
+  # `ls` — estrago grande demais para um confortinho de terminal. O alias só
+  # existe onde o programa existe.
+  pacotes = (user.packages or [ ]) ++ osConfig.lcars.system.core.userPackages;
+  temPacote = nome: builtins.elem nome pacotes;
+
+  temEza = temPacote "eza";
+  temBat = temPacote "bat";
 
   # Só é avaliado quando `temaLigado` — o Nix não força o que não se usa, e é
   # justamente isso que mantém o atributo inexistente fora do caminho.
@@ -176,9 +193,24 @@ lib.mkIf osConfig.lcars.user.zsh.enable {
     initContent = lib.mkAfter (if temaLigado then promptCores else "");
 
     shellAliases = {
-      ll = "ls -alF --color";
-      la = "ls -A --color";
-      l = "ls -CF --color";
+      # --- listagem ----------------------------------------------------
+      # Com o eza instalado, é ele quem atende por `ls` — e por ll/la/l, que
+      # mantêm o sentido de sempre: tudo em lista longa, tudo em coluna, e a
+      # coluna curta. O que muda é o que vem junto: ícone por tipo de arquivo e
+      # o estado no git de cada um, que é o que o eza tem e o ls não.
+      #
+      # `--group-directories-first` porque diretório em cima é o que a gente
+      # procura primeiro, e `--git` só faz sentido com repositório por perto —
+      # fora dele, a coluna simplesmente não aparece.
+      #
+      # Sem o eza, tudo continua exatamente como antes.
+      #
+      # O `ls` de verdade nunca fica inacessível: `\ls` ou `command ls` passam
+      # por cima de qualquer alias, e é assim que se escapa deles no zsh.
+      ll = if temEza then "eza --icons --group-directories-first --git -l --all" else "ls -alF --color";
+      la = if temEza then "eza --icons --group-directories-first --all" else "ls -A --color";
+      l = if temEza then "eza --icons --group-directories-first" else "ls -CF --color";
+
       gs = "git status";
       gp = "git push";
       gpl = "git pull";
@@ -197,6 +229,23 @@ lib.mkIf osConfig.lcars.user.zsh.enable {
       # Existe porque o nupdate faz `git reset --hard`: um ajuste feito aqui e
       # não publicado some no próximo nupdate.
       nsave = "$HOME/.dotfiles/scripts/save.sh";
+    }
+    # `ls` e `cat` só mudam de dono onde o substituto existe. Sem o pacote, o
+    # alias nem é gerado — nada de `alias cat=cat`, e nada de um `ls --color`
+    # que ninguém pediu aparecer numa máquina headless.
+    // lib.optionalAttrs temEza {
+      ls = "eza --icons --group-directories-first";
+
+      # Árvore, que o ls não faz e o eza faz sem precisar de outro programa.
+      # Dois níveis: o bastante para entender um diretório sem inundar a tela.
+      lt = "eza --icons --tree --level=2";
+    }
+    // lib.optionalAttrs temBat {
+      # O bat sabe quando não está falando com um terminal: em pipe ou
+      # redirecionamento ele vira o cat, sem cor, sem número de linha e sem
+      # paginador. É o que torna este alias seguro — `cat x | grep y` continua
+      # funcionando, e `cat x > y` também.
+      cat = "bat";
     };
   };
 
