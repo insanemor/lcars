@@ -766,15 +766,16 @@ inline_height = 25
 dialect = "uk"            # data em dd/mm
 ```
 
-#### O login é feito pela ativação, com o item do 1Password
+#### O login é feito pelo `nupdate`, com o item do 1Password
 
 O servidor público guarda blocos que não sabe ler: **a chave é o histórico**.
 Perdê-la é perder o que está lá, e uma máquina nova sem ela não decifra nada.
 Sem chave e sem login, o atuin roda local e **o sync falha calado**.
 
-A ativação resolve os dois de uma vez: quando o atuin não está logado, ela faz
-o login. O que ela precisa é um item chamado `atuin`, no vault de
-`userSettings.onePassword.vault`, com três campos:
+Quem resolve os dois é o `nupdate`: no fim dele, se `atuin status` disser que
+não há sessão, ele lê o 1Password e chama `atuin login`. O que precisa existir é
+um item chamado `atuin`, no vault de `userSettings.onePassword.vault`, com três
+campos:
 
 | Campo | O que é |
 |---|---|
@@ -783,32 +784,41 @@ o login. O que ela precisa é um item chamado `atuin`, no vault de
 | `key` | a saída de `atuin key` — o campo que você acrescenta |
 
 Os dois primeiros são os de qualquer item de login, então na prática só falta a
-chave. Já logado, a ativação não faz nada: não reloga a cada rebuild nem bate no
-1Password à toa.
+chave. Já logado, o passo não faz nada: não reloga a cada `nupdate` nem incomoda
+o 1Password à toa.
+
+**Por que no script, e não num módulo.** Porque o `nupdate` roda no seu
+terminal, e a ativação do Home Manager não. O login morou em
+`home.activation.atuinLogin` da #48 à #57 e nunca funcionou: aquilo executa na
+unit `home-manager-<user>.service`, que não tem a sua sessão gráfica — nem
+variáveis, nem socket, nem alguém para autorizar o popup com que o 1Password
+libera o CLI. O journal repetia `sem login no 1Password` enquanto o `op`
+funcionava no terminal ao lado. Não era configuração; era o contexto do
+processo.
+
+Fica a regra, que vale para o repositório inteiro: **o que depende da sessão do
+usuário não pode morar na ativação.** Lá cabe o declarativo — pacote,
+`config.toml`, integração de shell. O que precisa de alguém na frente da máquina
+mora no comando que essa pessoa digita.
 
 **Quem responde "estou logado?" é o `atuin status`**, e não um arquivo. Ele sai
 com 1 e diz `You are not logged in to a sync server` quando não há login, e
 imprime endereço e usuário quando há — é também o comando para você conferir
 depois de um `nupdate`. A #48 perguntava a `~/.local/share/atuin/session`, que a
 18.18 **não cria**: num `HOME` limpo ela deixa só os bancos (`history.db`,
-`meta.db`, `records.db`), e o estado de login vive dentro do `meta.db`. A guarda
-nunca era verdadeira, e toda ativação caía no login (#49).
+`meta.db`, `records.db`), e o estado de login vive dentro do `meta.db` (#49).
 
-Falha nenhuma aí derruba o `home-manager switch`. Sem `op` no PATH, sem sessão
-aberta no 1Password, com campo faltando, ou com o servidor do atuin fora do ar,
-sai uma linha (`lcars: item op://… incompleto no 1Password …`) e o rebuild
-segue — o atuin fica local, que é um estado utilizável. As duas chamadas de rede
-têm tempo limite (15 s no `status`, 30 s no `login`), para nenhuma delas
-pendurar o rebuild.
+Falha nenhuma aí muda o resultado do `nupdate`. Sem `op`, sem sessão no
+1Password, com campo faltando no item ou com o login recusado, sai uma linha
+amarela — inclusive `op disse: …`, com o motivo dado pelo próprio `op` — e o
+comando termina como terminaria. O sistema já foi construído e ativado; um login
+que não deu certo não invalida um rebuild que deu.
 
 **A senha aparece no `ps`.** O `atuin login` não lê a senha de stdin nem de
 variável de ambiente — `-p` é a única forma. Enquanto o comando roda, ela está
 no argv, visível a quem puder ler `/proc` desta máquina: cerca de um segundo,
 uma vez por máquina. Foi um risco aceito na #48, em troca de a máquina nova não
-precisar de passo manual nenhum. Se um dia deixar de valer a troca, a saída é
-tirar o login da ativação e fazê-lo à mão uma vez por máquina — guardar um
-arquivo de sessão pronto no vault não serve, porque a 18.18 não guarda a sessão
-em arquivo.
+precisar de passo manual nenhum.
 
 **O passo que é seu.** Criar a conta envolve senha, e senha não entra em arquivo
 versionado. Uma vez, na máquina que já tem o histórico:
@@ -826,11 +836,11 @@ segunda chave, que não decifra nada do que está no servidor. Rode-o só onde a
 chave certa já existe; a saída vai para o 1Password, nunca o contrário.
 
 Depois acrescente a `key` ao item `atuin` do vault. A partir daí, toda máquina
-nova nasce sincronizada com um `op signin` e um `nupdate`.
+nova nasce sincronizada com um `nupdate` — com o 1Password destravado, para o
+popup de autorização poder ser respondido.
 
-Se, depois do `nupdate`, o `atuin status` disser que não há login — a ativação
-roda dentro do `nixos-rebuild`, e pode não ter sessão do 1Password ali —, o
-mesmo login sai à mão num terminal seu, com o 1Password destravado:
+Se quiser fazer o login sem esperar o próximo `nupdate`, é o mesmo comando, à
+mão:
 
 ```bash
 vault=$(grep -oP 'vault = "\K[^"]+' ~/.dotfiles/settings.nix)
@@ -844,9 +854,13 @@ atuin status       # confere
 O `$vault` é o `userSettings.onePassword.vault` do `settings.nix`, e precisa ser
 o nome exato que aparece em `op vault list`. Um nome que não existe na conta não
 dá erro de avaliação: o login simplesmente não acontece, e a única pista é a
-linha `lcars:   op disse: …` do rebuild. Foi assim na #50 — o repositório dizia
-`Dotfiles`, a conta tinha `Dotifiles` — e de novo na #52, com os nomes trocados
-de lado depois de o vault ser renomeado.
+linha `op disse: …`. Foi assim na #50 — o repositório dizia `Dotfiles`, a conta
+tinha `Dotifiles` — e de novo na #52, com os nomes trocados de lado depois de o
+vault ser renomeado.
+
+E a integração do `op` com o aplicativo precisa estar ligada nesta máquina:
+*Settings → Developer → Integrate with 1Password CLI*, que é chave separada da
+do agente SSH. Veja `docs/secrets.md`.
 
 O profile `basic` fica de fora pelo mesmo motivo dos dotfiles: sem sessão no
 1Password numa máquina headless, o atuin seria o histórico do zsh com passos a
@@ -905,8 +919,9 @@ de login da conta (`bash` quando desligada). Veja "Base do sistema" acima.
 
 #### `nupdate` — trazer o repositório para esta máquina
 
-`scripts/update.sh`. Sincroniza `~/.dotfiles`, avalia os `.nix` e roda o
-`nixos-rebuild`. Aceita `--inputs` para atualizar o nixpkgs junto e
+`scripts/update.sh`. Sincroniza `~/.dotfiles`, avalia os `.nix`, roda o
+`nixos-rebuild` e, no fim, autentica o atuin se ainda não houver sessão (veja
+"Histórico" acima). Aceita `--inputs` para atualizar o nixpkgs junto e
 `--no-check` para pular a avaliação.
 
 **Em conflito, o repositório vence** — sem perguntar, sem parar. O que você
@@ -914,7 +929,8 @@ editou vai para um `git stash` nomeado e commits locais descartados ficam no
 `reflog`; as duas coisas são rede de segurança, não confirmação.
 `machines/<host>/` é preservado sempre, porque não existe no repositório.
 
-Antes de tudo isso, um `atuin sync` silencioso — veja "Histórico" acima.
+Antes de tudo isso, um `atuin sync` silencioso; e depois de tudo, o login do
+atuin, se faltar. Os dois estão em "Histórico", acima.
 
 #### `nsave` — publicar o que você ajustou aqui
 

@@ -16,8 +16,8 @@
 # São 50 000 linhas num arquivo de texto, custo desprezível, e é a rede de
 # segurança para o dia em que o atuin sair do caminho.
 #
-# O SYNC, E POR QUE ELE PRECISA DO 1PASSWORD
-# ------------------------------------------
+# O SYNC, E QUEM FAZ O LOGIN
+# --------------------------
 # O sync é contra o servidor público, `https://api.atuin.sh`. O histórico vai
 # criptografado ponta a ponta: o servidor guarda blocos que não sabe ler, e a
 # chave nunca sai daqui.
@@ -26,24 +26,36 @@
 # perder o que está no servidor, e uma máquina nova sem ela não decifra nada.
 # Sem chave e sem login, o atuin roda local e o sync falha calado.
 #
-# A ativação resolve os dois de uma vez: quando o atuin não está logado, ela
-# faz o login, com usuário, senha e chave lidos do 1Password (veja o bloco lá
-# embaixo). Uma máquina nova nasce sincronizada com um `op signin` e um
-# `nupdate`.
+# O login NÃO acontece aqui. Ele mora no fim do `nupdate`
+# (scripts/update.sh), que lê usuário, senha e chave do 1Password e chama
+# `atuin login` quando `atuin status` diz que não há sessão.
 #
-# A #46 fazia diferente — copiava `key` e `session` do vault, o que só
-# funcionava se alguém já tivesse gerado a session à mão e a guardado lá. O
-# passo manual não sumia, só mudava de lugar.
+# POR QUE NÃO AQUI — a história vale o espaço, porque a tentação de trazer de
+# volta é grande e o erro é silencioso:
+#
+#   #48 pôs o login em `home.activation.atuinLogin`. Módulo é o lugar óbvio de
+#   tudo neste repositório, e este parecia igual aos outros. Não é. A ativação
+#   do home-manager roda na unit `home-manager-<user>.service`, que não tem a
+#   sessão gráfica do usuário — nem variáveis, nem socket, nem alguém para
+#   autorizar o popup com que o 1Password libera o CLI. Foram quatro rodadas
+#   até a mensagem final do journal, sempre com o `op` funcionando no terminal
+#   ao lado: "sem login no 1Password" (#56, #57).
+#
+# A regra que fica: **o que precisa da sessão do usuário não pode morar na
+# ativação.** Ali cabe o declarativo — pacote, config, integração de shell.
+# O que depende de haver alguém na frente da máquina mora no script que essa
+# pessoa digita.
 #
 # "ESTOU LOGADO?" É PERGUNTA PARA O ATUIN, NÃO PARA O DISCO
 # ---------------------------------------------------------
 # `atuin status` responde: sai com 1 e diz "You are not logged in to a sync
-# server" quando não há login, e imprime endereço e usuário quando há.
+# server" quando não há login, e imprime endereço e usuário quando há. É o que
+# o `nupdate` usa para não relogar à toa.
 #
 # A #48 perguntava a um arquivo, `~/.local/share/atuin/session`, e errava. A
 # 18.18 não cria esse arquivo — num HOME limpo ela deixa apenas os bancos
 # (`history.db`, `meta.db`, `records.db`), e o estado de login vive dentro do
-# meta.db. A guarda nunca era verdadeira e toda ativação caía no login (#49).
+# meta.db (#49).
 #
 # O ITEM NO 1PASSWORD
 # -------------------
@@ -68,36 +80,12 @@
 # mostrando a sua. Numa máquina que ainda não logou, isso cria uma segunda
 # chave, que não decifra nada do que está no servidor. Rode `atuin key` só onde
 # a chave certa já existe, e leve a saída para o 1Password — nunca o contrário.
-#
-# A SENHA APARECE NO `ps` — POR UM SEGUNDO, UMA VEZ POR MÁQUINA
-# -------------------------------------------------------------
-# `atuin login` não lê a senha de stdin nem de variável de ambiente: `-p` é a
-# única forma (conferido no --help da 18.18.1). Enquanto o comando roda, a
-# senha está no argv, visível a quem puder ler `/proc` desta máquina.
-#
-# É um risco real e pequeno — máquina pessoal, um login por máquina, cerca de
-# um segundo — e foi aceito de propósito, na #48, em troca de a máquina nova não
-# precisar de nenhum passo manual. Se um dia deixar de valer a troca, a saída é
-# tirar o login daqui e fazê-lo à mão, uma vez por máquina; copiar um arquivo de
-# sessão pronto não é alternativa, porque a 18.18 não guarda a sessão em arquivo.
 {
-  config,
   osConfig,
   lib,
-  user,
   ...
 }:
 
-let
-  dataDir = "${config.home.homeDirectory}/.local/share/atuin";
-
-  # Um item com três campos, e não itens Document como em user/app/dotfiles.nix:
-  # são três partes de uma credencial só, e assim há um lugar único para olhar
-  # quando o sync parar.
-  item = "op://${user.onePassword.vault}/atuin";
-
-  atuin = lib.getExe config.programs.atuin.package;
-in
 lib.mkIf osConfig.lcars.user.atuin.enable {
   programs.atuin = {
     enable = true;
@@ -143,97 +131,4 @@ lib.mkIf osConfig.lcars.user.atuin.enable {
       # disparar algo indesejado, é esta linha que você acrescenta como false.
     };
   };
-
-  # O login, em tempo de ATIVAÇÃO, com o que estiver no 1Password.
-  #
-  # `entryAfter [ "writeBoundary" ]` é o ponto em que o home-manager já
-  # materializou o resto — inclusive o binário do atuin, que é chamado aqui pelo
-  # caminho absoluto no store, e não pelo nome: o PATH da ativação não é o do
-  # shell interativo.
-  #
-  # Nada aqui pode derrubar o `home-manager switch`. Sem `op`, sem sessão no
-  # 1Password, com campo faltando no item ou com o servidor do atuin fora do ar,
-  # o bloco imprime uma linha e segue — o atuin fica local, que é um estado
-  # utilizável. Mesmo desenho de user/app/dotfiles.nix.
-  home.activation.atuinLogin = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    mkdir -p ${lib.escapeShellArg dataDir}
-
-    # Quem responde se há login é o próprio atuin: `status` sai com 1 e diz
-    # "You are not logged in to a sync server" quando não há.
-    #
-    # A #48 perguntava a um arquivo, `~/.local/share/atuin/session`, e errava:
-    # a 18.18 não cria esse arquivo — o estado vive no meta.db. A guarda nunca
-    # era verdadeira, e toda ativação caía no login (#49). Ler o meta.db aqui
-    # seria trocar um palpite por outro: o formato é interno do atuin, e o
-    # comando é a interface pública.
-
-    # O `op`, por caminho absoluto — e o do WRAPPER, primeiro.
-    #
-    # Duas razões, e a segunda só apareceu depois de a primeira ser resolvida:
-    #
-    # 1. Esta ativação roda numa unit systemd (home-manager-<user>.service),
-    #    cujo PATH não tem `/run/wrappers/bin` nem `/run/current-system/sw/bin`.
-    #    `command -v op` ali falha sempre, por melhor que o 1Password esteja
-    #    configurado — era o que o journal da VM mostrava na #56.
-    #
-    # 2. Entre os dois `op` possíveis, serve o do wrapper.
-    #    `programs._1password` instala em /run/wrappers/bin/op um wrapper setgid
-    #    do grupo `onepassword-cli`, e é esse grupo que o aplicativo verifica
-    #    para aceitar falar com o CLI. O binário do store é achado do mesmo
-    #    jeito e recusado pelo app — trocaria "não está no PATH" por
-    #    "no account found".
-    #
-    # O fallback para o PATH existe para quem rodar este módulo sem
-    # `programs._1password` — fora do NixOS, ou com o CLI vindo de outro lugar.
-    op=""
-    for candidato in /run/wrappers/bin/op "$(command -v op 2>/dev/null || true)"; do
-      if [ -n "$candidato" ] && [ -x "$candidato" ]; then
-        op="$candidato"
-        break
-      fi
-    done
-
-    if timeout 15 ${atuin} status >/dev/null 2>&1; then
-      : # já logado nesta máquina — não relogar a cada rebuild
-    elif [ -z "$op" ]; then
-      echo "lcars: 'op' não encontrado (nem /run/wrappers/bin/op, nem no PATH) — atuin fica local, sem sync"
-    elif [ -z "''${OP_SERVICE_ACCOUNT_TOKEN:-}" ] && ! "$op" whoami >/dev/null 2>&1; then
-      echo "lcars: sem login no 1Password — atuin fica local, sem sync"
-    else
-      # Os três de uma vez. O stderr do `op` é guardado num arquivo, e não
-      # jogado em /dev/null: é ele quem sabe o que houve.
-      #
-      # Foi a lição da #50. O vault do settings.nix tinha um nome que não
-      # existia na conta, e o `op` dizia exatamente isso —
-      # `"Dotfiles" isn't a vault in this account` —, mas a frase estava sendo
-      # descartada. O que sobrava era um "item incompleto" genérico, mandando
-      # conferir campos que estavam certos o tempo todo.
-      #
-      # O stderr do `op` não carrega segredo: traz o caminho pedido e o motivo.
-      op_tmp="$(mktemp -d)"
-      atuin_user="$("$op" read ${lib.escapeShellArg "${item}/username"} 2>>"$op_tmp/erro" || true)"
-      atuin_pass="$("$op" read ${lib.escapeShellArg "${item}/password"} 2>>"$op_tmp/erro" || true)"
-      atuin_key="$("$op" read ${lib.escapeShellArg "${item}/key"} 2>>"$op_tmp/erro" || true)"
-
-      if [ -z "$atuin_user" ] || [ -z "$atuin_pass" ] || [ -z "$atuin_key" ]; then
-        echo "lcars: não consegui ler ${item} no 1Password — atuin fica local, sem sync"
-        if [ -s "$op_tmp/erro" ]; then
-          echo "lcars:   op disse: $(head -1 "$op_tmp/erro")"
-        fi
-      # `timeout` porque isto é uma chamada de rede no meio de um rebuild: com o
-      # servidor mudo, o switch ficaria pendurado esperando.
-      elif timeout 30 ${atuin} login \
-             -u "$atuin_user" -p "$atuin_pass" -k "$atuin_key" >/dev/null 2>&1; then
-        echo "lcars: atuin logado — o histórico desta máquina passa a sincronizar"
-      else
-        echo "lcars: 'atuin login' falhou (senha, chave ou servidor) — atuin fica local, sem sync"
-      fi
-
-      rm -rf "$op_tmp"
-
-      # A senha sai da memória do shell assim que deixa de ser necessária. É
-      # higiene, não proteção: enquanto o login rodou, ela esteve no argv.
-      unset atuin_user atuin_pass atuin_key
-    fi
-  '';
 }
