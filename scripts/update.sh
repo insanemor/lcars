@@ -219,7 +219,9 @@ renomeia_hm_bak() {
     mv "$f" "$novo"
     note "backup antigo renomeado: $f → $novo"
   done < <(find "$HOME" -path "$HOME/.cache" -prune -o -name '*.hm-bak' -print0 2>/dev/null)
-  [[ "$achou" == yes ]] && note "nomes liberados — a ativação não deve mais recusar o backup"
+  if [[ "$achou" == yes ]]; then
+    note "nomes liberados — a ativação não deve mais recusar o backup"
+  fi
 }
 
 step "verificando backups antigos do home-manager"
