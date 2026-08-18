@@ -53,8 +53,9 @@
       # dotfiles e o item `atuin`. É o nome como ele aparece em `op vault list`
       # — confira lá antes de mudar. Um nome que não existe na conta não dá
       # erro de avaliação: o `op` é que reclama, na ativação, e o segredo
-      # simplesmente não chega (foi o que aconteceu na #50).
-      vault = "Dotifiles";
+      # simplesmente não chega — foi o que aconteceu na #50, e de novo na #52
+      # quando o vault mudou de nome do outro lado.
+      vault = "Dotfiles";
     };
 
     # Dotfiles guardados como itens Document no 1Password. Cada nome aqui é
