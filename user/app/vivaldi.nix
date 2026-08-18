@@ -76,4 +76,24 @@ lib.mkIf osConfig.lcars.user.vivaldi.enable {
       "--ozone-platform-hint=auto"
     ];
   };
+
+  # Quem abre um link no sistema. Até a #60 isto não era declarado em lugar
+  # nenhum: o `xdg-open` não achava associação, caía no fallback da variável
+  # `$BROWSER` e acertava o Vivaldi por tabela. Funcionava, e ia continuar
+  # funcionando até o dia em que alguma coisa no ambiente mudasse — e aí o
+  # sintoma seria um clique que não abre nada, sem erro em lugar nenhum.
+  #
+  # O nome do arquivo é `vivaldi-stable.desktop`, e não `vivaldi.desktop`: o
+  # pacote vem do .deb oficial, e o nixpkgs reescreve o CONTEÚDO do desktop
+  # file (o caminho do binário e o WMClass) sem renomeá-lo.
+  xdg.mimeApps = {
+    enable = true;
+    defaultApplications = {
+      "text/html" = "vivaldi-stable.desktop";
+      "x-scheme-handler/http" = "vivaldi-stable.desktop";
+      "x-scheme-handler/https" = "vivaldi-stable.desktop";
+      "x-scheme-handler/about" = "vivaldi-stable.desktop";
+      "x-scheme-handler/unknown" = "vivaldi-stable.desktop";
+    };
+  };
 }

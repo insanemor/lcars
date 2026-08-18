@@ -118,7 +118,98 @@ let
   # configuração para o config dir — nada é escrito na raiz do plugin. Se um
   # dia o upstream passar a escrever lá, a saída é a ativação copiar esta
   # árvore para um caminho mutável e linkar de lá.
-  pluginBrowser = inputs.herdr-browser;
+  # Onde um link abre, e por quê
+  # ----------------------------
+  # São três caminhos, e antes da #60 só o primeiro chegava ao painel:
+  #
+  #   Ctrl+clique num link do terminal  → link_handler de plugin, senão xdg-open
+  #   CLI que autentica (aws sso, okta) → $BROWSER / xdg-open, sem passar pelo herdr
+  #   qualquer coisa fora do herdr      → xdg-open
+  #
+  # O wrapper abaixo cobre os dois primeiros. Ele vira o `$BROWSER` da sessão e
+  # decide pelo ambiente: dentro de um painel do herdr abre no plugin, fora
+  # dele chama o navegador de verdade.
+  #
+  # `HERDR_ENV=1` é o que marca "estou dentro": todo pty que o herdr cria
+  # recebe essa variável (src/pty/backend/unix.rs:77). Não é heurística, é o
+  # mesmo sinal que o próprio herdr usa para recusar rodar aninhado.
+  #
+  # As duas saídas de emergência, porque um Chromium dirigido por CDP não
+  # serve para tudo — ele tem perfil próprio, sem os cookies e as senhas do seu
+  # navegador, e não faz passkey nem extensão:
+  #
+  #   LCARS_BROWSER_EXTERNO=1 aws sso login   # este login vai no Vivaldi
+  #   lcars-browser <url>                     # e o wrapper é chamável à mão
+  navegadorExterno =
+    if osConfig.lcars.user.vivaldi.enable then
+      lib.getExe config.programs.vivaldi.finalPackage
+    else
+      "${pkgs.xdg-utils}/bin/xdg-open";
+
+  navegador = pkgs.writeShellScriptBin "lcars-browser" ''
+    set -u
+    url="''${1:-}"
+
+    # Sem URL não há o que abrir no painel: cai direto no navegador, que sabe
+    # subir sozinho.
+    if [ -n "$url" ]       && [ "''${LCARS_BROWSER_EXTERNO:-}" != "1" ]       && { [ "''${HERDR_ENV:-}" = "1" ] || [ "''${LCARS_BROWSER_FORCA_PAINEL:-}" = "1" ]; }; then
+      if "${lib.getExe herdr}" plugin pane open         --plugin official.browser --entrypoint browser         --placement split --direction right --focus         --env HERDR_BROWSER_CHROME=${chromium}         --env HERDR_BROWSER_INITIAL_URL="$url" >/dev/null 2>&1; then
+        exit 0
+      fi
+      echo "lcars-browser: painel do herdr não abriu; indo para o navegador" >&2
+    fi
+
+    # `env -u BROWSER` porque o xdg-open, quando não acha associação, tenta
+    # justamente o $BROWSER — que é este script. Sem isso, um sistema sem
+    # mimeapps declarado entraria em laço.
+    exec ${pkgs.coreutils}/bin/env -u BROWSER ${navegadorExterno} "$url"
+  '';
+
+  # A ação que o link handler novo chama. Ela força o painel: o processo de uma
+  # ação de plugin não é um pty do herdr, então `HERDR_ENV` não vale como
+  # sinal, e sem isto o clique cairia no navegador de fora — exatamente o que
+  # queremos evitar.
+  abrirNoPainel = pkgs.writeShellScript "lcars-herdr-abrir-url" ''
+    LCARS_BROWSER_FORCA_PAINEL=1 exec ${lib.getExe navegador} "''${HERDR_PLUGIN_CLICKED_URL:-}"
+  '';
+
+  # O plugin, com um link handler a mais.
+  #
+  # O upstream declara um só, e o pattern dele é localhost — é por isso que o
+  # `http://localhost:3000` do dev server abre no painel e o resto vai para
+  # fora. Trocar aquele pattern NÃO resolveria: a ação dele
+  # (src/actions/open-localhost.ts) valida a URL e morre com "refusing
+  # non-localhost URL" para qualquer outro host.
+  #
+  # Então acrescentamos uma ação nossa, que abre um painel com
+  # HERDR_BROWSER_INITIAL_URL — variável que o viewer.ts do plugin lê sem
+  # validar host nenhum (src/viewer.ts:196). O código do plugin fica intacto;
+  # o que muda é só o manifesto.
+  #
+  # A ordem importa e está certa por construção: handlers são testados na
+  # ordem do manifesto, então o de localhost (que vem antes, do upstream)
+  # continua tratando localhost pelo caminho nativo, e o nosso pega o resto.
+  #
+  # Ids locais aceitam letras, números, `:`, `_` e `-`, e ponto NÃO
+  # (src/app/api/plugins/manifest.rs:602) — daí `lcars-open-url`.
+  pluginBrowser = pkgs.runCommand "herdr-browser-com-link-handler" { } ''
+    cp -r ${inputs.herdr-browser} $out
+    chmod -R u+w $out
+    cat >> $out/herdr-plugin.toml <<'MANIFESTO'
+
+    [[actions]]
+    id = "lcars-open-url"
+    title = "Abrir a URL no painel do herdr"
+    contexts = ["workspace"]
+    command = ["${abrirNoPainel}"]
+
+    [[link_handlers]]
+    id = "lcars-any-http"
+    title = "Abrir no painel do herdr"
+    pattern = "^https?://"
+    action = "lcars-open-url"
+    MANIFESTO
+  '';
 
   # As cores, do esquema base16 do stylix — o mesmo que pinta o terminal, o
   # prompt, GTK e Qt. O herdr aceita hex em todos os tokens (veja
@@ -177,7 +268,22 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     # esse executável é o servidor do herdr. Caminho absoluto não resolveria —
     # o comando está fixo no manifesto, que é do upstream do plugin.
     pkgs.bun
+
+    # No PATH para poder ser chamado à mão: `lcars-browser <url>` abre a URL no
+    # painel de dentro do herdr, e no navegador de fora.
+    navegador
   ];
+
+  # O `$BROWSER` da sessão do usuário passa a ser o wrapper — é o que redireciona
+  # `aws sso login`, `gh auth login` e qualquer CLI que abra o navegador de
+  # dentro de um painel. Fora do herdr o wrapper repassa para o navegador de
+  # verdade, então nada muda para as aplicações gráficas.
+  #
+  # Aqui, e não em `environment.variables` do lado NixOS, por duas razões: a
+  # variável só interessa a processos da sessão do usuário, e o
+  # `settings.nix` continua sendo quem nomeia o navegador (`browser`), sem que
+  # este módulo o sobrescreva.
+  home.sessionVariables.BROWSER = lib.getExe navegador;
 
   # Registra o plugin browser a cada ativação. Roda na unit
   # home-manager-<user>.service, e pode: não depende da sessão gráfica nem do
