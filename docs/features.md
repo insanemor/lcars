@@ -784,6 +784,7 @@ sincroniza esse banco entre as suas máquinas, criptografado ponta a ponta.
 |---|---|
 | `CTRL+R` | busca do atuin: tela de 25 linhas, difusa, sobre todo o histórico |
 | `↑` | **não muda** — continua o histórico do zsh, por prefixo, da sessão |
+| `?` | comando por linguagem natural (IA) — liga sozinho, por `atuin init zsh` |
 
 A seta pra cima fica de fora por `--disable-up-arrow`, decisão deliberada: a
 tecla já está na memória muscular. E o histórico nativo do zsh continua sendo
@@ -802,7 +803,22 @@ filter_mode = "global"    # todas as máquinas; CTRL+R de novo alterna o filtro
 style = "compact"
 inline_height = 25
 dialect = "uk"            # data em dd/mm
+ai.enabled = true         # a tecla `?`; interruptor explícito, já ligado por padrão
 ```
+
+#### `atuin setup` e `atuin config set` não funcionam aqui
+
+`~/.config/atuin/config.toml` é gerado por `user/shell/atuin.nix` e é um link
+para o `/nix/store` — **read-only**. Rodar `atuin setup` (as perguntas sobre IA
+e sobre o daemon) ou `atuin config set` cai em `read-only file system`
+([#61](https://github.com/insanemor/lcars/issues/61)): o programa tenta gravar
+onde não pode escrever.
+
+Não é bug do atuin — é o preço do config vir do store, como qualquer outro
+programa deste repositório. O que ele gravaria, o módulo já declara: para
+mudar alguma coisa, edite `settings` em `user/shell/atuin.nix` e rode
+`nupdate`. Para desligar a tecla `?`, é `ai.enabled = false` ali — tentar pelo
+programa falha do mesmo jeito que o `setup`.
 
 #### O login é feito pelo `nupdate`, com o item do 1Password
 

@@ -80,6 +80,22 @@
 # mostrando a sua. Numa máquina que ainda não logou, isso cria uma segunda
 # chave, que não decifra nada do que está no servidor. Rode `atuin key` só onde
 # a chave certa já existe, e leve a saída para o 1Password — nunca o contrário.
+#
+# O CONFIG É READ-ONLY — `atuin setup` E `atuin config set` NÃO FUNCIONAM
+# ------------------------------------------------------------------------
+# `~/.config/atuin/config.toml` é gerado por este módulo e vira um link para
+# o `/nix/store` — read-only. `atuin setup` (as perguntas sobre IA e sobre o
+# daemon) e qualquer `atuin config set` tentam gravar ali e caem em "read-only
+# file system" (#61). O que o programa gravaria, o módulo declara: mude a
+# opção aqui embaixo e rode `nupdate` — não tem outro jeito, e não é bug do
+# atuin, é o preço do config vir do store.
+#
+# A tecla `?` (comando por linguagem natural) já funciona sem nada disso:
+# `atuin init zsh` a liga por padrão, e só `--disable-ai` nas `flags` acima a
+# tiraria — não está lá. `settings.ai.enabled` abaixo é só o interruptor
+# explícito que o `setup` tentaria gravar. Para desligar a tecla `?`, mude
+# `ai.enabled` aqui para `false`; tentar pelo programa vai falhar do mesmo
+# jeito que o `setup`.
 {
   osConfig,
   lib,
@@ -129,6 +145,12 @@ lib.mkIf osConfig.lcars.user.atuin.enable {
       # `enter_accept` fica no default do atuin (true): Enter executa o comando
       # escolhido, Tab o traz para a linha para editar. Se um dia o Enter
       # disparar algo indesejado, é esta linha que você acrescenta como false.
+
+      # --- IA ----------------------------------------------------------
+      # O interruptor que `atuin setup` tentaria gravar (e falha — veja
+      # "CONFIG É READ-ONLY" no cabeçalho). A tecla `?` já funciona sem isto;
+      # esta linha só torna explícito o que já está ligado por padrão.
+      ai.enabled = true;
     };
   };
 }
