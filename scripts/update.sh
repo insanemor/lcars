@@ -17,10 +17,19 @@
 #   5. autentica o atuin, se ainda não houver sessão — aqui, e não num módulo,
 #      porque só este script roda na sua sessão (veja o bloco no fim)
 #
-# SOBRE CONFLITOS: o repositório sempre vence. Se você editou um arquivo que
-# também mudou no repositório, a sua versão é descartada — sem perguntar, sem
-# parar. É uma escolha deliberada, para o comando poder rodar sem exigir
-# atenção.
+# SOBRE CONFLITOS: o repositório sempre vence, mas só quando ele tem
+# histórico novo de verdade. Se `origin/main` for ancestral do HEAD local —
+# main local igual ou à FRENTE, o caso comum aqui, já que este script nunca dá
+# push — a sincronização inteira é pulada: sem stash, sem reset. Uma entrega
+# que a skill `entrega` já mergeou em main, e que ainda não foi publicada,
+# fica intacta até você decidir subir. Sem esta checagem o reset --hard trata
+# esse merge como lixo remoto e o joga pro reflog — foi o que aconteceu na
+# #69, com o merge da #67.
+#
+# Só quando origin TEM histórico novo é que "o repositório sempre vence" entra
+# em ação: se você editou um arquivo que também mudou lá, a sua versão é
+# descartada — sem perguntar, sem parar. É uma escolha deliberada, para o
+# comando poder rodar sem exigir atenção.
 #
 # Nada é perdido de forma irrecuperável: o que estava fora do commit vai para
 # um `git stash` nomeado, e commits locais que forem descartados continuam no
@@ -107,39 +116,54 @@ git fetch --quiet origin "$BRANCH"
 antes="$(git rev-parse HEAD)"
 depois="$(git rev-parse "origin/$BRANCH")"
 
-# O diretório desta máquina sai do git ANTES de qualquer operação.
-#
-# Fora do git de propósito: ele pode estar commitado localmente, no index, ou
-# só no disco, e o `reset --hard` abaixo o levaria em qualquer um dos casos.
-# Depender de stash aqui seria frágil — se você tiver commitado a configuração
-# da máquina, não há nada para stashear, e o diretório sumiria sem rede.
-guardado="$(mktemp -d)"
-trap 'rm -rf "$guardado"' EXIT
-cp -a "machines/$HOST" "$guardado/"
-
-if [[ -n "$(git status --porcelain)" ]]; then
-  # `-u` inclui os não rastreados: sem ele o stash não os leva e o reset os
-  # apagaria sem deixar cópia.
-  git stash push -u -q -m "nupdate $(date +%F-%H%M)" || true
-  note "edições locais guardadas — recupere com 'git stash list' / 'git stash pop'"
+# Local pode estar igual ou à FRENTE de origin sem que haja conflito nenhum:
+# é o estado normal deste repo entre uma entrega mergeada e o próximo push.
+# Só vale resetar quando origin de fato trouxe histórico que o local não tem.
+if [[ "$antes" == "$depois" ]] || git merge-base --is-ancestor "$depois" "$antes"; then
+  precisa_reset=no
+else
+  precisa_reset=yes
 fi
 
-# reset --hard, e não merge: é o que "o repositório sempre vence" significa.
-# Nunca conflita, nunca para. Commits locais descartados ficam no reflog.
-if [[ "$antes" != "$depois" ]] && ! git merge-base --is-ancestor "$antes" "$depois"; then
-  note "havia commits locais nesta máquina — descartados, mas veja 'git reflog'"
-fi
-git reset --hard --quiet "origin/$BRANCH"
+if [[ "$precisa_reset" == yes ]]; then
+  # O diretório desta máquina sai do git ANTES de qualquer operação.
+  #
+  # Fora do git de propósito: ele pode estar commitado localmente, no index,
+  # ou só no disco, e o `reset --hard` abaixo o levaria em qualquer um dos
+  # casos. Depender de stash aqui seria frágil — se você tiver commitado a
+  # configuração da máquina, não há nada para stashear, e o diretório sumiria
+  # sem rede.
+  guardado="$(mktemp -d)"
+  trap 'rm -rf "$guardado"' EXIT
+  cp -a "machines/$HOST" "$guardado/"
 
-# Devolve o diretório da máquina, e o registra no index: o
-# hardware-configuration.nix está no .gitignore, e um flake em repo git só lê
-# arquivos rastreados.
-rm -rf "machines/$HOST"
-cp -a "$guardado/$HOST" machines/
-git add -f "machines/$HOST" >/dev/null
+  if [[ -n "$(git status --porcelain)" ]]; then
+    # `-u` inclui os não rastreados: sem ele o stash não os leva e o reset os
+    # apagaria sem deixar cópia.
+    git stash push -u -q -m "nupdate $(date +%F-%H%M)" || true
+    note "edições locais guardadas — recupere com 'git stash list' / 'git stash pop'"
+  fi
+
+  # reset --hard, e não merge: é o que "o repositório sempre vence" significa
+  # quando origin de fato tem histórico novo. Nunca conflita, nunca para.
+  # Commits locais descartados ficam no reflog.
+  if ! git merge-base --is-ancestor "$antes" "$depois"; then
+    note "havia commits locais nesta máquina — descartados, mas veja 'git reflog'"
+  fi
+  git reset --hard --quiet "origin/$BRANCH"
+
+  # Devolve o diretório da máquina, e o registra no index: o
+  # hardware-configuration.nix está no .gitignore, e um flake em repo git só lê
+  # arquivos rastreados.
+  rm -rf "machines/$HOST"
+  cp -a "$guardado/$HOST" machines/
+  git add -f "machines/$HOST" >/dev/null
+fi
 
 if [[ "$antes" == "$depois" ]]; then
   ok "já estava atualizado"
+elif [[ "$precisa_reset" == no ]]; then
+  ok "main local está à frente de origin/$BRANCH — nada publicado para trazer, seguindo com o que já está aqui"
 else
   git --no-pager log --oneline "$antes..$depois" 2>/dev/null | sed 's/^/    /' \
     || ok "sincronizado com origin/$BRANCH"
