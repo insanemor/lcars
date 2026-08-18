@@ -80,5 +80,26 @@ lib.mkIf osConfig.lcars.user.kitty.enable {
     // lib.optionalAttrs osConfig.lcars.user.herdr.enable {
       shell = herdr;
     };
+
+    # COLAR — Ctrl+V e Ctrl+Insert, além do Ctrl+Shift+V de fábrica (#71)
+    # --------------------------------------------------------------------
+    # O padrão do kitty é só `ctrl+shift+v` (e `shift+insert`): ele reserva
+    # `ctrl+v` de propósito, pra não atropelar programas de terminal que usam
+    # essa combinação — o caso mais comum é o modo visual-block do vim/nvim.
+    # Foi assim que a #71 apareceu: "copio, mas não consigo colar" era
+    # digitar `Ctrl+V`/`Ctrl+Insert` (o hábito de toda GUI) contra um kitty
+    # que só reconhece `Ctrl+Shift+V`.
+    #
+    # As duas linhas abaixo pagam esse preço às claras: um keybinding do
+    # kitty intercepta ANTES da tecla chegar ao programa dentro do terminal
+    # (o herdr, ou o que estiver rodando dentro dele). Com isto ligado,
+    # `Ctrl+V` sempre cola — inclusive dentro do vim/nvim, onde antes entrava
+    # em modo visual-block. Escolha deliberada do usuário: o Ctrl+V "como em
+    # qualquer app" pesa mais que o atalho do vim, que continua acessível por
+    # `v` (visual) e `Ctrl+Shift+V` residual não muda nada aqui.
+    keybindings = {
+      "ctrl+v" = "paste_from_clipboard";
+      "ctrl+insert" = "paste_from_clipboard";
+    };
   };
 }
