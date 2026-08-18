@@ -68,9 +68,33 @@ in
       package = pkgs._1password-cli;
     };
 
-    # 1Password GUI. `polkitPolicyOwners` é uma lista de nomes de usuário — o
-    # módulo já gera a regra polkit e põe esses usuários nos grupos
-    # `onepassword`/`onepassword-cli`, então não escrevemos polkit à mão.
+    # 1Password GUI. `polkitPolicyOwners` é uma lista de nomes de usuário, e o
+    # módulo do nixpkgs a usa para gerar a regra polkit — daí não escrevermos
+    # polkit à mão.
+    #
+    # E é SÓ isso que ela faz. Este comentário já afirmou que ela também punha
+    # esses usuários nos grupos `onepassword`/`onepassword-cli`, o que é falso
+    # (#53): `programs/_1password-gui.nix` cria o grupo `onepassword` e o
+    # wrapper setgid do `1Password-BrowserSupport`, `programs/_1password.nix`
+    # cria o grupo `onepassword-cli` e o wrapper setgid do `op`, e nenhum dos
+    # dois mexe em `users.groups.<g>.members` nem em `extraGroups`.
+    #
+    # Ninguém precisa ser membro: os wrappers são setgid justamente para o
+    # processo receber o grupo ao executar. Por isso `id -nG` não lista nada de
+    # 1Password numa máquina onde tudo funciona — e por isso essa ausência não
+    # serve de diagnóstico quando alguma coisa NÃO funciona.
+    #
+    # A integração do `op` com o aplicativo depende de duas caixas dentro dele,
+    # como o agente SSH: Settings → Security → "Unlock using system
+    # authentication", e Settings → Developer → "Integrate with 1Password CLI".
+    # São chaves independentes; ligar o agente SSH não liga a do CLI.
+    #
+    # E não, não dá para ligá-las daqui. Elas vivem em
+    # ~/.config/1Password/settings/settings.json, ao lado de um bloco `authTags`
+    # com uma assinatura por preferência sensível — é o que impede ligar o
+    # agente SSH ou o desbloqueio por sistema editando um arquivo. Um valor
+    # escrito por fora não tem assinatura válida, e o aplicativo o descarta.
+    # Veja docs/secrets.md.
     programs._1password-gui = mkIf cfg.enableGui {
       enable = true;
       package = pkgs._1password-gui;

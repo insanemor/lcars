@@ -37,6 +37,57 @@ Host *
 
 Depois de instalar, abra a GUI e faça pareamento com o app mobile via QR code (o 1Password 8 suporta isso sem conta de email). Depois de pareado, desbloqueie qualquer sessão da área de trabalho em que confia e o agente SSH expõe as chaves do host.
 
+### A integração do `op` com o aplicativo é outra caixa
+
+Pela mesma lógica do agente SSH, o `op` só conversa com o aplicativo se você
+ligar isso **dentro dele** — e são duas opções, não uma:
+
+| Onde | O quê |
+|---|---|
+| Settings → Security | **Unlock using system authentication** |
+| Settings → Developer | **Integrate with 1Password CLI** |
+
+São chaves independentes: ter o agente SSH funcionando **não** significa que a
+do CLI está ligada. Sem ela, `op account list` vem vazio e qualquer `op read`
+responde `no account found` — mesmo com o aplicativo aberto e logado.
+
+O que o NixOS faz por você é o outro lado: `programs._1password` instala o
+wrapper `setgid` de `op` (grupo `onepassword-cli`) e `programs._1password-gui`
+o de `1Password-BrowserSupport` (grupo `onepassword`), além da regra polkit
+gerada por `polkitPolicyOwners`. **Ninguém precisa ser membro desses grupos** —
+o setgid existe para o processo recebê-los ao executar. `id -nG` não listar
+nada de 1Password é o normal, e não um diagnóstico (#53).
+
+### Por que essas caixas não dá para versionar
+
+A pergunta é natural: se tudo neste repositório é declarativo, por que essas
+três opções são cliques?
+
+O aplicativo guarda as preferências em `~/.config/1Password/settings/settings.json`,
+e as chaves são exatamente estas:
+
+| Chave | Caixa correspondente |
+|---|---|
+| `security.authenticatedUnlock.enabled` | Unlock using system authentication |
+| `sshAgent.enabled` | Use the SSH agent |
+| `developers.cliSharedLockState.enabled` | Integrate with 1Password CLI |
+
+Só que o mesmo arquivo traz um bloco `authTags`, com **uma assinatura por
+preferência sensível** — strings de 43 caracteres, uma para cada chave acima.
+O 1Password assina essas opções para que ligá-las exija passar pelo aplicativo
+autenticado. Escrever `sshAgent.enabled = true` por fora, pelo Home Manager ou
+por um script de ativação, produz um valor sem assinatura válida — e o
+aplicativo o descarta.
+
+Isso é desenho, não limitação a contornar: ligar o agente SSH ou o
+desbloqueio por sistema editando um arquivo seria justamente o que a assinatura
+existe para impedir. Some-se a isso que o arquivo é mutável e reescrito pelo
+próprio aplicativo a cada mudança de preferência, o que já basta para um
+symlink read-only do store estar fora de questão.
+
+**Portanto: três cliques por máquina nova, uma vez.** É o mesmo custo do
+pareamento inicial da conta, e pela mesma razão.
+
 O 1Password é software proprietário. O módulo acrescenta exatamente esses três
 pacotes a `lcars.system.unfreePackages`, a lista de onde `system/unfree.nix`
 monta o `allowUnfreePredicate` — sem ligar `allowUnfree` global. A lista existe
