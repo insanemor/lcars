@@ -39,7 +39,7 @@
 
     editor = "nano";
     terminal = "konsole";
-    browser = "firefox";
+    browser = "vivaldi";
 
     # ---------------------------------------------------------------
     # 1Password

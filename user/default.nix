@@ -19,6 +19,7 @@
     ./shell/atuin.nix
     ./app/git.nix
     ./app/kitty.nix
+    ./app/vivaldi.nix
     ./app/herdr.nix
     ./app/direnv.nix
     ./app/dotfiles.nix
