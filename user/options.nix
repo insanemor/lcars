@@ -41,6 +41,8 @@
 
     kitty.enable = lib.mkEnableOption "o terminal — a fonte e as cores vêm do stylix, via lcars.system.theme";
 
+    vivaldi.enable = lib.mkEnableOption "o navegador Vivaldi — com codecs proprietários, Widevine e Wayland nativo; é ele que o \$BROWSER do settings.nix aponta";
+
     herdr.enable = lib.mkEnableOption "o multiplexador de terminal — workspaces, painéis e sessões persistentes, com os atalhos herdados do tmux (prefixo Ctrl-a)";
 
     niri.enable = lib.mkEnableOption "a configuração do niri — atalhos, forma e cores (o compositor é lcars.system.wm.niri)";

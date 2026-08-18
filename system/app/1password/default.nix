@@ -52,15 +52,15 @@ in
   config = mkIf cfg.enable {
 
     # 1Password é software proprietário — precisa ser liberado explicitamente.
-    # Usamos só o predicate (não allowUnfree global) para o desvio ficar
-    # limitado aos pacotes do 1Password.
-    nixpkgs.config.allowUnfreePredicate =
-      pkg:
-      builtins.elem (lib.getName pkg) [
-        "1password-cli"
-        "1password-gui"
-        "1password"
-      ];
+    # A lista é acumulada por system/unfree.nix, que é quem escreve o
+    # `allowUnfreePredicate`. Escrever o predicate aqui, como era até a #47,
+    # funcionava só enquanto este fosse o único módulo a fazê-lo: `nixpkgs.config`
+    # mescla por atributo, e um segundo predicate apagaria este calado.
+    lcars.system.unfreePackages = [
+      "1password-cli"
+      "1password-gui"
+      "1password"
+    ];
 
     # 1Password CLI
     programs._1password = mkIf cfg.enableCli {

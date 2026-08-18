@@ -19,6 +19,7 @@ O repo vem com `personal`.
 | Shell noctalia (`user/wm`) | `lcars.user.noctalia.enable` | — | sim |
 | Terminal kitty (`user/app`) | `lcars.user.kitty.enable` | — | sim |
 | Multiplexador herdr (`user/app`) | `lcars.user.herdr.enable` | — | sim |
+| Navegador Vivaldi (`user/app`) | `lcars.user.vivaldi.enable` | — | sim |
 | Áudio PipeWire (`system/hardware`) | `lcars.system.hardware.audio.enable` | — | sim |
 | Teclado, console e gráfico (`system/hardware`) | `lcars.system.hardware.keyboard.enable` | sim | sim |
 | 1Password CLI e GUI (`system/app`) | `lcars.system.app.onePassword.enable` | — | sim |
@@ -517,7 +518,7 @@ acima). A flag `rice` governa só o compositor.
 - As **três** chaves de host do `github.com` (RSA, ECDSA, ED25519) em `programs.ssh.knownHosts`, para não haver prompt de host desconhecido no primeiro clone — e para recusar quem não for o GitHub
 - `ssh` do sistema apontando para `~/.1password/agent.sock` via `IdentityAgent`
 - `gpg.ssh.program` do git apontando para o `op-ssh-sign`, quando há chave de assinatura (`user/app/git.nix`)
-- Software proprietário liberado por `allowUnfreePredicate` restrito aos pacotes do 1Password — `allowUnfree` global **não** é ligado
+- Software proprietário liberado nome a nome: o módulo acrescenta os três pacotes do 1Password a `lcars.system.unfreePackages`, e `system/unfree.nix` escreve o `allowUnfreePredicate` a partir dessa lista — `allowUnfree` global **não** é ligado
 
 O agente SSH em si é um recurso do aplicativo, ligado em **Settings →
 Developer**. Não existe módulo NixOS para ele; o que o repo faz é apontar o ssh
@@ -908,6 +909,36 @@ segue com a referência em cache, em vez de abortar. Dá para commitar offline; 
 Se o noctalia não estiver no PATH, o script avisa e segue sem exportar — o que
 o torna útil para publicar qualquer ajuste feito na máquina, não só o do shell.
 
+### Navegador · `user/app/vivaldi.nix` · `lcars.user.vivaldi.enable` · só personal
+
+O [Vivaldi](https://vivaldi.com) é o navegador do profile `personal`, e é o que
+`browser` no `settings.nix` aponta — `$BROWSER` finalmente resolve para um
+programa que existe na máquina.
+
+Ele **não** é só o `pkgs.vivaldi`. O módulo existe porque três coisas precisam
+ser decididas na derivação, e nenhuma delas cabe num nome de pacote numa lista:
+
+| O quê | Por quê |
+|---|---|
+| `proprietaryCodecs = true` | H.264 e AAC, do `vivaldi-ffmpeg-codecs`. Sem eles, metade do YouTube e todo MP4 local ficam mudos ou pretos. O pacote é LGPL 2.1 — livre, apesar do nome do argumento. |
+| `enableWidevine = true` | O CDM da Google, que destrava streaming com DRM: Netflix, Prime, Spotify Web. É **unfree**, e aparece por nome em `system/unfree.nix`. |
+| `--ozone-platform-hint=auto` | Wayland nativo sob o niri. Sem a flag, o Chromium escolhe X11 e o navegador sobe em XWayland, com fonte borrada em tela HiDPI. |
+
+O módulo do Home Manager usado é `programs.vivaldi`, que sai do mesmo
+`chromium.nix` que serve chromium, brave e edge — daí ele também aceitar
+`extensions`, `dictionaries` e `nativeMessagingHosts`, nenhum deles usado aqui.
+
+**Nada de dentro do navegador é declarado.** Marcadores, abas, atalhos, tema,
+extensões e mecanismo de busca vivem no perfil do Vivaldi e sincronizam pela
+conta — pôr isso no Nix criaria uma segunda fonte de verdade que o primeiro
+login sobrescreve. O stylix também não o alcança: não há alvo para Vivaldi, e a
+cor da interface se escolhe na Configuração dele.
+
+O chromium que `user/app/herdr.nix` traz **continua sendo outro programa**: ele
+é o motor CDP do painel de browser do multiplexador, fica fora do PATH, e o
+Vivaldi não serve no lugar dele (falha com "timed out waiting for CDP
+Page.enable").
+
 ### Multiplexador · `user/app/herdr.nix` · `lcars.user.herdr.enable` · só personal
 
 O [herdr](https://herdr.dev) ocupa o lugar do tmux: workspaces, painéis lado a
@@ -1009,10 +1040,10 @@ Para não haver surpresa:
 - **Nenhum profile além de `basic` e `personal`.**
 - **Nenhum container, VPN, impressora ou bluetooth** configurado.
 - **Nenhum editor além do `vim`**, e nenhuma IDE.
-- **Nenhum navegador.** `browser` no `settings.nix` só define `$BROWSER` — não
-  instala nada. (O módulo do herdr traz um chromium para o closure, mas ele
-  fica fora do PATH: serve de motor ao painel de browser, não de navegador.)
-  Ponha o seu em `userSettings.packages`:
+- **Nenhum segundo navegador.** O Vivaldi vem no profile `personal` (veja
+  "Navegador" acima) e é o que `browser` no `settings.nix` aponta. Se você
+  quiser outro, ponha em `userSettings.packages` — e lembre de trocar o
+  `browser`, que é só a variável `$BROWSER`, não uma instalação:
 
   ```nix
   userSettings.packages = [ "firefox" ];

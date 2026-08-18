@@ -9,6 +9,7 @@
 # em user/options.nix.
 #
 #   core/       identidade, locale, boot, usuário
+#   unfree.nix  a lista de pacotes proprietários liberados — sem flag
 #   security/   sshd e firewall
 #   hardware/   o que depende do hardware: áudio, teclado, notebook, VM
 #   theme/      cor, fontes e papel de parede — transversal, não é de um WM
@@ -23,6 +24,7 @@
 {
   imports = [
     ./core
+    ./unfree.nix
     ./security
     ./hardware/audio.nix
     ./hardware/keyboard.nix

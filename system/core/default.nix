@@ -233,8 +233,9 @@ in
     hardware.cpu.intel.updateMicrocode = true;
 
     # --- preferências do usuário ---------------------------------------
-    # Os programas em si precisam estar instalados (userSettings.packages ou
-    # systemSettings.extraPackages) — aqui só dizemos qual usar.
+    # Os programas em si precisam estar instalados — por um módulo (o
+    # navegador vem de user/app/vivaldi.nix), por userSettings.packages ou
+    # por systemSettings.extraPackages. Aqui só dizemos qual usar.
     environment.variables = {
       EDITOR = user.editor;
       VISUAL = user.editor;

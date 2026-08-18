@@ -37,8 +37,11 @@ Host *
 
 Depois de instalar, abra a GUI e faça pareamento com o app mobile via QR code (o 1Password 8 suporta isso sem conta de email). Depois de pareado, desbloqueie qualquer sessão da área de trabalho em que confia e o agente SSH expõe as chaves do host.
 
-O 1Password é software proprietário. O módulo libera exatamente esses pacotes
-via `nixpkgs.config.allowUnfreePredicate`, sem ligar `allowUnfree` global.
+O 1Password é software proprietário. O módulo acrescenta exatamente esses três
+pacotes a `lcars.system.unfreePackages`, a lista de onde `system/unfree.nix`
+monta o `allowUnfreePredicate` — sem ligar `allowUnfree` global. A lista existe
+porque `nixpkgs.config` mescla por atributo: dois módulos escrevendo o
+predicate direto apagariam um ao outro em silêncio.
 
 ## OpNix
 

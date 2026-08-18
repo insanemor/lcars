@@ -185,10 +185,11 @@ shell [noctalia](https://github.com/noctalia-dev/noctalia-shell), o terminal
 kitty com o multiplexador [herdr](https://herdr.dev) (workspaces e painéis
 persistentes, com os atalhos do tmux), o histórico de comandos no
 [atuin](https://atuin.sh) (busca no `CTRL+R`, sincronizado entre máquinas com a
-chave vinda do 1Password), áudio PipeWire, fontes
-Noto/Liberation/DejaVu, 1Password (CLI + GUI + agente SSH), e `ripgrep`, `fd`,
-`bat`, `eza`. **Não há navegador** nem suíte de aplicativos; acrescente o que
-quiser em `userSettings.packages`.
+chave vinda do 1Password), o navegador
+[Vivaldi](https://vivaldi.com) (com codecs proprietários, Widevine e Wayland
+nativo), áudio PipeWire, fontes Noto/Liberation/DejaVu, 1Password (CLI + GUI +
+agente SSH), e `ripgrep`, `fd`, `bat`, `eza`. **Não há suíte de aplicativos**;
+acrescente o que quiser em `userSettings.packages`.
 
 O herdr é o único programa que **compila na sua máquina**: ele não está no
 nixpkgs, vem do flake do upstream, e não há cache binário. Se isso não lhe
