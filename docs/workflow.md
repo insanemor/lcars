@@ -103,6 +103,21 @@ Para isso o script monta, numa cópia temporária do repo, uma máquina
 descartável a partir do `template`, com um `hardware-configuration.nix`
 fictício. Sua árvore de trabalho não é tocada.
 
+### As ferramentas são fixadas pelo `flake.lock`, não pelo registry
+
+`nixfmt`, `statix` e `deadnix` são resolvidos via `github:NixOS/nixpkgs/<rev>`,
+com `<rev>` lido do próprio `flake.lock` — não via `nixpkgs#nixfmt`, que
+depende do flake registry remoto (`channels.nixos.org/flake-registry.json`) a
+cada execução, mesmo com tudo já no store local. Quando esse download falhava,
+a saída do `nix shell` se misturava com a da ferramenta, e o check reportava
+"arquivos fora do padrão" quando o problema era só rede — a ferramenta nunca
+tinha rodado ([#40](https://github.com/insanemor/lcars/issues/40)).
+
+Se ainda assim alguma etapa não conseguir baixar algo (primeira execução numa
+máquina limpa, por exemplo), o check diz isso explicitamente — "não rodou,
+falha de rede" — em vez de reportar como reprovação de código, e sai com
+código `2`, distinto do `1` de reprovação real.
+
 ### O que o check **não** faz
 
 Ele avalia, não builda: para no `drvPath`, sem compilar pacote nenhum. Passar

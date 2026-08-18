@@ -31,14 +31,43 @@ set -euo pipefail
 
 IMAGE="nixos/nix:latest"
 VOLUME="lcars-nix-store"
-# Array, não string: a lista precisa se dividir em palavras ao virar
-# argumentos do `nix shell`, e aspas em volta de uma string impediriam isso.
-TOOLS=(nixpkgs#nixfmt nixpkgs#statix nixpkgs#deadnix)
 # nixfmt deprecou receber diretório, então os arquivos vão um a um pelo find.
 # As aspas ficam escapadas: isto é expandido só dentro do container.
 FIND_NIX="find . -name \"*.nix\" -not -path \"./.git/*\""
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# --- ferramentas: fixadas pelo flake.lock deste repo, não pelo registry ----
+# `nixpkgs#nixfmt` resolve o alias "nixpkgs" pelo flake REGISTRY remoto
+# (baixado de channels.nixos.org/flake-registry.json a cada execução, mesmo
+# com tudo já no store). Quando esse download falha (#40), a saída do
+# `nix shell` — um aviso de HTTP, não nada sobre o código — se mistura com a
+# do comando de verdade, e o check lê isso como "arquivos fora do padrão":
+# a ferramenta nunca chegou a rodar.
+#
+# `github:NixOS/nixpkgs/<rev>` é uma referência LITERAL, sem indireção
+# nenhuma — não depende do registry, e usa o mesmo nixpkgs que a etapa de
+# avaliação já usa (mesmo `flake.lock`, mesmo narHash). `<rev>` vem do
+# próprio arquivo, não de um valor fixo aqui: segue sozinho a cada
+# `nupdate --inputs`.
+NIXPKGS_REV="$(awk '
+  /"owner": "NixOS"/ { o=1 }
+  o && /"repo": "nixpkgs"/ { r=1 }
+  o && r && /"rev":/ { print; exit }
+' "$REPO_ROOT/flake.lock" 2>/dev/null | sed -E 's/.*"rev": *"([^"]+)".*/\1/')"
+
+if [[ -n "$NIXPKGS_REV" ]]; then
+  NIXPKGS_REF="github:NixOS/nixpkgs/$NIXPKGS_REV"
+else
+  # flake.lock ausente ou em formato que o awk acima não reconhece — cai pro
+  # registry, que ao menos funciona quando há rede. Não é o caminho feliz,
+  # mas não trava o check por causa de um parsing que falhou.
+  NIXPKGS_REF="nixpkgs"
+fi
+
+# Array, não string: a lista precisa se dividir em palavras ao virar
+# argumentos do `nix shell`, e aspas em volta de uma string impediriam isso.
+TOOLS=("$NIXPKGS_REF#nixfmt" "$NIXPKGS_REF#statix" "$NIXPKGS_REF#deadnix")
 
 MODE="all"
 case "${1:-}" in
@@ -140,6 +169,17 @@ run_tools() {
   fi
 }
 
+# Distingue "a ferramenta reprovou" de "a ferramenta não chegou a rodar"
+# (#40). Os padrões abaixo são do PRÓPRIO nix — nunca de saída de
+# nixfmt/statix/deadnix/nix eval — então não há falso positivo quando o
+# código está de fato desformatado ou quebrado: essas ferramentas não
+# escrevem "unable to download" nem "HTTP error" na sua saída normal.
+rede_falhou() {
+  grep -qE \
+    'unable to download|unable to fetch|Could not resolve host|Temporary failure in name resolution|Connection timed out|SSL certificate|HTTP error [45][0-9][0-9]' \
+    <<< "$1"
+}
+
 [[ "$RUNNER" == "docker" ]] && docker volume create "$VOLUME" >/dev/null
 
 printf '%slcars — verificando %s arquivos .nix (via %s)%s\n' \
@@ -150,8 +190,24 @@ if [[ "$MODE" == "fix" ]]; then
   step "reformatando"
   # statix antes do nixfmt: ele reescreve expressões (assignment -> inherit) e
   # deixa a formatação do trecho novo por conta do nixfmt, que roda depois.
-  run_tools 'statix fix .' || { bad "statix fix falhou"; exit 1; }
-  run_tools "$FIND_NIX -exec nixfmt {} +" || { bad "nixfmt falhou"; exit 1; }
+  if ! out="$(run_tools 'statix fix .' 2>&1)"; then
+    if rede_falhou "$out"; then
+      bad "statix não rodou — falha de rede, não do código:"
+    else
+      bad "statix fix falhou:"
+    fi
+    printf '%s\n' "$out" | sed 's/^/    /' | head -20
+    exit 1
+  fi
+  if ! out="$(run_tools "$FIND_NIX -exec nixfmt {} +" 2>&1)"; then
+    if rede_falhou "$out"; then
+      bad "nixfmt não rodou — falha de rede, não do código:"
+    else
+      bad "nixfmt falhou:"
+    fi
+    printf '%s\n' "$out" | sed 's/^/    /' | head -20
+    exit 1
+  fi
   # Traz de volta só os .nix, um a um: o WORK tem um .git nosso e a máquina
   # descartável, que não podem vazar para o repo.
   changed=0
@@ -171,6 +227,7 @@ if [[ "$MODE" == "fix" ]]; then
 fi
 
 falhas=0
+sem_rede=0
 
 # --- 1. formato -------------------------------------------------------
 # `--eval` pula formato e anti-padrões: quem chama assim quer saber se o código
@@ -180,6 +237,10 @@ if [[ "$MODE" != "eval" ]]; then
 step "formato (nixfmt)"
 if out="$(run_tools "$FIND_NIX -exec nixfmt --check {} + 2>&1" 2>&1)"; then
   ok "formatação consistente"
+elif rede_falhou "$out"; then
+  note "nixfmt não rodou — falha de rede, sem veredito sobre o código:"
+  printf '%s\n' "$out" | sed 's/^/    /' | head -10
+  sem_rede=$((sem_rede + 1))
 else
   bad "arquivos fora do padrão:"
   printf '%s\n' "$out" | sed 's/^/    /' | head -30
@@ -191,6 +252,10 @@ fi
 step "anti-padrões (statix)"
 if out="$(run_tools 'statix check . 2>&1' 2>&1)"; then
   ok "nenhum anti-padrão"
+elif rede_falhou "$out"; then
+  note "statix não rodou — falha de rede, sem veredito sobre o código:"
+  printf '%s\n' "$out" | sed 's/^/    /' | head -10
+  sem_rede=$((sem_rede + 1))
 else
   bad "apontamentos:"
   # statix cospe ANSI pesado; sem isto a saída fica ilegível num log.
@@ -201,7 +266,7 @@ fi
 
 if [[ "$MODE" == "fmt" ]]; then
   printf '\n%s--fmt: parando antes da avaliação%s\n' "$yellow" "$off"
-  exit "$((falhas > 0 ? 1 : 0))"
+  exit "$((falhas > 0 ? 1 : (sem_rede > 0 ? 2 : 0) ))"
 fi
 fi  # fim do bloco pulado por --eval
 
@@ -216,6 +281,10 @@ for profile in basic personal; do
 
   if out="$(run_tools "nix eval .#nixosConfigurations.checkhost.config.system.build.toplevel.drvPath 2>&1" 2>&1)"; then
     ok "avalia"
+  elif rede_falhou "$out"; then
+    note "não deu pra avaliar — falha de rede, sem veredito sobre o código:"
+    printf '%s\n' "$out" | sed 's/^/    /' | head -10
+    sem_rede=$((sem_rede + 1))
   else
     bad "erro de avaliação:"
     # O Nix põe a causa real no FIM do stack trace: as primeiras linhas
@@ -236,6 +305,9 @@ if [[ "$MODE" != "eval" ]]; then
 step "código morto (deadnix) — informativo"
 if out="$(run_tools 'deadnix --fail . 2>&1' 2>&1)"; then
   ok "nada não usado"
+elif rede_falhou "$out"; then
+  note "deadnix não rodou — falha de rede:"
+  printf '%s\n' "$out" | sed 's/^/    /' | head -10
 else
   printf '%s\n' "$out" | sed 's/\x1b\[[0-9;]*m//g' | grep -E '╭─\[|Unused' \
     | sed 's/^/    /' | head -20
@@ -244,10 +316,21 @@ fi
 fi  # fim do bloco pulado por --eval
 
 # --- veredito ---------------------------------------------------------
+# Código de saída distingue os dois casos (#40): 1 é veredito sobre o
+# código (algo reprovou de verdade), 2 é falta de rede (nada foi
+# verificado, então não há veredito nenhum para dar). 0 só quando as duas
+# contagens estão zeradas.
 printf '\n'
-if [[ "$falhas" -eq 0 ]]; then
+if [[ "$falhas" -eq 0 && "$sem_rede" -eq 0 ]]; then
   printf '%s✓ tudo certo%s\n' "$green" "$off"
   exit 0
 fi
+if [[ "$falhas" -eq 0 ]]; then
+  printf '%s· %d etapa(s) não rodaram — falha de rede, sem veredito sobre o código%s\n' \
+    "$yellow" "$sem_rede" "$off"
+  exit 2
+fi
 printf '%s✗ %d etapa(s) reprovada(s)%s\n' "$red" "$falhas" "$off"
+[[ "$sem_rede" -gt 0 ]] && \
+  printf '%s  (mais %d etapa(s) que não rodaram por falta de rede)%s\n' "$yellow" "$sem_rede" "$off"
 exit 1
