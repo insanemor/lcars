@@ -1127,6 +1127,51 @@ Os outros plugins (file viewer, claude-usage) continuam manuais, e nenhum
 atalho os usa: é por isso que o token `$claude_usage` da sidebar fica vazio até
 alguém instalá-lo.
 
+#### Onde um link abre
+
+Com o painel funcionando, a pergunta passa a ser para onde vai cada link. São
+três caminhos, e o repo mexe nos dois primeiros:
+
+| O que acontece | Para onde vai |
+|---|---|
+| Ctrl+clique num link do terminal | painel do herdr |
+| CLI que autentica pelo navegador (`aws sso login`, `gh auth login`, okta), rodando num painel | painel do herdr |
+| Qualquer coisa fora do herdr (app gráfico, atalho do desktop) | Vivaldi |
+
+O **Ctrl+clique** é o gesto: o modificador é `Control` em qualquer plataforma,
+porque o relatório de mouse do terminal não distingue Super de clique comum.
+O herdr consulta os `link_handlers` dos plugins instalados e, se nenhum casar,
+chama o `xdg-open`.
+
+O plugin do upstream só declara handler para `localhost`. O módulo acrescenta
+um segundo, para qualquer `http(s)`, gerando uma cópia do manifesto no store —
+o código do plugin fica intacto. Não bastaria trocar o pattern do handler
+existente: a ação dele valida a URL e recusa host que não seja local.
+
+Os **CLIs** não passam pelo herdr: quem abre o navegador é o processo dentro
+do painel. Por isso `$BROWSER` na sessão do usuário aponta para o
+`lcars-browser`, um wrapper que decide pelo ambiente — dentro de um painel
+(`HERDR_ENV=1`) abre no plugin, fora dele chama o Vivaldi. Se o painel não
+abrir por qualquer motivo, ele avisa no stderr e segue para o Vivaldi, em vez
+de engolir o link.
+
+**Quando você NÃO quer o painel** — e vai querer, em login com passkey, com
+extensão do 1Password ou com sessão que já existe no Vivaldi:
+
+```bash
+LCARS_BROWSER_EXTERNO=1 aws sso login    # este comando abre no Vivaldi
+lcars-browser https://exemplo.com        # o wrapper também serve à mão
+```
+
+O Chromium do plugin tem **perfil próprio**, separado do Vivaldi: cookies,
+sessões e senhas não são compartilhados, e passkey/WebAuthn não funcionam num
+navegador dirigido por CDP. Para leitura e para fluxos de OAuth simples ele
+resolve; para login corporativo com segundo fator forte, prefira o de fora.
+
+Quem abre `http`, `https` e `text/html` no sistema é declarado por
+`xdg.mimeApps` no módulo do Vivaldi — antes da #60 isso não existia, e o
+`xdg-open` acertava o navegador por fallback da variável `$BROWSER`.
+
 Um aviso que economiza tempo: um `[[keys.command]]` com `type = "shell"` que
 falha **não mostra nada** — o herdr o spawna com a saída em `/dev/null` e não
 olha o código de retorno. Se um atalho desses parecer inerte, rode o comando à
