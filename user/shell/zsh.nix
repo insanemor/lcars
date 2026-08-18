@@ -246,6 +246,14 @@ lib.mkIf osConfig.lcars.user.zsh.enable {
       # paginador. É o que torna este alias seguro — `cat x | grep y` continua
       # funcionando, e `cat x > y` também.
       cat = "bat";
+    }
+    # O lazygit vem de user/app/herdr.nix (home.packages), não da lista de
+    # pacotes que `temPacote` verifica acima — por isso o guard aqui é a flag
+    # do módulo dono do pacote, e não `temPacote "lazygit"`, que sempre daria
+    # falso mesmo com o binário instalado. Mesmo princípio de eza/bat: o
+    # alias só existe onde o programa existe (#72).
+    // lib.optionalAttrs osConfig.lcars.user.herdr.enable {
+      lg = "lazygit";
     };
   };
 
