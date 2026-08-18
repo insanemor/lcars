@@ -49,8 +49,12 @@
       enableGui = true;
       enableSshAgent = true;
 
-      # Vault onde os itens Document dos dotfiles vivem.
-      vault = "Dotfiles";
+      # Vault onde os segredos deste repositório vivem: os itens Document dos
+      # dotfiles e o item `atuin`. É o nome como ele aparece em `op vault list`
+      # — confira lá antes de mudar. Um nome que não existe na conta não dá
+      # erro de avaliação: o `op` é que reclama, na ativação, e o segredo
+      # simplesmente não chega (foi o que aconteceu na #50).
+      vault = "Dotifiles";
     };
 
     # Dotfiles guardados como itens Document no 1Password. Cada nome aqui é

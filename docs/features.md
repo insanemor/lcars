@@ -833,12 +833,18 @@ roda dentro do `nixos-rebuild`, e pode não ter sessão do 1Password ali —, o
 mesmo login sai à mão num terminal seu, com o 1Password destravado:
 
 ```bash
-atuin login -u "$(op read op://Dotfiles/atuin/username)" \
-            -p "$(op read op://Dotfiles/atuin/password)" \
-            -k "$(op read op://Dotfiles/atuin/key)"
+vault=$(grep -oP 'vault = "\K[^"]+' ~/.dotfiles/settings.nix)
+atuin login -u "$(op read "op://$vault/atuin/username")" \
+            -p "$(op read "op://$vault/atuin/password")" \
+            -k "$(op read "op://$vault/atuin/key")"
 atuin sync -f      # numa máquina nova, baixa todo o histórico do servidor
 atuin status       # confere
 ```
+
+O `$vault` é o `userSettings.onePassword.vault` do `settings.nix`, e precisa ser
+o nome como ele aparece em `op vault list` — na #50 o repositório dizia
+`Dotfiles` e a conta tinha `Dotifiles`, e o único sintoma foi o login não
+acontecer.
 
 O profile `basic` fica de fora pelo mesmo motivo dos dotfiles: sem sessão no
 1Password numa máquina headless, o atuin seria o histórico do zsh com passos a
