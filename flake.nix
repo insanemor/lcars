@@ -77,6 +77,30 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Plugin browser do herdr — um Chromium de verdade desenhado dentro de um
+    # painel, dirigível por CDP. É o que `prefix + b` abre (veja
+    # user/app/herdr.nix).
+    #
+    # `flake = false`: o repositório é TypeScript rodado pelo bun na hora, sem
+    # flake e sem build — o que precisamos dele é a árvore de arquivos, para
+    # apontar `herdr plugin link` ao caminho no store.
+    #
+    # Por que ele está aqui e não sai de um `herdr plugin install`: aquele
+    # comando baixa por conta própria em tempo de execução, para um diretório
+    # que o Nix não gerencia, e obriga um passo manual por máquina. Pelo input,
+    # a versão fica no flake.lock como a de qualquer outra dependência (#58).
+    #
+    # PRESO NUM COMMIT, e não numa tag, porque o upstream não publica tags. Um
+    # `nix flake update` traria o topo do main sem revisão nenhuma; subir de
+    # versão aqui é ato deliberado, como no input do herdr.
+    #
+    # `git+https` pelo mesmo motivo documentado acima: `github:` resolve para
+    # um archive por rev no codeload, que responde 429 com frequência.
+    herdr-browser = {
+      url = "git+https://github.com/ogulcancelik/herdr-browser?ref=main&rev=be6888b71cf4eb5939ee79a746bd1a1c22ade046";
+      flake = false;
+    };
+
     # FUTURO — descomente para ligar um repo privado sobreposto:
     # lcars-private = {
     #   url = "git+ssh://git@github.com/<voce>/lcars-private.git";

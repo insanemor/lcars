@@ -181,6 +181,24 @@
         "url": "https://github.com/herdrdev/herdr"
       }
     },
+    "herdr-browser": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1785246706,
+        "narHash": "sha256-4Dlo4YQpLPJKEPuXSS4EO5LMCmUn/tezEiIqlFXhCxo=",
+        "ref": "main",
+        "rev": "be6888b71cf4eb5939ee79a746bd1a1c22ade046",
+        "revCount": 2,
+        "type": "git",
+        "url": "https://github.com/ogulcancelik/herdr-browser"
+      },
+      "original": {
+        "ref": "main",
+        "rev": "be6888b71cf4eb5939ee79a746bd1a1c22ade046",
+        "type": "git",
+        "url": "https://github.com/ogulcancelik/herdr-browser"
+      }
+    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -297,6 +315,7 @@
     "root": {
       "inputs": {
         "herdr": "herdr",
+        "herdr-browser": "herdr-browser",
         "home-manager": "home-manager",
         "nixpkgs": "nixpkgs",
         "noctalia": "noctalia",

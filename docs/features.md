@@ -1064,24 +1064,32 @@ Duas consequências de o arquivo ser gerado, que valem conhecer:
   salvar. O caminho é editar `user/app/herdr.nix` e rodar `nupdate`, como em
   todo dotfile gerado deste repo.
 
-Os **plugins** do herdr (browser, file viewer, claude-usage) são baixados em
-tempo de execução por `herdr plugin`, para `~/.config/herdr/plugins` — um
-diretório que o Nix não gerencia. Os atalhos `prefix + b` já apontam para o
-`official.browser` com o chromium do nixpkgs, mas ficam inertes até o plugin
-ser instalado uma vez, à mão, em cada máquina:
+O **plugin do browser não precisa ser instalado**: ele é o input
+`herdr-browser` do flake, preso a um commit no `flake.lock`, e a ativação do
+Home Manager o registra com `herdr plugin link` apontando para o caminho no
+store. Numa máquina nova, `prefix + b` funciona depois do primeiro rebuild.
+Confira com `herdr plugin list` — deve aparecer `official.browser`.
 
-```bash
-herdr plugin install ogulcancelik/herdr-browser --yes
-herdr plugin list
-```
+O caminho normal do herdr para plugins seria
+`herdr plugin install <owner>/<repo>`, que baixa em tempo de execução para
+`~/.config/herdr/plugins` e é um passo manual por máquina. Ele continua
+disponível para qualquer outro plugin; o registro em si
+(`~/.config/herdr/plugins.json`) é mutável nos dois casos, e por isso o link é
+feito na ativação e não gerado como dotfile.
 
-O módulo já resolve as duas dependências que esse plugin tem: o **`bun`**, que
-ele usa para rodar o painel, vai no PATH do usuário, e o **Chromium** chega por
+Se você já tinha instalado esse plugin à mão, não precisa fazer nada: o link
+substitui a entrada de mesmo id. O checkout antigo fica órfão em
+`~/.config/herdr/plugins/github/` e pode ser apagado.
+
+O módulo também resolve as duas dependências do plugin: o **`bun`**, que ele
+usa para rodar o painel, vai no PATH do usuário, e o **Chromium** chega por
 `--env HERDR_BROWSER_CHROME=`. Essa flag não é detalhe de estilo — quem lança o
 processo do plugin é o servidor do herdr, não o CLI, então uma variável posta
 na frente do comando nunca chegaria lá.
 
-O mesmo "instale à mão" vale para o token `$claude_usage` da sidebar.
+Os outros plugins (file viewer, claude-usage) continuam manuais, e nenhum
+atalho os usa: é por isso que o token `$claude_usage` da sidebar fica vazio até
+alguém instalá-lo.
 
 Um aviso que economiza tempo: um `[[keys.command]]` com `type = "shell"` que
 falha **não mostra nada** — o herdr o spawna com a saída em `/dev/null` e não
