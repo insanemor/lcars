@@ -29,29 +29,44 @@
 #   key      — a chave de criptografia, a MESMA em todas as máquinas
 #   session  — o token de sessão, obtido no login
 #
-# Sem os dois, o atuin roda local e o sync falha calado. É por isso que eles
-# vêm do 1Password na ativação, no mesmo espírito de user/app/dotfiles.nix: uma
-# máquina nova nasce sincronizada depois de um `op signin` e um `nupdate`, sem
-# ninguém digitar senha.
+# Sem os dois, o atuin roda local e o sync falha calado.
+#
+# A ativação resolve os dois de uma vez: quando não há `session`, ela faz o
+# login, com usuário, senha e chave lidos do 1Password (veja o bloco lá
+# embaixo). O próprio `atuin login` grava os dois arquivos. Uma máquina nova
+# nasce sincronizada com um `op signin` e um `nupdate`.
+#
+# A #46 fazia diferente — copiava `key` e `session` do vault, o que só
+# funcionava se alguém já tivesse gerado a session à mão e a guardado lá. O
+# passo manual não sumia, só mudava de lugar.
+#
+# O ITEM NO 1PASSWORD
+# -------------------
+# Um item chamado `atuin`, no vault de `userSettings.onePassword.vault`, com
+# três campos — os dois primeiros são os de qualquer item de login:
+#
+#   username  — o usuário da conta atuin
+#   password  — a senha
+#   key       — a saída de `atuin key`, o campo que você acrescenta
 #
 # O PASSO QUE É SEU, E NÃO DO REPOSITÓRIO
 # ---------------------------------------
-# Registrar a conta envolve senha, e senha não entra em arquivo versionado nem
-# em script de ativação. Uma vez, na máquina que já tem o histórico:
+# Criar a conta. Uma vez, na máquina que já tem o histórico:
 #
 #   atuin register -u <usuário> -e <email>   # ou `atuin login`, se já existe
-#   atuin key                                # imprime a chave
+#   atuin import auto                        # traz o ~/.zsh_history
+#   atuin key                                # imprime a chave; vai para o item
 #
-# Depois, no vault do 1Password (`userSettings.onePassword.vault`), crie um
-# item chamado `atuin` com dois campos:
+# A SENHA APARECE NO `ps` — POR UM SEGUNDO, UMA VEZ POR MÁQUINA
+# -------------------------------------------------------------
+# `atuin login` não lê a senha de stdin nem de variável de ambiente: `-p` é a
+# única forma (conferido no --help da 18.18.1). Enquanto o comando roda, a
+# senha está no argv, visível a quem puder ler `/proc` desta máquina.
 #
-#   key      = a saída de `atuin key`
-#   session  = o conteúdo de ~/.local/share/atuin/session
-#
-# A partir daí toda máquina se vira sozinha. O 1Password é a fonte da verdade:
-# se você fizer `atuin login` numa máquina e não atualizar o item, a próxima
-# ativação devolve a session do vault por cima — é o mesmo trato do `nupdate`,
-# em que o repositório vence.
+# É um risco real e pequeno — máquina pessoal, um login por máquina, cerca de
+# um segundo — e foi aceito de propósito, na #48, em troca de a máquina nova não
+# precisar de nenhum passo manual. Se um dia deixar de valer a troca, a rota
+# alternativa é guardar a `session` já pronta no vault e só copiá-la.
 {
   config,
   osConfig,
@@ -63,21 +78,12 @@
 let
   dataDir = "${config.home.homeDirectory}/.local/share/atuin";
 
-  vault = user.onePassword.vault;
-
-  # Um item com dois campos, e não dois itens Document como em dotfiles.nix:
-  # são dois segredos de uma coisa só, e assim há um lugar único para olhar
+  # Um item com três campos, e não itens Document como em user/app/dotfiles.nix:
+  # são três partes de uma credencial só, e assim há um lugar único para olhar
   # quando o sync parar.
-  segredos = [
-    {
-      campo = "key";
-      destino = "${dataDir}/key";
-    }
-    {
-      campo = "session";
-      destino = "${dataDir}/session";
-    }
-  ];
+  item = "op://${user.onePassword.vault}/atuin";
+
+  atuin = lib.getExe config.programs.atuin.package;
 in
 lib.mkIf osConfig.lcars.user.atuin.enable {
   programs.atuin = {
@@ -125,34 +131,47 @@ lib.mkIf osConfig.lcars.user.atuin.enable {
     };
   };
 
-  # Os dois segredos, do 1Password, em tempo de ATIVAÇÃO.
+  # O login, em tempo de ATIVAÇÃO, com o que estiver no 1Password.
   #
-  # Não são symlinks para o store: são arquivos de verdade em ~/.local/share,
-  # porque o atuin os lê com permissão restrita e, no caso da session, pode
-  # querer reescrevê-los. `entryAfter [ "writeBoundary" ]` é o ponto em que o
-  # home-manager já materializou o resto.
+  # `entryAfter [ "writeBoundary" ]` é o ponto em que o home-manager já
+  # materializou o resto — inclusive o binário do atuin, que é chamado aqui pelo
+  # caminho absoluto no store, e não pelo nome: o PATH da ativação não é o do
+  # shell interativo.
   #
-  # Nada aqui pode derrubar o `home-manager switch`: sem `op`, sem login, ou com
-  # o item ainda não criado, o bloco imprime uma linha e segue — o atuin fica
-  # local, que é um estado utilizável. Mesmo desenho de user/app/dotfiles.nix.
-  home.activation.atuinFrom1Password = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+  # Nada aqui pode derrubar o `home-manager switch`. Sem `op`, sem sessão no
+  # 1Password, com campo faltando no item ou com o servidor do atuin fora do ar,
+  # o bloco imprime uma linha e segue — o atuin fica local, que é um estado
+  # utilizável. Mesmo desenho de user/app/dotfiles.nix.
+  home.activation.atuinLogin = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     mkdir -p ${lib.escapeShellArg dataDir}
 
-    if ! command -v op >/dev/null 2>&1; then
+    if [ -s ${lib.escapeShellArg "${dataDir}/session"} ]; then
+      : # já logado nesta máquina — não relogar a cada rebuild
+    elif ! command -v op >/dev/null 2>&1; then
       echo "lcars: 'op' não está no PATH — atuin fica local, sem sync"
     elif [ -z "''${OP_SERVICE_ACCOUNT_TOKEN:-}" ] && ! op whoami >/dev/null 2>&1; then
       echo "lcars: sem login no 1Password — atuin fica local, sem sync"
     else
-      ${lib.concatMapStringsSep "\n  " (s: ''
-        if op read ${lib.escapeShellArg "op://${vault}/atuin/${s.campo}"} \
-             > ${lib.escapeShellArg "${s.destino}.tmp"} 2>/dev/null; then
-          chmod 600 ${lib.escapeShellArg "${s.destino}.tmp"}
-          mv ${lib.escapeShellArg "${s.destino}.tmp"} ${lib.escapeShellArg s.destino}
-        else
-          rm -f ${lib.escapeShellArg "${s.destino}.tmp"}
-          echo "lcars: atuin sem '${s.campo}' no 1Password (op://${vault}/atuin/${s.campo}) — sync desligado"
-        fi
-      '') segredos}
+      # Os três de uma vez. Se qualquer um faltar, não há login a tentar, e o
+      # `op read` cala a boca sozinho — a mensagem daqui é mais útil que a dele.
+      atuin_user="$(op read ${lib.escapeShellArg "${item}/username"} 2>/dev/null || true)"
+      atuin_pass="$(op read ${lib.escapeShellArg "${item}/password"} 2>/dev/null || true)"
+      atuin_key="$(op read ${lib.escapeShellArg "${item}/key"} 2>/dev/null || true)"
+
+      if [ -z "$atuin_user" ] || [ -z "$atuin_pass" ] || [ -z "$atuin_key" ]; then
+        echo "lcars: item ${item} incompleto no 1Password (quero username, password e key) — atuin fica local, sem sync"
+      # `timeout` porque isto é uma chamada de rede no meio de um rebuild: com o
+      # servidor mudo, o switch ficaria pendurado esperando.
+      elif timeout 30 ${atuin} login \
+             -u "$atuin_user" -p "$atuin_pass" -k "$atuin_key" >/dev/null 2>&1; then
+        echo "lcars: atuin logado — o histórico desta máquina passa a sincronizar"
+      else
+        echo "lcars: 'atuin login' falhou (senha, chave ou servidor) — atuin fica local, sem sync"
+      fi
+
+      # A senha sai da memória do shell assim que deixa de ser necessária. É
+      # higiene, não proteção: enquanto o login rodou, ela esteve no argv.
+      unset atuin_user atuin_pass atuin_key
     fi
   '';
 }

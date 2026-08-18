@@ -14,6 +14,7 @@
 # que você mudou aqui e devolve.
 #
 # A sequência:
+#   0. sincroniza o histórico do atuin, se ele estiver instalado (fora do -n)
 #   1. exporta a configuração do noctalia por cima do arquivo versionado
 #   2. valida o TOML — inválido para aqui, antes de qualquer commit
 #   3. consulta o remoto e mostra o que mudou aqui e o que ainda não subiu
@@ -89,6 +90,15 @@ if find .git -maxdepth 3 ! -user "$(id -un)" -print -quit 2>/dev/null | grep -q 
         sudo chown -R \"\$USER\" $REPO
 
     e chame o nsave de novo."
+fi
+
+# O histórico de comandos sobe antes de publicar, pelo mesmo motivo do nupdate:
+# fechar a janela entre o último `auto_sync` do atuin e agora. Silencioso, e
+# incapaz de parar o script — sem atuin, sem login ou sem rede, segue em frente.
+#
+# Fora do dry run: `-n` promete não alterar nada, e um sync altera o servidor.
+if [[ "$DRY" == no ]] && command -v atuin >/dev/null 2>&1; then
+  atuin sync >/dev/null 2>&1 || note "atuin sync falhou — seguindo (histórico fica local)"
 fi
 
 # --- 1. exportar ------------------------------------------------------
