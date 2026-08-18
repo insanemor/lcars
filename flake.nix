@@ -101,6 +101,33 @@
       flake = false;
     };
 
+    # Plugin herdr-nvim — uma sidebar persistente de nvim dentro de um
+    # painel do herdr, com file picker ancorado nos arquivos que o agente
+    # tocou. Veja user/app/nvim.nix.
+    #
+    # É, ao mesmo tempo, plugin do herdr e do nvim:
+    #
+    #   - metade herdr: a raiz deste repo traz um herdr-plugin.toml com
+    #     as ações `chmarax.herdr-nvim.toggle` (sidebar) e
+    #     `.pick-file` (file picker). O plugin é linkado ao herdr na
+    #     ativação do Home Manager, com a mesma receita do herdr-browser.
+    #
+    #   - metade nvim: o código sob lua/herdr-nvim/ é carregado pelo nvim
+    #     em runtimepath. Por ora o init.lua escrito pelo HM aponta para
+    #     a árvore do store — sem canal de plugins automático.
+    #     Auto-update via lazy.nvim é entrega à parte.
+    #
+    # `flake = false`: o upstream não publica flake; o que precisamos é do
+    # diretório em si, e da árvore Lua dentro dele.
+    #
+    # PRESO NUM COMMIT (`rev=`), porque o upstream não publica tags e o
+    # main recebe PRs a cada release. A revisão é ato deliberado —
+    # `nix flake update herdr-nvim` move, e o `nupdate` traz.
+    herdr-nvim = {
+      url = "git+https://github.com/ChmaraX/herdr-nvim?ref=main&rev=40aadeab3cef3702ef5e05069181c7168084794f";
+      flake = false;
+    };
+
     # FUTURO — descomente para ligar um repo privado sobreposto:
     # lcars-private = {
     #   url = "git+ssh://git@github.com/<voce>/lcars-private.git";
