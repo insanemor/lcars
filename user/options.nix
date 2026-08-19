@@ -53,6 +53,8 @@
 
     claudeCode.enable = lib.mkEnableOption "o CLI do Claude Code — só o pacote no PATH; a configuração segue em ~/.claude, fora do store";
 
+    crush.enable = lib.mkEnableOption "o agente CLI do Crush (charm.land) — só o pacote no PATH; um crushrc de bootstrap em ~/.config/crush serve de ponto de partida, sem chaves de API";
+
     niri.enable = lib.mkEnableOption "a configuração do niri — atalhos, forma e cores (o compositor é lcars.system.wm.niri)";
 
     noctalia.enable = lib.mkEnableOption "o shell do desktop — barra, launcher, notificações, lock e dock numa peça só; substitui waybar, rofi e swaync";
