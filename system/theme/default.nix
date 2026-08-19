@@ -152,37 +152,12 @@ in
         '';
       };
     };
-
-    # Opacidade das janelas, propagada para `stylix.opacity` (que cada alvo
-    # consulta — kitty usa `terminal`, noctalia usa `desktop`/`popups`/etc.).
-    # Default 1.0 mantém o opaco; valores menores deixam o papel de parede
-    # aparecer por trás, ao custo de nitidez do texto.
-    #
-    # Por que mora aqui e não no módulo do kitty: o stylix já escreve
-    # `programs.kitty.settings.background_opacity` (modules/kitty/hm.nix), e
-    # tentar setar a mesma chave em `user/app/kitty.nix` colide com ele. Setar
-    # `stylix.opacity.terminal` é a única entrada que respeita a hierarquia
-    # sem precisar podar chaves (#102).
-    opacity = {
-      terminal = mkOption {
-        type = types.float;
-        default = 1.0;
-        description = ''
-          Opacidade do terminal (kitty, foot, wezterm, alacritty, ghostty).
-          1.0 = opaco; 0.9 = um pouco para ver o wallpaper; valores abaixo
-          de 0.7 começam a atrapalhar a leitura do texto.
-        '';
-      };
-    };
   };
 
   config = mkIf cfg.enable {
     stylix = {
       enable = true;
       inherit (cfg) polarity;
-      opacity = {
-        terminal = cfg.opacity.terminal;
-      };
       # Um esquema do repositório vence o de mesmo nome no pacote. É o que
       # permite `scheme = "simbiot-dark"` conviver com `scheme = "nord"` na
       # mesma option, sem uma segunda para "esquema próprio" — o nome continua
