@@ -55,6 +55,8 @@
 
     crush.enable = lib.mkEnableOption "o agente CLI do Crush (charm.land) — só o pacote no PATH; um crushrc de bootstrap em ~/.config/crush serve de ponto de partida, sem chaves de API";
 
+    opencode.enable = lib.mkEnableOption "o CLI do OpenCode (sst/opencode, \"OpenCode Go\") — pacote no PATH, provider MiniMax configurado em ~/.config/opencode/opencode.json, e a key puxada do 1Password na ativação (item op://Dotfiles/minimax token/token)";
+
     niri.enable = lib.mkEnableOption "a configuração do niri — atalhos, forma e cores (o compositor é lcars.system.wm.niri)";
 
     noctalia.enable = lib.mkEnableOption "o shell do desktop — barra, launcher, notificações, lock e dock numa peça só; substitui waybar, rofi e swaync";
