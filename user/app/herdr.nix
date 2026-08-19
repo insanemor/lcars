@@ -435,19 +435,6 @@ let
   #
   # doCheck = false: mesma razão dos outros pacotes — a suíte do upstream
   # não é o alvo aqui.
-  #
-  # postPatch: o placement do painel de notas vem HARDCODED no binário —
-  # não é algo que o `[config]` do plugin exponha (notes_dir/bundle_dir/
-  # editor_argv, só isso). `internal/launcher/launcher.go` monta o comando
-  # que abre o painel com `--placement split --direction right` fixo no
-  # código-fonte (é essa chamada, dentro do `--toggle`, que carrega a
-  # lógica de abrir/focar/fechar — um `[[keys.command]]` novo por fora,
-  # chamando `herdr plugin pane open` direto, perderia esse toggle). A
-  # troca pra `overlay` (o mais perto de "popup" que o herdr aceita: `herdr
-  # plugin pane open --placement` só tem overlay/split/tab/zoomed) tem que
-  # entrar antes do build. Confirmado nesta entrega, por dois caminhos: a
-  # árvore patchada tem a linha certa, e o binário compilado com o patch
-  # rodou `--toggle` de verdade numa sessão do herdr, sem erro.
   herdrNotesBin = pkgs.buildGoModule {
     pname = "herdr-notes";
     version = "0.2.0";
@@ -455,10 +442,6 @@ let
     vendorHash = "sha256-YMo6LEw5X+IaPYmuezUucucovrmve1EnXOK0pImGb9U=";
     subPackages = [ "cmd/herdr-notes" ];
     doCheck = false;
-    postPatch = ''
-      substituteInPlace internal/launcher/launcher.go \
-        --replace-fail '"--placement", "split", "--direction", "right", "--focus"' '"--placement", "overlay", "--focus"'
-    '';
   };
 
   # O manifesto abre o binário por caminho RELATIVO (`./bin/herdr-notes`) —
@@ -466,11 +449,35 @@ let
   # PATH). `plugin link` pula o [[build]] do upstream, que é quem colocaria
   # o binário ali; mesma receita do pluginFileViewer: copia a árvore pro
   # $out gravável e symlinka o binário buildado pelo Nix no lugar certo.
+  #
+  # O manifesto também é patchado — não pra corrigir nada, e sim pra mudar
+  # o placement do painel de notas de `split` pra `popup`, pequeno e
+  # centralizado, tipo post-it (`width`/`height`, que o herdr só aceita
+  # quando `placement = "popup"` — testado ao vivo, ele recusa a
+  # combinação com `overlay`: "pane width and height are only supported
+  # when placement is popup").
+  #
+  # Por que não é só isso: o atalho deste plugin PARA de ir pelo
+  # `./bin/herdr-notes --toggle` (mais abaixo, no `[[keys.command]]`) —
+  # esse binário tem sua própria lógica de abrir/focar/fechar, que faz
+  # polling em `pane list` procurando o próprio heartbeat, e essa lógica só
+  # foi escrita/testada pelo upstream pra `split`. Testado ao vivo: com
+  # `popup`, o painel abre mas o `--toggle` trava esperando o heartbeat e
+  # falha depois de 15s — a janela sobe, mas o comando reporta erro. A
+  # saída é abrir o painel direto por `herdr plugin pane open`, no mesmo
+  # molde do `prefix+b` do browser, sem passar pelo binário — o que
+  # também significa sem toggle: cada aperto de `prefix+n` abre um popup
+  # novo, e sai com Esc ou fechando o painel.
   pluginNotes = pkgs.runCommand "herdr-notes-com-binario" { } ''
-    cp -r ${inputs.herdr-notes} $out
-    chmod -R u+w $out
-    mkdir -p $out/bin
-    ln -s ${herdrNotesBin}/bin/herdr-notes $out/bin/herdr-notes
+        cp -r ${inputs.herdr-notes} $out
+        chmod -R u+w $out
+        mkdir -p $out/bin
+        ln -s ${herdrNotesBin}/bin/herdr-notes $out/bin/herdr-notes
+        substituteInPlace $out/herdr-plugin.toml \
+          --replace-fail 'placement = "split"
+    direction = "right"' 'placement = "popup"
+    width = "40%"
+    height = "45%"'
   '';
 
   # As cores, do esquema base16 do stylix — o mesmo que pinta o terminal, o
@@ -733,7 +740,7 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     #    reset auto-rename = prefix + Shift+a
     #    busca fuzzy       = prefix + p
     #    anotar seleção    = Ctrl+Alt+a          (colar: Ctrl+Alt+v)
-    #    notas do workspace = prefix + n        (popup)
+    #    notas do workspace = prefix + n        (popup pequeno, sem toggle — Esc fecha)
     #
     #  A tabela completa, dentro do programa: prefix + ?
     # =================================================================
@@ -966,23 +973,29 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     #  fora do herdr em qualquer editor. Diferente do herdr-annotations
     #  acima: aquele é um buffer de coleta que se apaga ao colar, este é
     #  documento de verdade. Não há passo manual: o binário é montado em
-    #  pluginNotes (buildGoModule + symlink) e registrado na ativação
-    #  (home.activation.herdrPluginNotes).
+    #  pluginNotes (buildGoModule + symlink, manifesto patchado) e
+    #  registrado na ativação (home.activation.herdrPluginNotes).
     #
-    #  Só a ação `toggle` tem atalho — a ação `edit` (abre a nota no editor
-    #  externo, default nvim) fica sem atalho por ora: a interface própria
-    #  do plugin já edita inline (e/Enter pra editar, Esc salva e volta ao
-    #  preview), então essa segunda via é dispensável até fazer falta.
+    #  ESTE ATALHO NÃO PASSA PELA AÇÃO `toggle` DO PLUGIN — de propósito.
+    #  `./bin/herdr-notes --toggle` tem lógica própria de abrir/focar/
+    #  fechar que só funciona com `placement = "split"` (a que o upstream
+    #  testou); com `popup` ela trava esperando um heartbeat que nunca
+    #  chega e falha depois de 15s (testado ao vivo — ver comentário de
+    #  pluginNotes, mais acima). A saída foi abrir o painel direto por
+    #  `herdr plugin pane open`, no mesmo molde do prefix+b do browser —
+    #  o que também significa SEM toggle: cada prefix+n abre um popup
+    #  novo, e sai com Esc ou fechando o painel (não fecha sozinho no
+    #  segundo aperto).
     #
-    #  Abre em POPUP (overlay), não em split — o placement vinha hardcoded
-    #  no binário do upstream; o patch que troca isso está no `postPatch`
-    #  de `herdrNotesBin`, mais acima.
+    #  A ação `edit` (abre a nota no editor externo, default nvim) segue
+    #  sem atalho — a interface própria do plugin já edita inline (e/Enter
+    #  pra editar, Esc salva e volta ao preview).
     # =================================================================
     [[keys.command]]
     key         = "prefix+n"
-    type        = "plugin_action"
-    command     = "herdr-notes.toggle"
-    description = "notas: abre/foca/fecha o popup do workspace"
+    type        = "shell"
+    command     = '"''${HERDR_BIN_PATH}" plugin pane open --plugin herdr-notes --entrypoint notes --placement popup --focus'
+    description = "notas: abre um popup do workspace (Esc fecha)"
 
     ${tema}
 
