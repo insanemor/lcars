@@ -17,6 +17,8 @@
   imports = [
     ./shell/zsh.nix
     ./shell/atuin.nix
+    ./shell/fzf.nix
+    ./shell/zoxide.nix
     ./app/git.nix
     ./app/kitty.nix
     ./app/vivaldi.nix

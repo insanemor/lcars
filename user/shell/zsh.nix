@@ -145,6 +145,33 @@ let
   hookAutomaticRename = lib.optionalString osConfig.lcars.user.herdr.enable ''
     source "${inputs.herdr-automatic-rename}/shell/hook.zsh"
   '';
+
+  # A integração padrão do fzf (user/shell/fzf.nix) também tenta o Ctrl+R
+  # pro seu próprio fuzzy-finder de histórico — mas essa tecla já é do
+  # atuin (user/shell/atuin.nix), que é a busca melhor das duas aqui:
+  # fuzzy, global, sincronizada entre máquinas.
+  #
+  # NÃO HÁ CONFLITO ATIVO HOJE: conferido gerando o initContent de verdade
+  # (módulos/programs/{fzf,atuin}.nix do Home Manager) — o fzf entra com
+  # `mkOrder 910`, o atuin não declara ordem (default 1000), e string de
+  # ordem menor vem primeiro. O atuin já roda DEPOIS do fzf e vence por
+  # conta própria.
+  #
+  # Este bindkey existe como garantia, não como correção: se um dia o
+  # nixpkgs mudar essa ordem (não é contrato público, é detalhe interno de
+  # implementação), o Ctrl+R continua do atuin sem precisar notar a
+  # mudança. `atuin init zsh` bindka `bindkey -M emacs '^r' atuin-search`
+  # (emacs é o keymap ativo neste repo — não há `bindkey -v` em lugar
+  # nenhum); repetir isso depois das duas integrações, via `mkAfter`
+  # (ordem 1500), garante a mesma tecla não importa a ordem real das duas.
+  #
+  # Só entra quando os dois estão ligados — com só um dos dois, não há o
+  # que garantir.
+  fixCtrlRParaAtuin =
+    lib.optionalString (osConfig.lcars.user.fzf.enable && osConfig.lcars.user.atuin.enable)
+      ''
+        bindkey -M emacs '^r' atuin-search
+      '';
 in
 lib.mkIf osConfig.lcars.user.zsh.enable {
   programs.zsh = {
@@ -206,7 +233,9 @@ lib.mkIf osConfig.lcars.user.zsh.enable {
     # Sem tema, o prompt fica com as cores do próprio preset do p10k — que
     # funciona, só não segue o esquema. É o comportamento certo para uma
     # máquina headless, onde não há esquema nenhum a seguir.
-    initContent = lib.mkAfter ((if temaLigado then promptCores else "") + hookAutomaticRename);
+    initContent = lib.mkAfter (
+      (if temaLigado then promptCores else "") + hookAutomaticRename + fixCtrlRParaAtuin
+    );
 
     shellAliases = {
       # --- listagem ----------------------------------------------------

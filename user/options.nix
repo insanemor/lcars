@@ -33,6 +33,10 @@
 
     atuin.enable = lib.mkEnableOption "o histórico de comandos no atuin — busca no Ctrl+R e sync criptografado entre máquinas, com a chave vinda do 1Password";
 
+    fzf.enable = lib.mkEnableOption "o fzf com integração no zsh — Ctrl+T (arquivos), Alt+C (diretórios) e completion difusa; o Ctrl+R fica com o atuin, não com o fzf";
+
+    zoxide.enable = lib.mkEnableOption "o zoxide com integração no zsh — comandos z/zi pra pular a diretórios visitados antes; não substitui o cd nativo";
+
     git.enable = lib.mkEnableOption "a configuração do git — identidade vinda do settings.nix, aliases e assinatura por chave SSH";
 
     direnv.enable = lib.mkEnableOption "o direnv com nix-direnv, para shells por projeto";
