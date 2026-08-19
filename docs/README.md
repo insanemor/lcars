@@ -6,6 +6,7 @@
 | [adding-a-host.md](./adding-a-host.md) | Adicionar uma máquina, escolher e criar profiles, resolver problemas comuns |
 | [secrets.md](./secrets.md) | 1Password (CLI, GUI, agente SSH), dotfiles via Document, e opnix para serviços |
 | [workflow.md](./workflow.md) | Como mudanças entram no repo: issue, branch, merge `--no-ff`, e o `scripts/check.sh` |
+| [atalhos.md](./atalhos.md) | Referência rápida — atalhos do herdr e seus plugins, aliases do zsh/git, e os do niri |
 
 Para instalar, comece pelo [README](../README.md) da raiz.
 
