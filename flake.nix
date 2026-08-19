@@ -186,6 +186,46 @@
       flake = false;
     };
 
+    # Plugin herdr-automatic-rename — nomeia abas pelo programa em foreground
+    # e numera workspaces/abas/agentes com o dígito do jump-key (1-9). Veja
+    # user/app/herdr.nix.
+    #
+    # `flake = false`: bash puro, sem build — mesma árvore-de-source direta
+    # do herdr-browser/herdr-nvim. A diferença é que este também precisa de
+    # um hook fonteado no zsh (shell/hook.zsh) — ver user/shell/zsh.nix.
+    #
+    # PRESO NUMA TAG (v0.7.0), que o upstream publica.
+    herdr-automatic-rename = {
+      url = "git+https://github.com/qu8n/herdr-automatic-rename?ref=refs/tags/v0.7.0&shallow=1";
+      flake = false;
+    };
+
+    # Plugin herdr-bar — Cmd+K: busca fuzzy por aba/agente num popup. Veja
+    # user/app/herdr.nix.
+    #
+    # `flake = false`: Python3 stdlib puro, sem build nem dependência —
+    # `python3` já é pacote global do sistema (system/core/default.nix).
+    #
+    # PRESO NUMA TAG (v0.2.1), que o upstream publica.
+    herdr-bar = {
+      url = "git+https://github.com/jeffarese/herdr-bar?ref=refs/tags/v0.2.1&shallow=1";
+      flake = false;
+    };
+
+    # Plugin herdr-annotations — anota texto selecionado no terminal, num
+    # popup local. Veja user/app/herdr.nix.
+    #
+    # `flake = false`: diferente dos outros três — Node/npm, com uma
+    # dependência (@inquirer/core) que `pkgs.buildNpmPackage` resolve
+    # (npmDepsHash pinado, descoberto por tentativa com nix build de
+    # verdade).
+    #
+    # PRESO NUM COMMIT, porque o upstream não publica tags.
+    herdr-annotations = {
+      url = "git+https://github.com/jagzmz/herdr-annotations?ref=main&rev=a408ebdeebd5a79fb96a6acc8314b32f2de0c85f";
+      flake = false;
+    };
+
     # FUTURO — descomente para ligar um repo privado sobreposto:
     # lcars-private = {
     #   url = "git+ssh://git@github.com/<voce>/lcars-private.git";

@@ -199,6 +199,60 @@
         "url": "https://github.com/herdrdev/herdr"
       }
     },
+    "herdr-annotations": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1784212381,
+        "narHash": "sha256-dfwiu5/3VqJ82Cjl/rtjI3KpqkQUJ5JWQ1t/8Pp47iA=",
+        "ref": "main",
+        "rev": "a408ebdeebd5a79fb96a6acc8314b32f2de0c85f",
+        "revCount": 1,
+        "type": "git",
+        "url": "https://github.com/jagzmz/herdr-annotations"
+      },
+      "original": {
+        "ref": "main",
+        "rev": "a408ebdeebd5a79fb96a6acc8314b32f2de0c85f",
+        "type": "git",
+        "url": "https://github.com/jagzmz/herdr-annotations"
+      }
+    },
+    "herdr-automatic-rename": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1787067705,
+        "narHash": "sha256-4r21CLLGUDfI3geW+6wn90XT/gu0tDJL51w3eNnu3dc=",
+        "ref": "refs/tags/v0.7.0",
+        "rev": "2f537b16faf1ebfad30ce0507439405ca03a2f84",
+        "shallow": true,
+        "type": "git",
+        "url": "https://github.com/qu8n/herdr-automatic-rename"
+      },
+      "original": {
+        "ref": "refs/tags/v0.7.0",
+        "shallow": true,
+        "type": "git",
+        "url": "https://github.com/qu8n/herdr-automatic-rename"
+      }
+    },
+    "herdr-bar": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1786078169,
+        "narHash": "sha256-DXOeCI5LGVfPvxXhACihyH6K9i6/q6uxTQdyYaUkUhE=",
+        "ref": "refs/tags/v0.2.1",
+        "rev": "01cc0620ec743ee7a62a561551b59d9be81bd563",
+        "shallow": true,
+        "type": "git",
+        "url": "https://github.com/jeffarese/herdr-bar"
+      },
+      "original": {
+        "ref": "refs/tags/v0.2.1",
+        "shallow": true,
+        "type": "git",
+        "url": "https://github.com/jeffarese/herdr-bar"
+      }
+    },
     "herdr-browser": {
       "flake": false,
       "locked": {
@@ -406,6 +460,9 @@
       "inputs": {
         "ghzinga": "ghzinga",
         "herdr": "herdr",
+        "herdr-annotations": "herdr-annotations",
+        "herdr-automatic-rename": "herdr-automatic-rename",
+        "herdr-bar": "herdr-bar",
         "herdr-browser": "herdr-browser",
         "herdr-file-viewer": "herdr-file-viewer",
         "herdr-nvim": "herdr-nvim",

@@ -24,6 +24,7 @@
 {
   config,
   osConfig,
+  inputs,
   lib,
   pkgs,
   user,
@@ -129,6 +130,21 @@ let
     typeset -g POWERLEVEL9K_DIRENV_BACKGROUND='${cores.base0A}'
     typeset -g POWERLEVEL9K_DIRENV_FOREGROUND='${cores.base00}'
   '';
+
+  # O hook do plugin herdr-automatic-rename (user/app/herdr.nix): renomeia a
+  # aba em tempo real a cada comando, o que nenhum evento do herdr cobre
+  # sozinho (a reconciliação por evento, no próprio plugin, só reage a
+  # mudança de painel/foco — não a cada Enter no prompt). Mesmo padrão do
+  # alias `lg`, mais abaixo: condicionado à flag de outro módulo
+  # (`lcars.user.herdr.enable`), porque o pacote só existe quando ele está
+  # ligado.
+  #
+  # `lib.optionalString` em vez de `lib.optionalAttrs`: aqui o que varia é
+  # uma STRING dentro de initContent, não uma chave do attrset do
+  # `programs.zsh`.
+  hookAutomaticRename = lib.optionalString osConfig.lcars.user.herdr.enable ''
+    source "${inputs.herdr-automatic-rename}/shell/hook.zsh"
+  '';
 in
 lib.mkIf osConfig.lcars.user.zsh.enable {
   programs.zsh = {
@@ -190,7 +206,7 @@ lib.mkIf osConfig.lcars.user.zsh.enable {
     # Sem tema, o prompt fica com as cores do próprio preset do p10k — que
     # funciona, só não segue o esquema. É o comportamento certo para uma
     # máquina headless, onde não há esquema nenhum a seguir.
-    initContent = lib.mkAfter (if temaLigado then promptCores else "");
+    initContent = lib.mkAfter ((if temaLigado then promptCores else "") + hookAutomaticRename);
 
     shellAliases = {
       # --- listagem ----------------------------------------------------
