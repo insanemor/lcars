@@ -18,17 +18,17 @@
 # Mantemos só o que muda do default: colocar o arquivo inteiro é ruído no
 # diff e abre espaço pra divergir do upstream silenciosamente.
 #
-# PARA ESCONDER STASH E REFLOG: basta omitir os nomes da lista
-# `gui.sidePanels`. 'files', 'branches' e 'commits' são obrigatórios —
-# sem nenhum dos três o lazygit recusa a configuração (validado na doc).
+# PARA TER UM SIDE PANEL ÚNICO: a lista `gui.sidePanels` aceita uma ou
+# mais seções; cada seção vira um bloco vertical na coluna da esquerda.
+# Colocando tudo numa só seção `[status, files, branches, commits]`, os
+# quatro painéis viram abas dentro do mesmo bloco (ciclados por
+# `nextTab`/`prevTab`, default `[` e `]`). 'files', 'branches' e
+# 'commits' são obrigatórios e seguem na lista — sem nenhum dos três o
+# lazygit recusa a configuração (validado na doc). `stash` e `reflog`
+# ficam de fora, então não aparecem em lugar nenhum.
 #
 # PARA ESCONDER O COMMAND LOG: `gui.showCommandLog: false` na seção
 # `gui`.
-#
-# PARA TIRAR O PREFIXO NUMÉRICO DOS TÍTULOS: `gui.showPanelJumps: false`.
-# Sem isso, o título de cada painel lateral ganha um "1 - status",
-# "2 - files" etc. Os atalhos de jump (`jumpToBlock`) seguem valendo —
-# só o label nos títulos some.
 {
   osConfig,
   lib,
@@ -49,18 +49,11 @@ lib.mkIf osConfig.lcars.user.lazygit.enable {
     gui:
       showCommandLog: false
 
-      # Esconde os painéis de stash e reflog. files, branches e commits
+      # Side panel único, com status / files / branches / commits como
+      # abas. stash e reflog ficam de fora. files, branches e commits
       # são obrigatórios — sem nenhum dos três o lazygit recusa a
       # configuração.
       sidePanels:
-        - [status]
-        - [files, worktrees, submodules]
-        - [branches, remotes, tags]
-        - [commits]
-
-      # Esconde os prefixos numéricos ("0 - diff", "1 - status", …) nos
-      # títulos das janelas. Os atalhos de jump (jumpToBlock) seguem
-      # valendo — só o label nos títulos some.
-      showPanelJumps: false
+        - [status, files, branches, commits]
   '';
 }
