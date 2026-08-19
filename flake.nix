@@ -128,6 +128,60 @@
       flake = false;
     };
 
+    # Plugin herdr-ctx — indicador de uso da context window do Claude na
+    # sidebar do herdr (token $ctx). Veja user/app/herdr.nix.
+    #
+    # `flake = false`: é TypeScript rodado por bun, igual ao herdr-browser —
+    # sem build, o que precisamos é da árvore de arquivos para `plugin link`.
+    #
+    # PRESO NUM COMMIT, porque o upstream não publica tags.
+    herdr-ctx = {
+      url = "git+https://github.com/aorumbayev/herdr-ctx?ref=main&rev=4ae1110131ea6a5d3ec81d31d359fe43199ae1f0";
+      flake = false;
+    };
+
+    # Plugin herdr-file-viewer — visualizador de arquivos read-only,
+    # git-aware, num painel do herdr. Veja user/app/herdr.nix.
+    #
+    # `flake = false`: diferente do browser/nvim, este é um binário Rust — o
+    # que a árvore fornece é o source, para `rustPlatform.buildRustPackage`
+    # (veja herdr.nix), mais o herdr-plugin.toml e os scripts de lançamento
+    # que `plugin link` aponta.
+    #
+    # PRESO NUMA TAG: o upstream publica release por tag (v1.16.0), e a versão
+    # do Cargo.toml bate com ela — subir de versão aqui é ato deliberado.
+    herdr-file-viewer = {
+      url = "git+https://github.com/smarzban/herdr-file-viewer?ref=refs/tags/v1.16.0&shallow=1";
+      flake = false;
+    };
+
+    # Plugin herdr-reviewr — sidebar de code review: comenta no diff de um
+    # agente e manda de volta pro chat. Veja user/app/herdr.nix.
+    #
+    # `flake = false`, mesma razão do herdr-file-viewer: binário Rust,
+    # buildado por rustPlatform.buildRustPackage a partir deste source.
+    #
+    # PRESO NUMA TAG (v0.32.1), pela mesma razão do herdr-file-viewer.
+    herdr-reviewr = {
+      url = "git+https://github.com/persiyanov/herdr-reviewr?ref=refs/tags/v0.32.1&shallow=1";
+      flake = false;
+    };
+
+    # ghzinga — TUI em Rust para abrir issue/PR do GitHub num painel do
+    # herdr. Veja user/app/herdr.nix.
+    #
+    # `flake = false`: o repositório inteiro vira o source do
+    # buildRustPackage (binário `gzg`, que entra no PATH) E, ao mesmo tempo,
+    # fornece o subdiretório plugins/herdr/ — só um herdr-plugin.toml que
+    # chama `gzg` pelo nome — que é o que `plugin link` aponta. Um input só
+    # serve às duas metades.
+    #
+    # PRESO NUMA TAG (v0.5.0), mesma versão do Cargo.toml.
+    ghzinga = {
+      url = "git+https://github.com/osolmaz/ghzinga?ref=refs/tags/v0.5.0&shallow=1";
+      flake = false;
+    };
+
     # FUTURO — descomente para ligar um repo privado sobreposto:
     # lcars-private = {
     #   url = "git+ssh://git@github.com/<voce>/lcars-private.git";
