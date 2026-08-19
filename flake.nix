@@ -128,15 +128,19 @@
       flake = false;
     };
 
-    # Plugin herdr-ctx — indicador de uso da context window do Claude na
-    # sidebar do herdr (token $ctx). Veja user/app/herdr.nix.
+    # Plugin herdr-usage-bar — medidores de uso na sidebar do herdr
+    # ($provider/$limit/$context), sempre visíveis, não só acima de um
+    # threshold. Veja user/app/herdr.nix. Substituiu o herdr-ctx (#79):
+    # aquele só mostrava o token acima de 75% de uso: por design, não em
+    # tempo real.
     #
-    # `flake = false`: é TypeScript rodado por bun, igual ao herdr-browser —
-    # sem build, o que precisamos é da árvore de arquivos para `plugin link`.
+    # `flake = false`: diferente do herdr-ctx (TypeScript/bun) e do
+    # herdr-file-viewer/herdr-reviewr (Rust), este é Go — o que a árvore
+    # fornece é o source, para `pkgs.buildGoModule` (veja herdr.nix).
     #
-    # PRESO NUM COMMIT, porque o upstream não publica tags.
-    herdr-ctx = {
-      url = "git+https://github.com/aorumbayev/herdr-ctx?ref=main&rev=4ae1110131ea6a5d3ec81d31d359fe43199ae1f0";
+    # PRESO NUMA TAG: o upstream publica release por tag (v0.1.1).
+    herdr-usage-bar = {
+      url = "git+https://github.com/silverwolfdoc/herdr-usage-bar?ref=refs/tags/v0.1.1&shallow=1";
       flake = false;
     };
 
