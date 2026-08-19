@@ -171,6 +171,26 @@ let
   base = podar exportado (
     (lib.optionals temaLigado gerenciadosPeloStylix) ++ (lib.optionals (!animacoes) efeitos)
   );
+
+  # Plugins do noctalia habilitados por flag. Cada plugin vira uma entrada em
+  # `[plugins].enabled`, e o noctalia baixa o repositório oficial sozinho na
+  # primeira ativação. Adicionar um plugin novo é declarar a flag em
+  # user/options.nix e somar o id aqui.
+  pluginsHabilitados = lib.optional osConfig.lcars.user.noctalia.plugins.wallhaven.enable "noctalia/wallhaven";
+
+  # `recursiveUpdate` e não `//`: os efeitos vivem a dois níveis
+  # (`shell.animation.enabled`), e a fusão rasa apagaria as outras chaves de
+  # `shell` que vieram do seu export.
+  settingsComEfeitos = if animacoes then base else lib.recursiveUpdate base semEfeitos;
+
+  # `//` aqui é seguro: `plugins.enabled` vive um nível só, e ele só é escrito
+  # quando há pelo menos um plugin — sem flag ligada, o attrset fica
+  # exatamente como veio do TOML.
+  attrsetFinal =
+    if pluginsHabilitados == [ ] then
+      settingsComEfeitos
+    else
+      settingsComEfeitos // { plugins.enabled = pluginsHabilitados; };
 in
 lib.mkIf osConfig.lcars.user.noctalia.enable {
   programs.noctalia = {
@@ -183,9 +203,6 @@ lib.mkIf osConfig.lcars.user.noctalia.enable {
     # módulo NixOS do niri instala (system/wm/niri.nix).
     systemd.enable = true;
 
-    # `recursiveUpdate` e não `//`: os efeitos vivem a dois níveis
-    # (`shell.animation.enabled`), e a fusão rasa apagaria as outras chaves de
-    # `shell` que vieram do seu export.
-    settings = if animacoes then base else lib.recursiveUpdate base semEfeitos;
+    settings = attrsetFinal;
   };
 }

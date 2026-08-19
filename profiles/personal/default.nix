@@ -65,6 +65,7 @@ with lib;
     lcars.user.crush.enable = mkDefault false;
     lcars.user.niri.enable = mkDefault true;
     lcars.user.noctalia.enable = mkDefault true;
+    lcars.user.noctalia.plugins.wallhaven.enable = mkDefault true;
     lcars.user.yazi.enable = mkDefault true;
     lcars.user.lazygit.enable = mkDefault true;
     lcars.user.onedrive.enable = mkDefault true;
