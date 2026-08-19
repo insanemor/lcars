@@ -18,14 +18,20 @@
 # Mantemos só o que muda do default: colocar o arquivo inteiro é ruído no
 # diff e abre espaço pra divergir do upstream silenciosamente.
 #
-# PARA TER UM SIDE PANEL ÚNICO: a lista `gui.sidePanels` aceita uma ou
-# mais seções; cada seção vira um bloco vertical na coluna da esquerda.
-# Colocando tudo numa só seção `[status, files, branches, commits]`, os
-# quatro painéis viram abas dentro do mesmo bloco (ciclados por
-# `nextTab`/`prevTab`, default `[` e `]`). 'files', 'branches' e
-# 'commits' são obrigatórios e seguem na lista — sem nenhum dos três o
-# lazygit recusa a configuração (validado na doc). `stash` e `reflog`
+# SIDE PANEL: QUATRO BLOCOS VERTICAIS
+# -----------------------------------
+# A lista `gui.sidePanels` aceita uma ou mais seções; cada seção vira um
+# bloco vertical na coluna da esquerda. Quatro entradas de um painel só
+# cada (`[status]`, `[files]`, `[branches]`, `[commits]`) dão quatro
+# blocos separados, todos visíveis ao mesmo tempo.
+#
+# 'files', 'branches' e 'commits' são obrigatórios — sem nenhum dos três
+# o lazygit recusa a configuração (validado na doc). `stash` e `reflog`
 # ficam de fora, então não aparecem em lugar nenhum.
+#
+# A doc também permite abas dentro de uma seção (entrada com vários
+# nomes). Foi tentado em #96, mas o usuário não descobriu as outras
+# abas sem usar `[`/`]`; voltar a quatro blocos resolve.
 #
 # PARA ESCONDER O COMMAND LOG: `gui.showCommandLog: false` na seção
 # `gui`.
@@ -49,11 +55,15 @@ lib.mkIf osConfig.lcars.user.lazygit.enable {
     gui:
       showCommandLog: false
 
-      # Side panel único, com status / files / branches / commits como
-      # abas. stash e reflog ficam de fora. files, branches e commits
-      # são obrigatórios — sem nenhum dos três o lazygit recusa a
+      # Quatro blocos verticais separados na coluna da esquerda, um
+      # painel por bloco: status, files, branches, commits. stash e
+      # reflog ficam de fora. files, branches e commits são
+      # obrigatórios — sem nenhum dos três o lazygit recusa a
       # configuração.
       sidePanels:
-        - [status, files, branches, commits]
+        - [status]
+        - [files]
+        - [branches]
+        - [commits]
   '';
 }
