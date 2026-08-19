@@ -361,6 +361,24 @@
         "url": "https://github.com/silverwolfdoc/herdr-usage-bar"
       }
     },
+    "herdr-yazi": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1787148805,
+        "narHash": "sha256-5bAy+xD1mLYJOUYvLWeU2pgZpYAeo+hxdNSlaM9pCkA=",
+        "ref": "main",
+        "rev": "54aa4e6dff480189630fa3593146cdcc2768ade9",
+        "revCount": 13,
+        "type": "git",
+        "url": "https://github.com/speardragon/herdr-yazi"
+      },
+      "original": {
+        "ref": "main",
+        "rev": "54aa4e6dff480189630fa3593146cdcc2768ade9",
+        "type": "git",
+        "url": "https://github.com/speardragon/herdr-yazi"
+      }
+    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -487,6 +505,7 @@
         "herdr-nvim": "herdr-nvim",
         "herdr-reviewr": "herdr-reviewr",
         "herdr-usage-bar": "herdr-usage-bar",
+        "herdr-yazi": "herdr-yazi",
         "home-manager": "home-manager",
         "nixpkgs": "nixpkgs",
         "noctalia": "noctalia",

@@ -404,6 +404,21 @@ let
   # link direto, sem runCommand.
   pluginBar = inputs.herdr-bar;
 
+  # --- herdr-yazi: yazi (gerenciador de arquivos TUI) num painel ---------
+  # Bash + `node -e` puros, sem build, sem dependência fora do yazi (que
+  # entra via `programs.yazi` no módulo do Home Manager, em
+  # user/app/yazi.nix — este plugin só sabe qual painel abrir). Mesma
+  # receita do automatic-rename / herdr-bar: link direto, sem runCommand.
+  # O `[[build]]` do manifesto (que tenta `brew install yazi` no macOS)
+  # é pulado pelo `plugin link`, e no Linux o `yazi` não precisa ser
+  # instalado por aqui.
+  #
+  # Sem patch de manifesto, ao contrário do que a issue #88 originalmente
+  # planejava: o upstream já recebeu o PR #1 ("feat: add Linux support"),
+  # `platforms = ["linux", "macos"]` já vem de fábrica, e `substituteInPlace`
+  # viraria `replace-fail` (sem alvo).
+  pluginYazi = inputs.herdr-yazi;
+
   # --- herdr-annotations: anota texto selecionado num popup ---------------
   # Node/npm — quarto toolchain no arquivo, depois de bash, Rust e Go.
   # `npmDepsHash` descoberto por tentativa (o Cargo/Go têm formas de evitar
@@ -669,6 +684,13 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
         fi
       '';
 
+      pluginYaziAtivacao = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        if ! saida=$(${lib.getExe herdr} plugin link ${pluginYazi} 2>&1); then
+          echo "lcars: falha ao registrar o herdr-yazi — prefix+y/prefix+shift+y não vão abrir"
+          echo "$saida"
+        fi
+      '';
+
       pluginAnnotationsAtivacao = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         if ! saida=$(${lib.getExe herdr} plugin link ${pluginAnnotations} 2>&1); then
           echo "lcars: falha ao registrar o herdr-annotations — ctrl+alt+a/ctrl+alt+v não vão funcionar"
@@ -691,6 +713,7 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
       herdrPluginGhzinga = pluginGhzingaAtivacao;
       herdrPluginAutomaticRename = pluginAutomaticRenameAtivacao;
       herdrPluginBar = pluginBarAtivacao;
+      herdrPluginYazi = pluginYaziAtivacao;
       herdrPluginAnnotations = pluginAnnotationsAtivacao;
       herdrPluginNotes = pluginNotesAtivacao;
     }
@@ -753,6 +776,7 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     #    limites de uso    = prefix + u        (painel), prefix + Shift+u (atualiza)
     #    reset auto-rename = prefix + Shift+a
     #    busca fuzzy       = prefix + p
+    #    yazi              = prefix + y        (split: prefix + Shift+y, em aba)
     #    anotar seleção    = Ctrl+Alt+a          (colar: Ctrl+Alt+v)
     #    notas do workspace = prefix + n        (popup pequeno, sem toggle — Esc fecha)
     #
@@ -959,6 +983,33 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     type        = "plugin_action"
     command     = "herdr-bar.open"
     description = "busca fuzzy por aba/agente"
+
+    # =================================================================
+    #  Plugin herdr-yazi (ray.file-explorer) — abre o yazi (gerenciador
+    #  de arquivos TUI) num painel do herdr, com o cwd do painel focado.
+    #  Não há passo manual: link direto na ativação
+    #  (home.activation.herdrPluginYazi). O `yazi` em si entra pelo
+    #  `programs.yazi` do Home Manager (user/app/yazi.nix) — este plugin
+    #  só sabe qual painel abrir.
+    #
+    #  Os ids `open` / `open-tab` vêm do herdr-plugin.toml do upstream:
+    #  o primeiro chama `plugin pane open --placement split`, o segundo
+    #  `--placement tab`. Mesmo padrão bare/shift do herdr-file-viewer:
+    #  o básico sem modifier abre em split, a variante com Shift abre em
+    #  aba. `y` está livre na tabela atual (sem colisão com nenhum
+    #  prefix+ desta seção).
+    # =================================================================
+    [[keys.command]]
+    key         = "prefix+y"
+    type        = "plugin_action"
+    command     = "ray.file-explorer.open"
+    description = "yazi em split (file explorer)"
+
+    [[keys.command]]
+    key         = "prefix+shift+y"
+    type        = "plugin_action"
+    command     = "ray.file-explorer.open-tab"
+    description = "yazi em aba (file explorer)"
 
     # =================================================================
     #  Plugin herdr-annotations (jagzmz.herdr-annotations) — anota texto
