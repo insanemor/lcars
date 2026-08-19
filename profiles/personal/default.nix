@@ -67,5 +67,6 @@ with lib;
     lcars.user.noctalia.enable = mkDefault true;
     lcars.user.yazi.enable = mkDefault true;
     lcars.user.lazygit.enable = mkDefault true;
+    lcars.user.onedrive.enable = mkDefault true;
   };
 }

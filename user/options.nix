@@ -64,5 +64,7 @@
     yazi.enable = lib.mkEnableOption "o yazi (gerenciador de arquivos TUI) com o wrapper `y` no zsh — depois de navegar, o shell já fica dentro do diretório escolhido; o painel dentro do herdr é o plugin herdr-yazi";
 
     lazygit.enable = lib.mkEnableOption "o lazygit (TUI de git) com config versionado em ~/.config/lazygit/config.yml — painéis de stash, reflog e o command log escondidos; o popup no herdr é `prefix+Shift+g`";
+
+    onedrive.enable = lib.mkEnableOption "o cliente OneDrive (abi-1/onedrive) com sync contínuo em ~/OneDrive — refresh_token materializado na ativação a partir do 1Password (item op://Dotfiles/onedrive/refresh_token)";
   };
 }
