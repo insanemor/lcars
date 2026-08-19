@@ -283,11 +283,28 @@ let
   # bin/run-usagebar.sh (o entrypoint que os [[actions]]/[[panes]]/[[events]]
   # do manifesto chamam) resolve o binário em três passos: $USAGEBAR_BIN, um
   # `bin/usagebar` relativo à raiz do plugin, e por último `command -v
-  # usagebar` no PATH. Ao contrário do file-viewer e do reviewr, não
-  # precisamos montar árvore nenhuma com runCommand — o terceiro caso já
-  # serve: o binário entra em home.packages (abaixo) e o link aponta direto
-  # pro input, sem modificação.
-  pluginUsageBar = inputs.herdr-usage-bar;
+  # usagebar` no PATH. O binário em si não precisa de árvore nenhuma
+  # montada — o terceiro caso já serve, com o pacote em home.packages.
+  #
+  # O que PRECISA de runCommand é outra coisa: todo script em bin/*.sh do
+  # upstream começa com `#!/bin/bash`, caminho absoluto que não existe numa
+  # instalação Nix (bash mora em /run/current-system/sw/bin/bash ou em
+  # algum caminho do store — nunca em /bin). Os scripts que o manifesto
+  # chama com `command = ["bash", "bin/foo.sh"]` funcionam mesmo assim, porque
+  # o `bash` já vem explícito antes do caminho e o shebang do arquivo nunca é
+  # lido. Mas run-status.sh e os outros wrappers fazem `exec
+  # "$SCRIPT_DIR/run-usagebar.sh" ...` — um exec DIRETO, sem `bash` na
+  # frente — e aí o shebang do arquivo importa. Sem correção, todo evento
+  # (pane.focused, pane.agent_status_changed) falhava com exit 126
+  # ("interpretador incorreto"), silenciosamente — foi assim que a sidebar
+  # nunca mostrou nada (#80). `patchShebangs`, a função do stdenv do Nix
+  # feita exatamente pra isso, reescreve `#!/bin/bash` para o bash de
+  # verdade do store.
+  pluginUsageBar = pkgs.runCommand "herdr-usage-bar-com-shebang-corrigido" { } ''
+    cp -r ${inputs.herdr-usage-bar} $out
+    chmod -R u+w $out
+    patchShebangs $out/bin
+  '';
 
   # --- herdr-file-viewer: visualizador git-aware, binário Rust -------------
   # cargoLock.lockFile em vez de cargoHash: o Cargo.lock do upstream não tem
