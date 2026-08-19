@@ -289,6 +289,24 @@
         "url": "https://github.com/smarzban/herdr-file-viewer"
       }
     },
+    "herdr-notes": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1786840609,
+        "narHash": "sha256-DwrQcJlHnaRlPmaSsPX70+z01EHC/b7NfzvUbwzxU4w=",
+        "ref": "refs/tags/v0.2.0",
+        "rev": "76517c7d6aa17eb24abc49e71cb920d7a00f0d79",
+        "shallow": true,
+        "type": "git",
+        "url": "https://github.com/cyperx84/herdr-notes"
+      },
+      "original": {
+        "ref": "refs/tags/v0.2.0",
+        "shallow": true,
+        "type": "git",
+        "url": "https://github.com/cyperx84/herdr-notes"
+      }
+    },
     "herdr-nvim": {
       "flake": false,
       "locked": {
@@ -465,6 +483,7 @@
         "herdr-bar": "herdr-bar",
         "herdr-browser": "herdr-browser",
         "herdr-file-viewer": "herdr-file-viewer",
+        "herdr-notes": "herdr-notes",
         "herdr-nvim": "herdr-nvim",
         "herdr-reviewr": "herdr-reviewr",
         "herdr-usage-bar": "herdr-usage-bar",
