@@ -71,5 +71,10 @@ lib.mkIf osConfig.lcars.user.lazygit.enable {
         - [files]
         - [branches]
         - [commits]
+
+      # No modo meia-tela (após `+`), os side panels ficam em cima e o
+      # painel principal embaixo, em vez do default 'left' (side
+      # panels à esquerda, main view à direita).
+      enlargedSideViewLocation: top
   '';
 }
