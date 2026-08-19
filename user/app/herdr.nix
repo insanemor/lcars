@@ -698,6 +698,20 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
       herdrPluginHerdrNvim = pluginHerdrNvimAtivacao;
     };
 
+  # Config específico do herdr-notes (não é o config.toml principal, é o
+  # dele — `herdr plugin config-dir herdr-notes` aponta pra esta pasta). O
+  # binário lê o destino das notas por `HERDR_NOTES_NOTES_DIR`, que o herdr
+  # injeta a partir daqui usando o `[config]`/`[default_config]` do
+  # herdr-plugin.toml (confirmado lendo internal/config/config.go do
+  # upstream — inclusive a expansão de `~`, que o próprio binário faz, não
+  # o herdr).
+  #
+  # Read-only tudo bem aqui: não existe `herdr plugin config set` (conferido
+  # no --help) — nada além deste módulo escreve neste arquivo.
+  xdg.configFile."herdr/plugins/config/herdr-notes/config.toml".text = ''
+    notes_dir = "~/Notas"
+  '';
+
   xdg.configFile."herdr/config.toml".text = ''
     # ATENÇÃO: arquivo gerado por user/app/herdr.nix. Editar aqui não adianta —
     # é um link para o /nix/store, e o próximo `nupdate` o reescreve.
