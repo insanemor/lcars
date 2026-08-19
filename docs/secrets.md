@@ -129,6 +129,48 @@ Use os caminhos **sem** `./` — eles viram nomes de atributo em
 
 Durante `nixos-rebuild switch`, o Home Manager lê os itens Document correspondentes e popula `~/.config/dotfiles/`. Como cada máquina tem seu próprio vault ou referência única por dotfile, os secrets ficam isolados por escopo.
 
+## Refresh token do OneDrive
+
+O cliente [abi-1/onedrive](https://github.com/abraunegg/onedrive) precisa de um
+`refresh_token` em `~/.config/onedrive/refresh_token` para subir a unit
+`onedrive@onedrive.service` sem prompt de OAuth. O `user/app/onedrive.nix`
+materializa esse arquivo na ativação do Home Manager a partir do item
+`onedrive/refresh_token` do vault — mesmo padrão de tolerância a `op`
+indisponível usado pelos dotfiles e pelo opencode: sem CLI ou sem login, sai
+uma linha amarela e o serviço não sobe, em vez de quebrar o rebuild.
+
+O item **existe, mas você precisa criá-lo** na primeira instalação. O ciclo é
+uma vez por máquina — na prática, uma vez por conta Microsoft:
+
+```bash
+# 1. Autentica no OneDrive pelo navegador e cria o refresh_token local
+onedrive
+#   ... segue as instruções, autoriza, espera o cliente baixar a config ...
+#   Ctrl+C quando terminar (o que queremos é o arquivo, não a sincronização
+#   contínua — quem sobe é o serviço).
+
+# 2. Cria o item no vault com o conteúdo do arquivo
+op item create \
+  --category "Login" \
+  --title "onedrive" \
+  --vault "Dotfiles" \
+  "refresh_token=$(cat ~/.config/onedrive/refresh_token)"
+
+# 3. Re-roda a ativação para puxar do 1Password
+nupdate
+```
+
+Daí em diante, toda ativação sobrescreve o arquivo a partir do 1Password, e
+`systemctl --user status onedrive@onedrive` mostra o serviço rodando com
+`--monitor`. Se o token expirar (a Microsoft não avisa), basta re-rodar o
+passo 2 com o novo conteúdo do arquivo local.
+
+**O config (`sync_dir`, free space, etc.) não mora no 1Password.** O cliente
+cria `~/.config/onedrive/config` na primeira execução, e ajustes finos são
+editados nesse arquivo — que o serviço lê em runtime. A activation só toca
+no `refresh_token`, e só porque ele é o que precisa estar em disco **antes**
+do serviço subir para o `ExecStart` não falhar com "no account".
+
 ## Escape hatch
 
 Se algum pedaço pessoal se recusar a morar no 1Password (por exemplo, scripts locais referenciando `$HOME/<caminho-secreto>`), coloque em:

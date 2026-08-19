@@ -31,6 +31,7 @@ O repo vem com `personal`.
 | git (`user/app`) | `lcars.user.git.enable` | sim | sim |
 | direnv (`user/app`) | `lcars.user.direnv.enable` | — | sim |
 | dotfiles do 1Password (`user/app`) | `lcars.user.dotfiles.enable` | — | sim |
+| onedrive sync (`user/app` + `system/app`) | `lcars.user.onedrive.enable` | — | sim |
 
 Os presets estão em `profiles/basic/default.nix` e
 `profiles/personal/default.nix` — e são a lista completa: o que não está ligado
@@ -1281,6 +1282,37 @@ Arquivos listados em `userSettings.dotfilesFrom1Password` são puxados de itens
 
 Vazio por padrão. Se o `op` não estiver no PATH ou não houver sessão aberta, a
 ativação avisa e segue — não falha o rebuild.
+
+### OneDrive · `user/app/onedrive.nix` + `system/app/onedrive/default.nix` · `lcars.user.onedrive.enable` · só personal
+
+O cliente [abi-1/onedrive](https://github.com/abraunegg/onedrive) roda como
+serviço do usuário, com `--monitor` ligado e `sync_dir` em `~/OneDrive` — os
+arquivos da nuvem aparecem em `~/OneDrive` e as mudanças locais sobem de
+volta, sem precisar de comando manual.
+
+A divisão segue o resto do repo: `system/app/onedrive/default.nix` liga
+`services.onedrive.enable`, que cria a unit template `onedrive@.service` e
+um `onedrive-launcher.service` que sobe `onedrive@onedrive` no login; e
+`user/app/onedrive.nix` materializa o `~/.config/onedrive/refresh_token` a
+partir do 1Password na ativação, com `chmod 600`.
+
+**Sem o token, a unit falha em silêncio.** É por isso que a activation é parte
+do módulo: a primeira `home-manager switch` sem `op` disponível imprime uma
+linha amarela e o serviço não sobe — `systemctl --user status onedrive@onedrive`
+diz o motivo. O passo de autenticação, que é o que o `docs/secrets.md` traz,
+deixa o token em `~/.config/onedrive/refresh_token`, e a partir daí o 1Password
+é a fonte.
+
+**O config (`~/.config/onedrive/config`) não é gerado.** O próprio cliente
+cria na primeira execução, com `sync_dir = "~/OneDrive"`. Selective sync, rate
+limit, free space check e demais opções se ajustam editando esse arquivo
+diretamente — o serviço o lê em runtime, e a activation só encosta no
+`refresh_token`.
+
+**Rodando o cliente em mais de uma máquina.** O abi-1 detecta divergência
+entre a `state` local e a nuvem, e oferece `--resync`. Sincronizar em duas
+máquinas ao mesmo tempo é receita para conflito — mantenha o serviço ligado
+só onde você está trabalhando, como em qualquer outro sync de nuvem.
 
 ### Escape hatch · `user/personal/default.nix` · sem flag
 

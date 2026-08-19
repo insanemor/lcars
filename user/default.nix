@@ -28,6 +28,7 @@
     ./app/nvim.nix
     ./app/yazi.nix
     ./app/lazygit.nix
+    ./app/onedrive.nix
     ./app/claude-code.nix
     ./cli/crush/default.nix
     ./cli/opencode/default.nix

@@ -33,5 +33,6 @@
     ./theme
     ./wm
     ./app/1password
+    ./app/onedrive
   ];
 }
