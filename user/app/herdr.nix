@@ -386,6 +386,48 @@ let
   # virar gravável porque nada escreve ali.
   pluginGhzinga = "${inputs.ghzinga}/plugins/herdr";
 
+  # --- herdr-automatic-rename: nomeia abas, numera pelo jump-key ----------
+  # Bash puro, sem build — igual ao pluginBrowser: a árvore entra como está,
+  # `plugin link` aponta pro input direto. Toda ação/evento do manifesto
+  # chama `["bash", "automatic-rename.sh", ...]` com bash explícito no
+  # argv0, então não tem o problema de self-exec que o usage-bar teve — sem
+  # runCommand.
+  #
+  # A metade que NÃO mora aqui: o hook de shell (renomeação em tempo real, a
+  # cada comando) precisa ser fonteado no zsh — ver user/shell/zsh.nix,
+  # que lê este mesmo input.
+  pluginAutomaticRename = inputs.herdr-automatic-rename;
+
+  # --- herdr-bar: busca fuzzy por aba/agente num popup --------------------
+  # Python3 stdlib, sem build, sem dependência nova — `python3` já é pacote
+  # global (system/core/default.nix). Mesma receita do automatic-rename:
+  # link direto, sem runCommand.
+  pluginBar = inputs.herdr-bar;
+
+  # --- herdr-annotations: anota texto selecionado num popup ---------------
+  # Node/npm — quarto toolchain no arquivo, depois de bash, Rust e Go.
+  # `npmDepsHash` descoberto por tentativa (o Cargo/Go têm formas de evitar
+  # isso; o npm não tem um lockfile-only mode equivalente no buildNpmPackage
+  # do nixpkgs). Sem dependência git no package-lock.json, então um hash só
+  # já basta.
+  #
+  # `dontNpmBuild = true`: o manifesto roda `npm ci --omit=dev`, não um
+  # build de verdade — o pacote não tem script de build, só precisa do
+  # node_modules populado. `installPhase` copia a árvore inteira (incluindo
+  # docs/test, que não atrapalham) pro $out, que vira o plugin root direto —
+  # sem runCommand por cima, porque nada mais precisa ser montado ali.
+  pluginAnnotations = pkgs.buildNpmPackage {
+    pname = "herdr-annotations";
+    version = "0.2.8";
+    src = inputs.herdr-annotations;
+    npmDepsHash = "sha256-OdisFpDsHptt5viZPhlgMe86AL+dPBuajYaSkjWddYk=";
+    dontNpmBuild = true;
+    installPhase = ''
+      mkdir -p $out
+      cp -r . $out
+    '';
+  };
+
   # As cores, do esquema base16 do stylix — o mesmo que pinta o terminal, o
   # prompt, GTK e Qt. O herdr aceita hex em todos os tokens (veja
   # src/config/theme.rs no upstream), então a paleta inteira é sobrescrita e
@@ -465,6 +507,10 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     # (`command -v usagebar`), e o único que usamos — não montamos árvore
     # nenhuma pro plugin, ao contrário do file-viewer/reviewr.
     usagebarBin
+
+    # `node` no PATH: as ações/painéis do herdr-annotations chamam `node
+    # src/....mjs` pelo nome (herdr-plugin.toml), não por caminho.
+    pkgs.nodejs
   ];
 
   # O `$BROWSER` da sessão do usuário passa a ser o wrapper — é o que redireciona
@@ -556,6 +602,27 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
           echo "$saida"
         fi
       '';
+
+      pluginAutomaticRenameAtivacao = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        if ! saida=$(${lib.getExe herdr} plugin link ${pluginAutomaticRename} 2>&1); then
+          echo "lcars: falha ao registrar o herdr-automatic-rename — abas e workspaces não vão ser renomeados/numerados"
+          echo "$saida"
+        fi
+      '';
+
+      pluginBarAtivacao = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        if ! saida=$(${lib.getExe herdr} plugin link ${pluginBar} 2>&1); then
+          echo "lcars: falha ao registrar o herdr-bar — prefix+p não vai abrir"
+          echo "$saida"
+        fi
+      '';
+
+      pluginAnnotationsAtivacao = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        if ! saida=$(${lib.getExe herdr} plugin link ${pluginAnnotations} 2>&1); then
+          echo "lcars: falha ao registrar o herdr-annotations — ctrl+alt+a/ctrl+alt+v não vão funcionar"
+          echo "$saida"
+        fi
+      '';
     in
     {
       herdrPluginBrowser = pluginBrowserAtivacao;
@@ -563,6 +630,9 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
       herdrPluginFileViewer = pluginFileViewerAtivacao;
       herdrPluginReviewr = pluginReviewrAtivacao;
       herdrPluginGhzinga = pluginGhzingaAtivacao;
+      herdrPluginAutomaticRename = pluginAutomaticRenameAtivacao;
+      herdrPluginBar = pluginBarAtivacao;
+      herdrPluginAnnotations = pluginAnnotationsAtivacao;
     }
     // lib.optionalAttrs osConfig.lcars.user.nvim.enable {
       herdrPluginHerdrNvim = pluginHerdrNvimAtivacao;
@@ -576,6 +646,12 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     # herdr tentaria gravar `onboarding = false` neste arquivo, que é
     # read-only, na primeira vez que subisse.
     onboarding = false
+
+    # O herdr-automatic-rename nomeia a aba sozinho a cada evento — sem isto
+    # o prompt manual de nome (ao criar aba) atropelaria a nomeação
+    # automática toda vez que o usuário digitasse Enter nele.
+    [ui]
+    prompt_new_tab_name = false
 
     # =================================================================
     #  Atalhos — os mesmos do antigo ~/.tmux.conf:
@@ -601,6 +677,9 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     #    file viewer       = prefix + f        (aba: prefix + Shift+f)
     #    review de agente  = prefix + v        (abre/fecha)
     #    limites de uso    = prefix + u        (painel), prefix + Shift+u (atualiza)
+    #    reset auto-rename = prefix + Shift+a
+    #    busca fuzzy       = prefix + p
+    #    anotar seleção    = Ctrl+Alt+a          (colar: Ctrl+Alt+v)
     #
     #  A tabela completa, dentro do programa: prefix + ?
     # =================================================================
@@ -776,6 +855,57 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     type        = "plugin_action"
     command     = "usagebar.refresh"
     description = "usage bar: força atualização dos medidores"
+
+    # =================================================================
+    #  Plugin herdr-automatic-rename — nomeia abas pelo programa em
+    #  foreground e numera workspaces/abas/agentes pelo dígito do jump-key.
+    #  Roda sozinho a cada evento; o único atalho é pra desfazer um nome
+    #  manual e voltar pro automático.
+    #
+    #  O README sugere alt+shift+r, mas isso foge do padrão prefix+ do
+    #  resto da tabela — troquei por prefix+shift+a.
+    # =================================================================
+    [[keys.command]]
+    key         = "prefix+shift+a"
+    type        = "plugin_action"
+    command     = "herdr-automatic-rename.reset"
+    description = "automatic rename: volta a aba pra nomeação automática"
+
+    # =================================================================
+    #  Plugin herdr-bar — Cmd+K: busca fuzzy por aba ou agente, num popup.
+    #  Não há passo manual: link direto na ativação
+    #  (home.activation.herdrPluginBar).
+    #
+    #  O README sugere prefix+k, mas isso colide com focus_pane_up (já é
+    #  prefix+k/alt+up, lá em cima) — troquei por prefix+p.
+    # =================================================================
+    [[keys.command]]
+    key         = "prefix+p"
+    type        = "plugin_action"
+    command     = "herdr-bar.open"
+    description = "busca fuzzy por aba/agente"
+
+    # =================================================================
+    #  Plugin herdr-annotations (jagzmz.herdr-annotations) — anota texto
+    #  selecionado no terminal, num popup local. Não há passo manual: o
+    #  pacote (pluginAnnotations, via buildNpmPackage) é linkado na
+    #  ativação (home.activation.herdrPluginAnnotations).
+    #
+    #  ctrl+alt+, não prefix+: a ação parte de uma seleção de texto já
+    #  feita no terminal, e exigir o prefixo do herdr antes atrapalharia
+    #  esse fluxo — mantive os atalhos que o próprio README sugere.
+    # =================================================================
+    [[keys.command]]
+    key         = "ctrl+alt+a"
+    type        = "plugin_action"
+    command     = "jagzmz.herdr-annotations.annotate-selection"
+    description = "anota o texto selecionado"
+
+    [[keys.command]]
+    key         = "ctrl+alt+v"
+    type        = "plugin_action"
+    command     = "jagzmz.herdr-annotations.paste-collection"
+    description = "cola e limpa as anotações coletadas"
 
     ${tema}
 
