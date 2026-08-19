@@ -58,18 +58,19 @@
 # sobrescreve a entrada. O checkout antigo fica órfão em
 # ~/.config/herdr/plugins/github/ e pode ser apagado.
 #
-# QUATRO PLUGINS A MAIS, E DOIS MOLDES DIFERENTES
-# ------------------------------------------------
-# herdr-ctx é TypeScript/bun, igual ao browser: entra como está, sem build,
-# `plugin link` aponta pro input direto.
+# CINCO PLUGINS A MAIS, E TRÊS TOOLCHAINS DIFERENTES
+# -----------------------------------------------------
+# herdr-file-viewer, herdr-reviewr e ghzinga são binários Rust. `herdr plugin
+# install` os baixaria pronto (ou compilaria na hora) de um jeito que o Nix
+# não gerencia; a alternativa aqui é `rustPlatform.buildRustPackage` a partir
+# do source do input, usando `cargoLock.lockFile` — nenhum dos três Cargo.lock
+# tem dependência git, então cada crate se verifica pelo próprio checksum do
+# lockfile, sem cargoHash descoberto por tentativa.
 #
-# herdr-file-viewer, herdr-reviewr e ghzinga já não são árvore-de-source
-# solta — são binários Rust. `herdr plugin install` os baixaria pronto (ou
-# compilaria na hora) de um jeito que o Nix não gerencia; a alternativa aqui é
-# `rustPlatform.buildRustPackage` a partir do source do input, usando
-# `cargoLock.lockFile` — nenhum dos três Cargo.lock tem dependência git, então
-# cada crate se verifica pelo próprio checksum do lockfile, sem cargoHash
-# descoberto por tentativa.
+# herdr-usage-bar é Go: `pkgs.buildGoModule`, que — ao contrário do Rust —
+# não tem um jeito de evitar descobrir o hash por tentativa (`vendorHash`);
+# feito com `nix build` de verdade, não só avaliação, e confirmado nesta
+# entrega.
 #
 # O detalhe que muda de plugin pra plugin é COMO o binário buildado chega ao
 # lugar que o manifesto espera, porque `plugin link` pula o [[build]] do
@@ -78,6 +79,9 @@
 #   - ghzinga: as ações chamam `gzg` pelo nome (plugins/herdr/herdr-plugin.toml),
 #     então basta o binário estar no PATH — home.packages, abaixo — e o link
 #     aponta direto pro subdiretório plugins/herdr do próprio input.
+#   - herdr-usage-bar: mesma lógica — o entrypoint bin/run-usagebar.sh já
+#     cai pro `command -v usagebar` no PATH quando não acha um `bin/usagebar`
+#     relativo à raiz do plugin, então nem isso precisamos montar.
 #   - herdr-file-viewer: o manifesto abre o binário por caminho RELATIVO
 #     (`./target/release/herdr-file-viewer`, lido por scripts/open-file-viewer.sh
 #     a partir da raiz do plugin).
@@ -247,18 +251,43 @@ let
     MANIFESTO
   '';
 
-  # --- herdr-ctx: indicador de context window do Claude na sidebar ---------
-  # TypeScript/bun, sem build — igual ao pluginBrowser antes do link handler
-  # extra: o input entra como está, e `plugin link` aponta pra árvore no
-  # store.
+  # --- herdr-usage-bar: medidores de uso sempre visíveis na sidebar --------
+  # Substituiu o herdr-ctx (#79): aquele só mostrava o token acima de 75% de
+  # uso — por design, não em tempo real. Este mostra $context, $limit e
+  # $provider sempre, atualizados a cada turno do agente, e cobre não só
+  # Claude Code (Codex, OpenCode Go, Grok, OMP/Pi também), lendo os arquivos
+  # de sessão de cada um diretamente — sem hook por provedor.
   #
-  # Diferente do browser, este manifesto não declara [[actions]]/[[panes]]
-  # nenhum — ele só existe pra rodar `src/report.ts` a partir do status-line
-  # do Claude Code e escrever o token `$ctx` via `herdr pane
-  # report-metadata`. Ligar isso ao Claude Code (`bun src/setup.ts`, que
-  # escreve em ~/.claude/settings.json) é um passo manual — ver o comentário
-  # perto de `home.activation`, mais abaixo.
-  pluginCtx = inputs.herdr-ctx;
+  # Go, não Rust nem TypeScript/bun — nenhum dos dois moldes anteriores
+  # cobre isso. `buildGoModule` precisa de `vendorHash` (o Go não tem o
+  # equivalente ao `cargoLock.lockFile` do Rust que evita esse passo);
+  # descoberto por tentativa com `nix build` de verdade, e confirmado nesta
+  # entrega.
+  #
+  # `subPackages`: o repo só declara um binário (cmd/usagebar) — sem isso o
+  # buildGoModule tentaria buildar tudo que tem `func main()`, incluindo
+  # qualquer coisa em cmd/ que não seja o binário final.
+  #
+  # doCheck = false: mesma razão dos pacotes Rust — a suíte do upstream não
+  # é o alvo deste pacote, e parte dela lê arquivos de sessão reais de
+  # provedores (Claude, Codex etc.) que não existem no sandbox de build.
+  usagebarBin = pkgs.buildGoModule {
+    pname = "herdr-usage-bar";
+    version = "0.1.1";
+    src = inputs.herdr-usage-bar;
+    vendorHash = "sha256-rIJlQO/NKzOKbt4NL05fHzRTjReoGcbv4i4bwtNNc5w=";
+    subPackages = [ "cmd/usagebar" ];
+    doCheck = false;
+  };
+
+  # bin/run-usagebar.sh (o entrypoint que os [[actions]]/[[panes]]/[[events]]
+  # do manifesto chamam) resolve o binário em três passos: $USAGEBAR_BIN, um
+  # `bin/usagebar` relativo à raiz do plugin, e por último `command -v
+  # usagebar` no PATH. Ao contrário do file-viewer e do reviewr, não
+  # precisamos montar árvore nenhuma com runCommand — o terceiro caso já
+  # serve: o binário entra em home.packages (abaixo) e o link aponta direto
+  # pro input, sem modificação.
+  pluginUsageBar = inputs.herdr-usage-bar;
 
   # --- herdr-file-viewer: visualizador git-aware, binário Rust -------------
   # cargoLock.lockFile em vez de cargoHash: o Cargo.lock do upstream não tem
@@ -414,6 +443,11 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     # (plugins/herdr/herdr-plugin.toml chama `gzg` pelo nome, não por
     # caminho) — e também serve pro uso direto, `gzg owner/repo#123`.
     ghzingaBin
+
+    # `usagebar` no PATH: é o terceiro fallback de bin/run-usagebar.sh
+    # (`command -v usagebar`), e o único que usamos — não montamos árvore
+    # nenhuma pro plugin, ao contrário do file-viewer/reviewr.
+    usagebarBin
   ];
 
   # O `$BROWSER` da sessão do usuário passa a ser o wrapper — é o que redireciona
@@ -434,7 +468,7 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
   # atualiza via socket quando responde. (A lição contrária, do que NÃO pode
   # morar aqui, está em user/shell/atuin.nix.)
   #
-  # Browser, ctx, file-viewer, reviewr e ghzinga são incondicionais: cada um
+  # Browser, usage-bar, file-viewer, reviewr e ghzinga são incondicionais: cada um
   # é requisito só do próprio atalho, e o `lcars.user.herdr.enable` que
   # envolve este arquivo já garante que só rodam quando o herdr existe. O do
   # herdr-nvim é opt-in pela mesma flag do `programs.neovim`: se o nvim está
@@ -455,29 +489,32 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
         fi
       '';
 
-      # O `plugin link` aqui só registra o plugin — não é o bastante pro
-      # token $ctx funcionar. O reporter precisa estar plugado no
-      # status-line do Claude Code, e isso é um passo MANUAL, de propósito:
-      # o script que faz essa ligação (`bun src/setup.ts`, do próprio
-      # plugin) escreve em ~/.claude/settings.json com prompts interativos
-      # — não dá pra rodar de forma idempotente numa ativação do Home
-      # Manager, e esse arquivo é deliberadamente mutável e fora do Nix
-      # (veja user/app/claude-code.nix), então rodar o setup à mão não
-      # briga com o padrão do repo.
+      # O `plugin link` aqui só registra o plugin — o $context/$limit/
+      # $provider da sidebar já funcionam a partir daí, porque o
+      # herdr-usage-bar lê os arquivos de sessão de cada provedor direto do
+      # disco (sem hook nenhum). O que continua sendo passo MANUAL é só a
+      # parte específica do Claude — as janelas de 5h/7d e notificações,
+      # que dependem do `statusLine` de ~/.claude/settings.json — pela
+      # mesma razão do antigo herdr-ctx: esse arquivo é deliberadamente
+      # mutável e fora do Nix (veja user/app/claude-code.nix), então não dá
+      # pra escrever nele de forma idempotente numa ativação do Home
+      # Manager.
       #
-      # Depois de um `nupdate` com a flag ligada, rode uma vez:
+      # Diferente do herdr-ctx, aqui não tem script interativo — é edição
+      # direta. Depois de um `nupdate` com a flag ligada, aponte o
+      # `statusLine` de ~/.claude/settings.json para:
       #
-      #   bun "$(herdr plugin list --json | jq -r '.result.plugins[] |
-      #     select(.plugin_id == "herdr-ctx") | .plugin_root')"/src/setup.ts
+      #   bash "$(herdr plugin list --json | jq -r '.result.plugins[] |
+      #     select(.plugin_id == "usagebar") | .plugin_root')"/bin/run-statusline.sh
       #
-      # O script pergunta se quer acrescentar o snippet `$ctx` ao
-      # config.toml — RECUSE: o token já está declarado em
-      # `[ui.sidebar.agents]`, mais abaixo, e o config.toml daqui é um
-      # symlink read-only para o store; a escrita falharia mesmo que você
-      # aceitasse.
-      pluginCtxAtivacao = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-        if ! saida=$(${lib.getExe herdr} plugin link ${pluginCtx} 2>&1); then
-          echo "lcars: falha ao registrar o plugin herdr-ctx — o token \$ctx não vai aparecer na sidebar"
+      # Se veio de uma instalação que tinha o herdr-ctx (#78): aquele
+      # plugin já foi desregistrado (`herdr plugin unlink herdr-ctx`) e o
+      # `statusLine` que ele tinha instalado, revertido
+      # (`bun .../src/setup.ts --remove`) — os dois passos já rodados nesta
+      # entrega, não é preciso repetir.
+      pluginUsageBarAtivacao = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        if ! saida=$(${lib.getExe herdr} plugin link ${pluginUsageBar} 2>&1); then
+          echo "lcars: falha ao registrar o herdr-usage-bar — \$context/\$limit/\$provider não vão aparecer na sidebar"
           echo "$saida"
         fi
       '';
@@ -505,7 +542,7 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     in
     {
       herdrPluginBrowser = pluginBrowserAtivacao;
-      herdrPluginCtx = pluginCtxAtivacao;
+      herdrPluginUsageBar = pluginUsageBarAtivacao;
       herdrPluginFileViewer = pluginFileViewerAtivacao;
       herdrPluginReviewr = pluginReviewrAtivacao;
       herdrPluginGhzinga = pluginGhzingaAtivacao;
@@ -546,6 +583,7 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     #    lazygit           = prefix + Shift+g  (popup 90%)
     #    file viewer       = prefix + f        (aba: prefix + Shift+f)
     #    review de agente  = prefix + v        (abre/fecha)
+    #    limites de uso    = prefix + u        (painel), prefix + Shift+u (atualiza)
     #
     #  A tabela completa, dentro do programa: prefix + ?
     # =================================================================
@@ -697,6 +735,31 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     command     = "persiyanov.reviewr.toggle"
     description = "reviewr: abre/fecha o painel de review"
 
+    # =================================================================
+    #  Plugin herdr-usage-bar (usagebar) — medidores de uso na sidebar
+    #  ($context/$limit/$provider, sempre visíveis) e um painel com o
+    #  detalhe por provedor. Não há passo manual pra ISSO — o wiring do
+    #  status-line do Claude, que é outra coisa (janelas de 5h/7d,
+    #  notificações), está documentado em
+    #  home.activation.herdrPluginUsageBar, mais acima.
+    #
+    #  Os ids de ação (`open-limits`, `refresh`) vêm do herdr-plugin.toml do
+    #  upstream, que sugere ctrl+shift+u/ctrl+shift+m — troquei por
+    #  prefix+u/prefix+shift+u pra ficar consistente com o resto da tabela
+    #  daqui, que é toda prefix+.
+    # =================================================================
+    [[keys.command]]
+    key         = "prefix+u"
+    type        = "plugin_action"
+    command     = "usagebar.open-limits"
+    description = "usage bar: abre o painel de limites por provedor"
+
+    [[keys.command]]
+    key         = "prefix+shift+u"
+    type        = "plugin_action"
+    command     = "usagebar.refresh"
+    description = "usage bar: força atualização dos medidores"
+
     ${tema}
 
     # =================================================================
@@ -708,12 +771,12 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     new_cwd       = "follow"
 
     # =================================================================
-    #  Sidebar. `$ctx` vem do plugin herdr-ctx (pluginCtx, registrado na
-    #  ativação) e mostra o uso da context window do Claude por painel —
-    #  mas só depois do passo manual descrito no comentário de
-    #  home.activation.herdrPluginCtx, mais acima: sem ele o reporter nunca
-    #  roda e o token fica sempre vazio (comportamento normal do herdr pra
-    #  metadata ausente, não erro).
+    #  Sidebar. `$context`, `$limit` e `$provider` vêm do herdr-usage-bar
+    #  (pluginUsageBar, registrado na ativação) — sempre visíveis, sem
+    #  threshold, atualizados a cada turno do agente. `$context` é o uso da
+    #  janela de contexto por painel; `$limit`, quanto falta da janela de
+    #  conta do provedor (5h/7d no caso do Claude); `$provider` é o nome do
+    #  harness (ou do backend, em painéis pay-as-you-go).
     #
     #  `$claude_usage` vem do plugin unit1.claude-usage, que este módulo
     #  NÃO instala — segue inerte até alguém linká-lo à mão, como antes.
@@ -722,7 +785,9 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     row_gap = 0
     rows = [
       ["state_icon", "workspace", "tab"],
-      ["agent", "state_text", "$ctx"],
+      ["agent", "state_text"],
+      ["$provider", "$limit"],
+      ["$context"],
     ]
 
     [ui.sidebar.spaces]

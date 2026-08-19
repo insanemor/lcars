@@ -217,24 +217,6 @@
         "url": "https://github.com/ogulcancelik/herdr-browser"
       }
     },
-    "herdr-ctx": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1784632892,
-        "narHash": "sha256-wW0k68HPORLFqOYdDc385jLA3CBWf9hEuzj+lJIjn7M=",
-        "ref": "main",
-        "rev": "4ae1110131ea6a5d3ec81d31d359fe43199ae1f0",
-        "revCount": 1,
-        "type": "git",
-        "url": "https://github.com/aorumbayev/herdr-ctx"
-      },
-      "original": {
-        "ref": "main",
-        "rev": "4ae1110131ea6a5d3ec81d31d359fe43199ae1f0",
-        "type": "git",
-        "url": "https://github.com/aorumbayev/herdr-ctx"
-      }
-    },
     "herdr-file-viewer": {
       "flake": false,
       "locked": {
@@ -287,6 +269,24 @@
         "shallow": true,
         "type": "git",
         "url": "https://github.com/persiyanov/herdr-reviewr"
+      }
+    },
+    "herdr-usage-bar": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1784851511,
+        "narHash": "sha256-hLfKLBWytyFX31AP0lcNN+JbDXvDRayv7xIaQxJRcSA=",
+        "ref": "refs/tags/v0.1.1",
+        "rev": "c8431a173fc34d2776e66092b381b63978431ef1",
+        "shallow": true,
+        "type": "git",
+        "url": "https://github.com/silverwolfdoc/herdr-usage-bar"
+      },
+      "original": {
+        "ref": "refs/tags/v0.1.1",
+        "shallow": true,
+        "type": "git",
+        "url": "https://github.com/silverwolfdoc/herdr-usage-bar"
       }
     },
     "home-manager": {
@@ -407,10 +407,10 @@
         "ghzinga": "ghzinga",
         "herdr": "herdr",
         "herdr-browser": "herdr-browser",
-        "herdr-ctx": "herdr-ctx",
         "herdr-file-viewer": "herdr-file-viewer",
         "herdr-nvim": "herdr-nvim",
         "herdr-reviewr": "herdr-reviewr",
+        "herdr-usage-bar": "herdr-usage-bar",
         "home-manager": "home-manager",
         "nixpkgs": "nixpkgs",
         "noctalia": "noctalia",
