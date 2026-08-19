@@ -27,6 +27,7 @@
     ./app/dotfiles.nix
     ./app/nvim.nix
     ./app/claude-code.nix
+    ./cli/crush/default.nix
     ./wm/niri.nix
     ./wm/noctalia.nix
   ];
