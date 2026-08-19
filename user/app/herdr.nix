@@ -435,6 +435,19 @@ let
   #
   # doCheck = false: mesma razão dos outros pacotes — a suíte do upstream
   # não é o alvo aqui.
+  #
+  # postPatch: o placement do painel de notas vem HARDCODED no binário —
+  # não é algo que o `[config]` do plugin exponha (notes_dir/bundle_dir/
+  # editor_argv, só isso). `internal/launcher/launcher.go` monta o comando
+  # que abre o painel com `--placement split --direction right` fixo no
+  # código-fonte (é essa chamada, dentro do `--toggle`, que carrega a
+  # lógica de abrir/focar/fechar — um `[[keys.command]]` novo por fora,
+  # chamando `herdr plugin pane open` direto, perderia esse toggle). A
+  # troca pra `overlay` (o mais perto de "popup" que o herdr aceita: `herdr
+  # plugin pane open --placement` só tem overlay/split/tab/zoomed) tem que
+  # entrar antes do build. Confirmado nesta entrega, por dois caminhos: a
+  # árvore patchada tem a linha certa, e o binário compilado com o patch
+  # rodou `--toggle` de verdade numa sessão do herdr, sem erro.
   herdrNotesBin = pkgs.buildGoModule {
     pname = "herdr-notes";
     version = "0.2.0";
@@ -442,6 +455,10 @@ let
     vendorHash = "sha256-YMo6LEw5X+IaPYmuezUucucovrmve1EnXOK0pImGb9U=";
     subPackages = [ "cmd/herdr-notes" ];
     doCheck = false;
+    postPatch = ''
+      substituteInPlace internal/launcher/launcher.go \
+        --replace-fail '"--placement", "split", "--direction", "right", "--focus"' '"--placement", "overlay", "--focus"'
+    '';
   };
 
   # O manifesto abre o binário por caminho RELATIVO (`./bin/herdr-notes`) —
@@ -716,7 +733,7 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     #    reset auto-rename = prefix + Shift+a
     #    busca fuzzy       = prefix + p
     #    anotar seleção    = Ctrl+Alt+a          (colar: Ctrl+Alt+v)
-    #    notas do workspace = prefix + n
+    #    notas do workspace = prefix + n        (popup)
     #
     #  A tabela completa, dentro do programa: prefix + ?
     # =================================================================
@@ -956,12 +973,16 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     #  externo, default nvim) fica sem atalho por ora: a interface própria
     #  do plugin já edita inline (e/Enter pra editar, Esc salva e volta ao
     #  preview), então essa segunda via é dispensável até fazer falta.
+    #
+    #  Abre em POPUP (overlay), não em split — o placement vinha hardcoded
+    #  no binário do upstream; o patch que troca isso está no `postPatch`
+    #  de `herdrNotesBin`, mais acima.
     # =================================================================
     [[keys.command]]
     key         = "prefix+n"
     type        = "plugin_action"
     command     = "herdr-notes.toggle"
-    description = "notas: abre/foca/fecha o bloco do workspace"
+    description = "notas: abre/foca/fecha o popup do workspace"
 
     ${tema}
 
