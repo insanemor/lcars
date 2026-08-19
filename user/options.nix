@@ -61,6 +61,8 @@
 
     noctalia.enable = lib.mkEnableOption "o shell do desktop — barra, launcher, notificações, lock e dock numa peça só; substitui waybar, rofi e swaync";
 
+    noctalia.plugins.wallhaven.enable = lib.mkEnableOption "o plugin wallhaven do noctalia — painel de busca em wallhaven.cc que baixa e aplica o papel de parede escolhido";
+
     yazi.enable = lib.mkEnableOption "o yazi (gerenciador de arquivos TUI) com o wrapper `y` no zsh — depois de navegar, o shell já fica dentro do diretório escolhido; o painel dentro do herdr é o plugin herdr-yazi";
 
     lazygit.enable = lib.mkEnableOption "o lazygit (TUI de git) com config versionado em ~/.config/lazygit/config.yml — painéis de stash, reflog e o command log escondidos; o popup no herdr é `prefix+Shift+g`";
