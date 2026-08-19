@@ -60,5 +60,7 @@
     niri.enable = lib.mkEnableOption "a configuração do niri — atalhos, forma e cores (o compositor é lcars.system.wm.niri)";
 
     noctalia.enable = lib.mkEnableOption "o shell do desktop — barra, launcher, notificações, lock e dock numa peça só; substitui waybar, rofi e swaync";
+
+    yazi.enable = lib.mkEnableOption "o yazi (gerenciador de arquivos TUI) com o wrapper `y` no zsh — depois de navegar, o shell já fica dentro do diretório escolhido; o painel dentro do herdr é o plugin herdr-yazi";
   };
 }

@@ -241,6 +241,31 @@
       flake = false;
     };
 
+    # Plugin herdr-yazi — abre o yazi (gerenciador de arquivos TUI) num
+    # painel do herdr, com o diretório do painel focado já como cwd. Veja
+    # user/app/herdr.nix.
+    #
+    # `flake = false`: bash + `node -e` puros, sem build — mesma árvore-de-
+    # source direta do herdr-automatic-rename / herdr-bar / herdr-browser.
+    # O `plugin link` aponta direto pro input (read-only, nada escreve ali):
+    # o `[[build]]` do manifesto (que tenta `brew install yazi` no macOS) é
+    # pulado pelo link, e no Linux o `yazi` entra via `programs.yazi` no
+    # módulo do Home Manager (user/app/yazi.nix).
+    #
+    # PRESO NUM COMMIT (HEAD `54aa4e6`, v1.1.0): o upstream não publica tags
+    # — `nix flake update herdr-yazi` move, o `nupdate` traz. O alvo da
+    # entrega era `deaddaac` (v1.0.0), mas o PR #1 do upstream ("feat: add
+    # Linux support") já entrou depois da issue #88, e `platforms` no
+    # manifesto já vem com `["linux", "macos"]` de fábrica — sem o
+    # `substituteInPlace` que a issue planejava. HEAD carrega também a
+    # licença MIT que o autor adicionou em `54aa4e6` (sem ela o repo seria
+    # "todos os direitos reservados" por padrão, e os PRs externos
+    # mergeados ficariam em status ambíguo).
+    herdr-yazi = {
+      url = "git+https://github.com/speardragon/herdr-yazi?ref=main&rev=54aa4e6dff480189630fa3593146cdcc2768ade9";
+      flake = false;
+    };
+
     # FUTURO — descomente para ligar um repo privado sobreposto:
     # lcars-private = {
     #   url = "git+ssh://git@github.com/<voce>/lcars-private.git";

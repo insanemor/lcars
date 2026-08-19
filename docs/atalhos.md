@@ -41,6 +41,8 @@ se usa. Assume o profile `personal`, com tudo ligado.
 | `prefix` + `Shift` + `u` | usage bar — força atualização dos medidores |
 | `prefix` + `Shift` + `a` | desfaz nome manual de aba, volta pro automático |
 | `prefix` + `p` | busca fuzzy por aba ou agente |
+| `prefix` + `y` | yazi (file explorer), em split |
+| `prefix` + `Shift` + `y` | yazi, em aba |
 | `prefix` + `n` | notas do workspace, num popup pequeno (`Esc` fecha; sem toggle) |
 | `Ctrl+Alt+a` | anota o texto selecionado no terminal |
 | `Ctrl+Alt+v` | cola e limpa as anotações coletadas |
