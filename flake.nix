@@ -226,6 +226,21 @@
       flake = false;
     };
 
+    # Plugin herdr-notes — um Markdown permanente por workspace, editável
+    # fora do herdr em qualquer editor. Veja user/app/herdr.nix. Diferente
+    # do herdr-annotations (#81): aquele é um buffer de coleta que se apaga
+    # ao colar, este é documento de verdade — os dois ficam lado a lado.
+    #
+    # `flake = false`: Go, mesmo toolchain do herdr-usage-bar
+    # (rustPlatform.buildRustPackage não serve aqui) — o source vira input
+    # pro `pkgs.buildGoModule` em herdr.nix.
+    #
+    # PRESO NUMA TAG (v0.2.0), que o upstream publica.
+    herdr-notes = {
+      url = "git+https://github.com/cyperx84/herdr-notes?ref=refs/tags/v0.2.0&shallow=1";
+      flake = false;
+    };
+
     # FUTURO — descomente para ligar um repo privado sobreposto:
     # lcars-private = {
     #   url = "git+ssh://git@github.com/<voce>/lcars-private.git";

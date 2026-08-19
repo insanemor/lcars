@@ -428,6 +428,34 @@ let
     '';
   };
 
+  # --- herdr-notes: bloco de notas Markdown permanente por workspace ------
+  # Go, mesmo toolchain do herdr-usage-bar. cargoLock não existe pro Go — o
+  # vendorHash foi descoberto por tentativa (nix build de verdade,
+  # confirmado antes desta entrega).
+  #
+  # doCheck = false: mesma razão dos outros pacotes — a suíte do upstream
+  # não é o alvo aqui.
+  herdrNotesBin = pkgs.buildGoModule {
+    pname = "herdr-notes";
+    version = "0.2.0";
+    src = inputs.herdr-notes;
+    vendorHash = "sha256-YMo6LEw5X+IaPYmuezUucucovrmve1EnXOK0pImGb9U=";
+    subPackages = [ "cmd/herdr-notes" ];
+    doCheck = false;
+  };
+
+  # O manifesto abre o binário por caminho RELATIVO (`./bin/herdr-notes`) —
+  # igual ao herdr-file-viewer, não ao usage-bar/ghzinga (que resolvem pelo
+  # PATH). `plugin link` pula o [[build]] do upstream, que é quem colocaria
+  # o binário ali; mesma receita do pluginFileViewer: copia a árvore pro
+  # $out gravável e symlinka o binário buildado pelo Nix no lugar certo.
+  pluginNotes = pkgs.runCommand "herdr-notes-com-binario" { } ''
+    cp -r ${inputs.herdr-notes} $out
+    chmod -R u+w $out
+    mkdir -p $out/bin
+    ln -s ${herdrNotesBin}/bin/herdr-notes $out/bin/herdr-notes
+  '';
+
   # As cores, do esquema base16 do stylix — o mesmo que pinta o terminal, o
   # prompt, GTK e Qt. O herdr aceita hex em todos os tokens (veja
   # src/config/theme.rs no upstream), então a paleta inteira é sobrescrita e
@@ -623,6 +651,13 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
           echo "$saida"
         fi
       '';
+
+      pluginNotesAtivacao = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        if ! saida=$(${lib.getExe herdr} plugin link ${pluginNotes} 2>&1); then
+          echo "lcars: falha ao registrar o herdr-notes — prefix+n não vai abrir"
+          echo "$saida"
+        fi
+      '';
     in
     {
       herdrPluginBrowser = pluginBrowserAtivacao;
@@ -633,6 +668,7 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
       herdrPluginAutomaticRename = pluginAutomaticRenameAtivacao;
       herdrPluginBar = pluginBarAtivacao;
       herdrPluginAnnotations = pluginAnnotationsAtivacao;
+      herdrPluginNotes = pluginNotesAtivacao;
     }
     // lib.optionalAttrs osConfig.lcars.user.nvim.enable {
       herdrPluginHerdrNvim = pluginHerdrNvimAtivacao;
@@ -680,6 +716,7 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     #    reset auto-rename = prefix + Shift+a
     #    busca fuzzy       = prefix + p
     #    anotar seleção    = Ctrl+Alt+a          (colar: Ctrl+Alt+v)
+    #    notas do workspace = prefix + n
     #
     #  A tabela completa, dentro do programa: prefix + ?
     # =================================================================
@@ -906,6 +943,25 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     type        = "plugin_action"
     command     = "jagzmz.herdr-annotations.paste-collection"
     description = "cola e limpa as anotações coletadas"
+
+    # =================================================================
+    #  Plugin herdr-notes — um Markdown permanente por workspace, editável
+    #  fora do herdr em qualquer editor. Diferente do herdr-annotations
+    #  acima: aquele é um buffer de coleta que se apaga ao colar, este é
+    #  documento de verdade. Não há passo manual: o binário é montado em
+    #  pluginNotes (buildGoModule + symlink) e registrado na ativação
+    #  (home.activation.herdrPluginNotes).
+    #
+    #  Só a ação `toggle` tem atalho — a ação `edit` (abre a nota no editor
+    #  externo, default nvim) fica sem atalho por ora: a interface própria
+    #  do plugin já edita inline (e/Enter pra editar, Esc salva e volta ao
+    #  preview), então essa segunda via é dispensável até fazer falta.
+    # =================================================================
+    [[keys.command]]
+    key         = "prefix+n"
+    type        = "plugin_action"
+    command     = "herdr-notes.toggle"
+    description = "notas: abre/foca/fecha o bloco do workspace"
 
     ${tema}
 
