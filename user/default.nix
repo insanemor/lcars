@@ -27,6 +27,7 @@
     ./app/dotfiles.nix
     ./app/nvim.nix
     ./app/yazi.nix
+    ./app/lazygit.nix
     ./app/claude-code.nix
     ./cli/crush/default.nix
     ./cli/opencode/default.nix

@@ -543,8 +543,6 @@ in
 lib.mkIf osConfig.lcars.user.herdr.enable {
   home.packages = [
     herdr
-    # No PATH porque é ferramenta de uso direto, não só o alvo do popup.
-    pkgs.lazygit
 
     # Runtime do plugin browser, e o único caso aqui em que o pacote precisa
     # estar no PATH sem ser para o usuário chamar: o manifesto do plugin roda

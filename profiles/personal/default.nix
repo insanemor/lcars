@@ -66,5 +66,6 @@ with lib;
     lcars.user.niri.enable = mkDefault true;
     lcars.user.noctalia.enable = mkDefault true;
     lcars.user.yazi.enable = mkDefault true;
+    lcars.user.lazygit.enable = mkDefault true;
   };
 }
