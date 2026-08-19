@@ -28,9 +28,6 @@ with lib;
     # O niri é a exceção: o stylix não tem alvo para ele, e user/wm/niri.nix
     # aplica as mesmas cores à mão.
     lcars.system.theme.enable = mkDefault true;
-    # Terminal um pouco transparente para ver o wallpaper, sem comprometer a
-    # leitura. Stylix cuida do kitty e de qualquer outro terminal suportado.
-    lcars.system.theme.opacity.terminal = mkDefault 0.9;
 
     # Áudio é independente do desktop: o Plasma não o liga por trás, é aqui
     # que os dois se encontram. O teclado vale em qualquer máquina; o layout

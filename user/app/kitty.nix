@@ -44,7 +44,6 @@
 # compilado de um input preso numa tag — se um `nupdate --inputs` o quebrar,
 # aquele atalho é o terminal que roda o rollback.
 {
-  config,
   osConfig,
   inputs,
   lib,
@@ -74,11 +73,11 @@ lib.mkIf osConfig.lcars.user.kitty.enable {
       # `prefer-no-csd` do niri pede, e o que faz o anel de foco aparecer.
       hide_window_decorations = "yes";
     }
+    # Caminho absoluto no store, e não o nome do programa: o kitty é lançado
+    # pelo compositor, cujo PATH não é o do shell interativo. Com o herdr
+    # desligado a linha não é gerada, e o kitty volta ao shell de login da
+    # conta — é o que mantém o profile `basic` inteiro.
     // lib.optionalAttrs osConfig.lcars.user.herdr.enable {
-      # Caminho absoluto no store, e não o nome do programa: o kitty é lançado
-      # pelo compositor, cujo PATH não é o do shell interativo. Com o herdr
-      # desligado a linha não é gerada, e o kitty volta ao shell de login da
-      # conta — é o que mantém o profile `basic` inteiro.
       shell = herdr;
     };
 
@@ -102,30 +101,5 @@ lib.mkIf osConfig.lcars.user.kitty.enable {
       "ctrl+v" = "paste_from_clipboard";
       "ctrl+insert" = "paste_from_clipboard";
     };
-  }
-  // lib.optionalAttrs osConfig.lcars.system.theme.enable {
-    # TRANSPARÊNCIA DO FUNDO (#104)
-    # ------------------------------
-    # O stylix já escreve `background_opacity` (modules/kitty/hm.nix) a partir
-    # de `stylix.opacity.terminal` (#103) — e ele só age sobre a cor `background`
-    # (= base00 do esquema), mantendo as outras opacas. Em 0.9 o fundo fica
-    # 90% opaco e o wallpaper mal aparece.
-    #
-    # `transparent_background_colors` é a chave cirúrgica: lista cores no
-    # formato `#hex@opacidade` que DEVEM ser desenhadas translúcidas. Põe a
-    # base00 com 0.4 (40% opaco) e o wallpaper aparece nitidamente, enquanto
-    # seleção, status line do vim e highlight de sintaxe (que usam cores
-    # diferentes da base00) continuam totalmente opacos.
-    #
-    # `extraConfig` é a única forma de chegar lá via Home Manager: o módulo
-    # do kitty tipa `settings` como `attrsOf (str|bool|int|float)` e rejeita
-    # listas, então não dá para escrever `transparent_background_colors` como
-    # chave de `settings`.
-    #
-    # Gate por `lcars.system.theme.enable`: `config.lib.stylix.colors` é um
-    # valor calculado pelo módulo do stylix, e sem stylix ele não existe.
-    extraConfig = ''
-      transparent_background_colors ${config.lib.stylix.colors.withHashtag.base00}@0.4
-    '';
   };
 }
