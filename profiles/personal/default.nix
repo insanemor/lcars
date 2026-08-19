@@ -43,6 +43,7 @@ with lib;
       "bat"
       "eza"
       "gh"
+      "mtr"
     ];
 
     # --- ambiente do usuário (user/) ----------------------------------
@@ -50,6 +51,8 @@ with lib;
     # uso interativo.
     lcars.user.zsh.enable = mkDefault true;
     lcars.user.atuin.enable = mkDefault true;
+    lcars.user.fzf.enable = mkDefault true;
+    lcars.user.zoxide.enable = mkDefault true;
     lcars.user.git.enable = mkDefault true;
     lcars.user.direnv.enable = mkDefault true;
     lcars.user.dotfiles.enable = mkDefault true;
