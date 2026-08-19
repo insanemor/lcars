@@ -24,6 +24,11 @@
 #
 # PARA ESCONDER O COMMAND LOG: `gui.showCommandLog: false` na seção
 # `gui`.
+#
+# PARA TIRAR O PREFIXO NUMÉRICO DOS TÍTULOS: `gui.showPanelJumps: false`.
+# Sem isso, o título de cada painel lateral ganha um "1 - status",
+# "2 - files" etc. Os atalhos de jump (`jumpToBlock`) seguem valendo —
+# só o label nos títulos some.
 {
   osConfig,
   lib,
@@ -52,5 +57,10 @@ lib.mkIf osConfig.lcars.user.lazygit.enable {
         - [files, worktrees, submodules]
         - [branches, remotes, tags]
         - [commits]
+
+      # Esconde os prefixos numéricos ("0 - diff", "1 - status", …) nos
+      # títulos das janelas. Os atalhos de jump (jumpToBlock) seguem
+      # valendo — só o label nos títulos some.
+      showPanelJumps: false
   '';
 }
