@@ -56,10 +56,10 @@ lib.mkIf osConfig.lcars.user.lazygit.enable {
       showCommandLog: false
 
       # Quando um arquivo tem staged e unstaged ao mesmo tempo, divide
-      # o painel principal na horizontal (uma linha em cima do diff
-      # staged, outra embaixo com o unstaged). Default 'flexible'
+      # o painel principal na vertical (coluna esquerda pro diff
+      # staged, coluna direita pro unstaged). Default 'flexible'
       # decide entre horizontal e vertical pela largura da janela.
-      mainPanelSplitMode: horizontal
+      mainPanelSplitMode: vertical
 
       # Quatro blocos verticais separados na coluna da esquerda, um
       # painel por bloco: status, files, branches, commits. stash e
