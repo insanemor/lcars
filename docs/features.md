@@ -13,7 +13,7 @@ O repo vem com `personal`.
 |---|---|---|---|
 | Base do sistema (`system/core`) | `lcars.system.core.enable` | sim | sim |
 | ssh e firewall (`system/security`) | `lcars.system.security.enable` | sim | sim |
-| niri, compositor (`system/wm`) — fork [Niri-glass](https://github.com/zaroutt/Niri-glass) com efeito liquid-glass | `lcars.system.wm.niri.enable` | — | sim |
+| niri, compositor (`system/wm`) | `lcars.system.wm.niri.enable` | — | sim |
 | Config do niri (`user/wm`) | `lcars.user.niri.enable` | — | sim |
 | Tema unificado (`system/theme`) | `lcars.system.theme.enable` | — | sim |
 | Shell noctalia (`user/wm`) | `lcars.user.noctalia.enable` | — | sim |
