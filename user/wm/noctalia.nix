@@ -176,7 +176,18 @@ let
   # `[plugins].enabled`, e o noctalia baixa o repositório oficial sozinho na
   # primeira ativação. Adicionar um plugin novo é declarar a flag em
   # user/options.nix e somar o id aqui.
-  pluginsHabilitados = lib.optional osConfig.lcars.user.noctalia.plugins.wallhaven.enable "noctalia/wallhaven";
+  pluginsHabilitados =
+    (lib.optional osConfig.lcars.user.noctalia.plugins.wallhaven.enable "noctalia/wallhaven")
+    ++ (lib.optional osConfig.lcars.user.noctalia.plugins.nixMonitor.enable "avivbintangaringga/nix-monitor")
+    ++ (lib.optional osConfig.lcars.user.noctalia.plugins.niriDisplays.enable "raycursive/niri-displays")
+    ++ (lib.optional osConfig.lcars.user.noctalia.plugins.niriAnimations.enable "imjustdoingmypart/niri-animations")
+    ++ (lib.optional osConfig.lcars.user.noctalia.plugins.miniDocker.enable "8bury/mini-docker")
+    ++ (lib.optional osConfig.lcars.user.noctalia.plugins.gslapper.enable "nomadcxx/gslapper")
+    ++ (lib.optional osConfig.lcars.user.noctalia.plugins.gitCompanion.enable "tphilippot/git_companion")
+    ++ (lib.optional osConfig.lcars.user.noctalia.plugins.driveHealth.enable "gustav0ar/drive-health")
+    ++ (lib.optional osConfig.lcars.user.noctalia.plugins.aiUsagebar.enable "felipeartur/ai-usagebar")
+    ++ (lib.optional osConfig.lcars.user.noctalia.plugins.mpvpaper.enable "noctalia/mpvpaper")
+    ++ (lib.optional osConfig.lcars.user.noctalia.plugins.notes.enable "noctalia/notes");
 
   # `recursiveUpdate` e não `//`: os efeitos vivem a dois níveis
   # (`shell.animation.enabled`), e a fusão rasa apagaria as outras chaves de
