@@ -1,0 +1,244 @@
+{
+  "browser": {
+    "theme": {
+      "color_scheme2": 0
+    }
+  },
+  "vivaldi": {
+    "address_bar": {
+      "position": 0
+    },
+    "appearance": {
+      "density": false,
+      "range_buttons": true
+    },
+    "bookmarks": {
+      "bar": {
+        "display": 0,
+        "position": 0,
+        "sorting": {
+          "sortField": "manually",
+          "sortOrder": 1
+        }
+      },
+      "panel": {
+        "sorting": {
+          "sortField": "manually",
+          "sortOrder": 1
+        }
+      }
+    },
+    "chained_commands": {
+      "command_list": [
+        {
+          "category": "CATEGORY_COMMAND_CHAIN",
+          "chain": [
+            {
+              "defaultValue": "https://vivaldi.com",
+              "key": "f57b8092-9426-4bc8-8e39-fcf3e315b065",
+              "label": "COMMAND_OPEN_LINK_DEFAULT",
+              "name": "Abrir Link em uma Aba Nova",
+              "param": "https://vivaldi.com"
+            },
+            {
+              "key": "275ca3f7-ecfb-4445-bf87-686cd473536e"
+            }
+          ],
+          "key": "ckqjhvf430003c5429ni7i7bz",
+          "label": "Fechar outras e abrir aba definida",
+          "name": "COMMAND_ckqjhvf430003c5429ni7i7bz"
+        },
+        {
+          "category": "CATEGORY_COMMAND_CHAIN",
+          "chain": [
+            {
+              "key": "7420368f-565e-409f-8eec-5b5c578429af"
+            },
+            {
+              "key": "8dd47fc9-4c1f-4487-a475-f55bfa61aaf2"
+            }
+          ],
+          "key": "ckqkoqycf0003wv4210uduu8n",
+          "label": "Alternar tela cheia e modo de leitura",
+          "name": "COMMAND_ckqkoqycf0003wv4210uduu8n"
+        },
+        {
+          "category": "CATEGORY_COMMAND_CHAIN",
+          "chain": [
+            {
+              "defaultValue": "https://vivaldi.com",
+              "key": "0b01337b-4c13-4197-90c8-179c5c91cfff",
+              "label": "COMMAND_OPEN_LINK_CURRENT",
+              "param": "https://vivaldi.com"
+            },
+            {
+              "defaultValue": "https://vivaldi.net",
+              "key": "f57b8092-9426-4bc8-8e39-fcf3e315b065",
+              "label": "COMMAND_OPEN_LINK_DEFAULT",
+              "param": "https://vivaldi.net"
+            },
+            {
+              "defaultValue": "https://help.vivaldi.com",
+              "key": "f57b8092-9426-4bc8-8e39-fcf3e315b065",
+              "label": "COMMAND_OPEN_LINK_DEFAULT",
+              "param": "https://help.vivaldi.com"
+            },
+            {
+              "defaultValue": 1000,
+              "key": "2eb81004-6703-46db-9933-6afcfde924e4",
+              "param": 150
+            },
+            {
+              "key": "e245bce5-20a7-481f-910e-23bf1de86748"
+            },
+            {
+              "key": "e245bce5-20a7-481f-910e-23bf1de86748"
+            },
+            {
+              "defaultValue": 1000,
+              "key": "2eb81004-6703-46db-9933-6afcfde924e4",
+              "param": 125
+            },
+            {
+              "key": "cdd99010-5477-4508-aa28-d671de35dcb2"
+            },
+            {
+              "key": "854f8a44-50bd-41bc-8277-acd51e719d1b"
+            }
+          ],
+          "key": "ckqjdk4o7000001l58zh17egm",
+          "label": "Abrir links e exibir lado-a-lado",
+          "name": "COMMAND_ckqjdk4o7000001l58zh17egm"
+        }
+      ],
+      "version": 1
+    },
+    "history": {
+      "days_to_keep_visits": 3650
+    },
+    "keyboard": {
+      "tab_to_all": 0
+    },
+    "menu": {
+      "compact": false,
+      "display": 0,
+      "icon_type": 1
+    },
+    "panels": {
+      "position": 0,
+      "window_defaults": {
+        "barVisible": false,
+        "contentVisible": false,
+        "width": 400
+      }
+    },
+    "startpage": {
+      "navigation": 2,
+      "speed_dial": {
+        "titles_visible": 2
+      }
+    },
+    "status_bar": {
+      "display": 0,
+      "minimized": 1
+    },
+    "system": {
+      "search_engine": {
+        "default": {
+          "index": 5
+        }
+      },
+      "show_exit_confirmation_dialog": false
+    },
+    "tabs": {
+      "bar": {
+        "position": 0,
+        "width": 260
+      },
+      "stacking": {
+        "mode": 3
+      },
+      "tiling": {
+        "collapse_border": false
+      }
+    },
+    "theme": {
+      "schedule": {
+        "o_s": {
+          "dark": "Vivaldi2",
+          "light": "607da7fd-ff7a-44cb-b82c-a43c5a000d39"
+        }
+      },
+      "simple_scrollbar": true
+    },
+    "toolbars": {
+      "navigation": [
+        "Back",
+        "Forward",
+        "Reload",
+        "AddressField",
+        "DownloadButton",
+        "Spacer",
+        "Extensions",
+        "UpdateButton",
+        "AccountButton"
+      ],
+      "panel": [
+        "PanelBookmarks",
+        "PanelDownloads",
+        "PanelHistory",
+        "PanelNotes",
+        "PanelTranslate",
+        "PanelWindow",
+        "PanelReadingList",
+        "Divider",
+        "PanelMail",
+        "PanelContacts",
+        "PanelCalendar",
+        "PanelTasks",
+        "PanelFeeds",
+        "PanelWeb",
+        "FlexibleSpacer"
+      ],
+      "status": [
+        "Settings",
+        "BreakMode",
+        "SyncStatus",
+        "MailStatus",
+        "CalendarStatus",
+        "StatusInfo",
+        "VersionInfo",
+        "AutoHideToggle",
+        "CaptureImages",
+        "TilingToggle",
+        "PageActions",
+        "Zoom",
+        "Clock"
+      ],
+      "tabbar_after": [
+        "NewTab",
+        "FlexibleSpacer",
+        "TabButton"
+      ],
+      "tabbar_before": [
+        "WorkspaceButton"
+      ]
+    },
+    "translate": {
+      "enabled": true
+    },
+    "webpages": {
+      "tab_focuses_links": true
+    },
+    "workspaces": {
+      "list": [
+        {
+          "emoji": "👀",
+          "icon": "<svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" xmlns=\"http://www.w3.org/2000/svg\">\n  <path d=\"M2.5 2.5C2.47884 1.99197 2.65985 1.49625 3.00341 1.1214C3.34696 0.746547 3.82505 0.523105 4.333 0.5C7.045 0.5 8 4.5 8 4.5H4.333C3.82496 4.47716 3.34671 4.25379 3.0031 3.87888C2.65949 3.50397 2.47857 3.0081 2.5 2.5V2.5Z\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n  <path d=\"M13.5 2.5C13.5212 1.99197 13.3401 1.49625 12.9966 1.1214C12.653 0.746547 12.1749 0.523105 11.667 0.5C8.955 0.5 8 4.5 8 4.5H11.667C12.175 4.47716 12.6533 4.25379 12.9969 3.87888C13.3405 3.50397 13.5214 3.0081 13.5 2.5V2.5Z\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n  <path d=\"M13.5 9.5V14C13.5 14.3978 13.342 14.7794 13.0607 15.0607C12.7794 15.342 12.3978 15.5 12 15.5H4C3.60218 15.5 3.22064 15.342 2.93934 15.0607C2.65804 14.7794 2.5 14.3978 2.5 14V9.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n  <path d=\"M15.5 4.5H0.5V7.5H15.5V4.5Z\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n</svg>\n",
+          "id": 1787149005004,
+          "name": "Principal"
+        }
+      ]
+    }
+  }
+}
