@@ -57,84 +57,49 @@ let
   # caminho no store para o `shell` abaixo — quem instala é o outro módulo.
   herdr = lib.getExe inputs.herdr.packages.${pkgs.stdenv.hostPlatform.system}.default;
 in
-lib.mkIf osConfig.lcars.user.kitty.enable (
-  # Opacidade — para o liquid-glass do niri-glass (#107/#108) ter onde
-  # aparecer.
-  #
-  # O `background-effect { xray; liquid-glass }` do window-rule em
-  # user/wm/niri.nix só revela o vidro nas partes da JANELA que já são
-  # transparentes — ele não força nada a ficar translúcido (confirmado na wiki
-  # do niri e no shader do fork). Sem nenhum app com opacidade própria, o
-  # efeito ficava sem onde aparecer: zero janela mostrava qualquer traço dele.
-  # A #109 investigou isso dentro da VM (journalctl + screenshot) e confirmou
-  # o compositor funcionando — faltava só isto.
-  #
-  # `stylix.opacity.terminal`, e não `programs.kitty.settings.background_opacity`
-  # direto: o stylix já escreve essa chave (`modules/kitty/hm.nix`, com o
-  # default 1.0 do próprio stylix), e as duas definições na mesma prioridade
-  # são conflito de avaliação — pego pelo `check.sh --eval` do profile
-  # personal. É a opção que o próprio stylix expõe pra isto, vale pra todo
-  # terminal que ele tematiza, não só o kitty.
-  #
-  # Só com `theme.enable`, e é por isso que isto está fora de
-  # `programs.kitty.settings`, somado por `//`: no profile `basic`, o stylix
-  # nem chega a existir do lado do Home Manager —
-  # `home-manager.users.<user>.stylix` não é opção — e `check.sh --eval`
-  # prova isso na hora.
-  #
-  # Limitação do PRÓPRIO kitty, não deste repo: a opacidade só vale nas
-  # células com a cor de fundo PADRÃO do terminal. Onde um programa pinta uma
-  # cor de fundo explícita — os painéis e a status bar do herdr, por exemplo —
-  # a célula continua opaca, de propósito, pra manter texto legível. Por isso
-  # o vidro aparece forte com o terminal ocioso e quase some com a TUI cheia
-  # de cor. Não é bug, é o `kitty/options/definition.py` upstream.
-  lib.optionalAttrs osConfig.lcars.system.theme.enable {
-    stylix.opacity.terminal = 0.8;
-  }
-  // {
-    programs.kitty = {
-      enable = true;
+lib.mkIf osConfig.lcars.user.kitty.enable {
+  programs.kitty = {
+    enable = true;
 
-      settings = {
-        # Rolagem generosa: o padrão do kitty são 2000 linhas, e uma saída de
-        # build de NixOS passa disso sem esforço.
-        scrollback_lines = 10000;
+    settings = {
+      # Rolagem generosa: o padrão do kitty são 2000 linhas, e uma saída de
+      # build de NixOS passa disso sem esforço.
+      scrollback_lines = 10000;
 
-        # Sem o aviso de "sua configuração mudou, recarregue" a cada rebuild.
-        confirm_os_window_close = 0;
+      # Sem o aviso de "sua configuração mudou, recarregue" a cada rebuild.
+      confirm_os_window_close = 0;
 
-        # A barra de título é desenhada pelo compositor, não pelo kitty — é o que
-        # `prefer-no-csd` do niri pede, e o que faz o anel de foco aparecer.
-        hide_window_decorations = "yes";
-      }
-      # Caminho absoluto no store, e não o nome do programa: o kitty é lançado
-      # pelo compositor, cujo PATH não é o do shell interativo. Com o herdr
-      # desligado a linha não é gerada, e o kitty volta ao shell de login da
-      # conta — é o que mantém o profile `basic` inteiro.
-      // lib.optionalAttrs osConfig.lcars.user.herdr.enable {
-        shell = herdr;
-      };
-
-      # COLAR — Ctrl+V e Ctrl+Insert, além do Ctrl+Shift+V de fábrica (#71)
-      # --------------------------------------------------------------------
-      # O padrão do kitty é só `ctrl+shift+v` (e `shift+insert`): ele reserva
-      # `ctrl+v` de propósito, pra não atropelar programas de terminal que usam
-      # essa combinação — o caso mais comum é o modo visual-block do vim/nvim.
-      # Foi assim que a #71 apareceu: "copio, mas não consigo colar" era
-      # digitar `Ctrl+V`/`Ctrl+Insert` (o hábito de toda GUI) contra um kitty
-      # que só reconhece `Ctrl+Shift+V`.
-      #
-      # As duas linhas abaixo pagam esse preço às claras: um keybinding do
-      # kitty intercepta ANTES da tecla chegar ao programa dentro do terminal
-      # (o herdr, ou o que estiver rodando dentro dele). Com isto ligado,
-      # `Ctrl+V` sempre cola — inclusive dentro do vim/nvim, onde antes entrava
-      # em modo visual-block. Escolha deliberada do usuário: o Ctrl+V "como em
-      # qualquer app" pesa mais que o atalho do vim, que continua acessível por
-      # `v` (visual) e `Ctrl+Shift+V` residual não muda nada aqui.
-      keybindings = {
-        "ctrl+v" = "paste_from_clipboard";
-        "ctrl+insert" = "paste_from_clipboard";
-      };
+      # A barra de título é desenhada pelo compositor, não pelo kitty — é o que
+      # `prefer-no-csd` do niri pede, e o que faz o anel de foco aparecer.
+      hide_window_decorations = "yes";
+    }
+    # Caminho absoluto no store, e não o nome do programa: o kitty é lançado
+    # pelo compositor, cujo PATH não é o do shell interativo. Com o herdr
+    # desligado a linha não é gerada, e o kitty volta ao shell de login da
+    # conta — é o que mantém o profile `basic` inteiro.
+    // lib.optionalAttrs osConfig.lcars.user.herdr.enable {
+      shell = herdr;
     };
-  }
-)
+
+    # COLAR — Ctrl+V e Ctrl+Insert, além do Ctrl+Shift+V de fábrica (#71)
+    # --------------------------------------------------------------------
+    # O padrão do kitty é só `ctrl+shift+v` (e `shift+insert`): ele reserva
+    # `ctrl+v` de propósito, pra não atropelar programas de terminal que usam
+    # essa combinação — o caso mais comum é o modo visual-block do vim/nvim.
+    # Foi assim que a #71 apareceu: "copio, mas não consigo colar" era
+    # digitar `Ctrl+V`/`Ctrl+Insert` (o hábito de toda GUI) contra um kitty
+    # que só reconhece `Ctrl+Shift+V`.
+    #
+    # As duas linhas abaixo pagam esse preço às claras: um keybinding do
+    # kitty intercepta ANTES da tecla chegar ao programa dentro do terminal
+    # (o herdr, ou o que estiver rodando dentro dele). Com isto ligado,
+    # `Ctrl+V` sempre cola — inclusive dentro do vim/nvim, onde antes entrava
+    # em modo visual-block. Escolha deliberada do usuário: o Ctrl+V "como em
+    # qualquer app" pesa mais que o atalho do vim, que continua acessível por
+    # `v` (visual) e `Ctrl+Shift+V` residual não muda nada aqui.
+    keybindings = {
+      "ctrl+v" = "paste_from_clipboard";
+      "ctrl+insert" = "paste_from_clipboard";
+    };
+  };
+}
