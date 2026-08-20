@@ -90,6 +90,18 @@ lib.mkIf osConfig.lcars.user.niri.enable {
     # inválida nunca chega à máquina.
     package = pkgs.niri;
 
+    # Exceção à validação acima, e por um motivo que `niri validate` não tem
+    # como contornar: ele roda dentro do sandbox da derivação, sem acesso a
+    # nada fora do store. Com o plugin niri-animations ligado, `extraConfig`
+    # inclui `animations.kdl` — um arquivo que só existe em `$HOME` em
+    # runtime, escrito pelo próprio plugin (comentário logo abaixo). Não
+    # existe caminho, relativo ou absoluto, que o sandbox enxergue: o build
+    # falhava sempre, não importava o conteúdo real do arquivo (#120).
+    #
+    # Sem o plugin ligado, `checkConfig` continua `true` — a proteção acima
+    # segue valendo pro resto da configuração.
+    checkConfig = !osConfig.lcars.user.noctalia.plugins.niriAnimations.enable;
+
     # false, e não é descuido. As unidades systemd do niri — que é de onde sai
     # o `graphical-session.target` de que o serviço do noctalia depende — já
     # são instaladas pelo módulo NixOS (`systemd.packages = [ cfg.package ]`,
