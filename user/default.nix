@@ -30,6 +30,7 @@
     ./app/lazygit.nix
     ./app/onedrive.nix
     ./app/claude-code.nix
+    ./app/sudo-askpass.nix
     ./cli/crush/default.nix
     ./cli/opencode/default.nix
     ./wm/niri.nix

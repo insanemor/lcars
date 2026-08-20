@@ -78,5 +78,6 @@ with lib;
     lcars.user.yazi.enable = mkDefault true;
     lcars.user.lazygit.enable = mkDefault true;
     lcars.user.onedrive.enable = mkDefault true;
+    lcars.user.sudoAskpass.enable = mkDefault true;
   };
 }
