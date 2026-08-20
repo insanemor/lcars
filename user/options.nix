@@ -63,6 +63,26 @@
 
     noctalia.plugins.wallhaven.enable = lib.mkEnableOption "o plugin wallhaven do noctalia — painel de busca em wallhaven.cc que baixa e aplica o papel de parede escolhido";
 
+    noctalia.plugins.nixMonitor.enable = lib.mkEnableOption "o plugin nix-monitor do noctalia — compara a revisão local do nixpkgs com um branch remoto e mostra gerações do NixOS, tamanho do store, tamanho do closure e status de atualização na barra";
+
+    noctalia.plugins.niriDisplays.enable = lib.mkEnableOption "o plugin niri-displays do noctalia — inspeciona os outputs conectados e permite mudanças temporárias de display (resolução, taxa, escala, foco) via IPC do niri";
+
+    noctalia.plugins.niriAnimations.enable = lib.mkEnableOption "o plugin niri-animations do noctalia — gerencia animações do niri por um painel, com presets e velocidade, sem editar configuração manualmente";
+
+    noctalia.plugins.miniDocker.enable = lib.mkEnableOption "o plugin mini-docker do noctalia — gerencia containers, imagens, volumes e redes docker, com status na barra e controles em painel";
+
+    noctalia.plugins.gslapper.enable = lib.mkEnableOption "o plugin gslapper do noctalia — escolhe papéis de parede de imagem ou vídeo num único seletor, por output ou para todos";
+
+    noctalia.plugins.gitCompanion.enable = lib.mkEnableOption "o plugin git_companion do noctalia — monitora repositórios git na barra e dá acesso a pull requests e issues do GitHub e GitLab";
+
+    noctalia.plugins.driveHealth.enable = lib.mkEnableOption "o plugin drive-health do noctalia — descobre SSDs e HDDs, mostra temperatura e uso de espaço montado, com SMART completo opcional";
+
+    noctalia.plugins.aiUsagebar.enable = lib.mkEnableOption "o plugin ai-usagebar do noctalia — mostra a cota do plano de IA na barra, percentual de uso, tempo até reset e taxa de consumo";
+
+    noctalia.plugins.mpvpaper.enable = lib.mkEnableOption "o plugin oficial mpvpaper do noctalia — papéis de parede animados ou em vídeo, mantendo barra e dock acima da camada de fundo";
+
+    noctalia.plugins.notes.enable = lib.mkEnableOption "o plugin oficial notes do noctalia — notas rápidas num painel lateral em tela cheia, guardadas como arquivos de texto simples";
+
     yazi.enable = lib.mkEnableOption "o yazi (gerenciador de arquivos TUI) com o wrapper `y` no zsh — depois de navegar, o shell já fica dentro do diretório escolhido; o painel dentro do herdr é o plugin herdr-yazi";
 
     lazygit.enable = lib.mkEnableOption "o lazygit (TUI de git) com config versionado em ~/.config/lazygit/config.yml — painéis de stash, reflog e o command log escondidos; o popup no herdr é `prefix+Shift+g`";
