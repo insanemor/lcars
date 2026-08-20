@@ -35,12 +35,45 @@
 #
 # O que NÃO está aqui
 # -------------------
-# Nada de dentro do navegador: marcadores, abas, atalhos, tema, extensões,
-# mecanismo de busca. O Vivaldi guarda tudo isso no perfil dele e sincroniza
-# pela conta do usuário — declarar aqui seria uma segunda fonte de verdade que
-# a primeira sobrescreve no próximo login. O stylix também não o alcança: não
-# há alvo para Vivaldi, e a paleta de interface é escolhida na Configuração
-# dele.
+# A parte do estado interno do navegador que o Vivaldi Sync já cobre —
+# bookmarks, abas, histórico, senhas, extensões, reading list, notes — fica
+# por conta da conta do usuário. Declarar aqui seria uma segunda fonte de
+# verdade que a primeira sobrescreve no próximo login.
+#
+# O que ESTÁ aqui
+# --------------
+# O subconjunto do `Preferences` que o Sync NÃO cobre: posição da barra de
+# endereço, posição da tab bar, posição do painel lateral, ordem dos botões
+# nas toolbars, status bar, densidade da UI, scrollbar, agendamento de tema,
+# workspaces, macros (chained commands), retenção de histórico, default
+# search engine. Vive em `vivaldi-prefs.json` ao lado deste arquivo, e o
+# hook de activation (mais abaixo) faz deep-merge por cima do Preferences que
+# o navegador criou — sem sobrescrever o que o Sync grava nem as preferências
+# geradas em runtime (cookies, login data, pinned_tabs, account_values etc.).
+#
+# Por que deep-merge, e não xdg.configFile
+# -----------------------------------------
+# `xdg.configFile."vivaldi/Default/Preferences".source = ...` cria um symlink
+# para o JSON gerenciado: o navegador não conseguiria gravar nada nele
+# (qualquer salvamento de preferência falha, sync de preferências futuras
+# também). Por isso o Preferences tem que continuar sendo um arquivo comum
+# do usuário; o Nix só entra como camada por cima, no momento do
+# `home-manager switch`.
+#
+# O trade-off é direto: se o usuário ajusta uma chave gerenciada pela GUI
+# (tema, posição da tab bar, etc.), o próximo switch reverte. É a mesma
+# promessa de qualquer preferência gerenciada — você ganha em reprodutibilidade
+# entre máquinas, perde em ajustes improvisados pela GUI.
+#
+# Quando o hook não roda
+# ----------------------
+# Em uma máquina nova, o Preferences ainda não existe — ele nasce no primeiro
+# boot do Vivaldi. O hook loga um aviso e sai sem fazer nada. Depois de
+# abrir o navegador uma vez e logar no Sync, basta rodar `home-manager switch`
+# de novo: o hook encontra o arquivo e aplica o merge.
+#
+# O stylix também não o alcança: não há alvo para Vivaldi, e a paleta de
+# interface é escolhida na Configuração dele.
 #
 # O CHROMIUM DO HERDR CONTINUA SENDO OUTRO
 # ----------------------------------------
@@ -56,6 +89,17 @@
   ...
 }:
 
+let
+  # O subconjunto do `~/.config/vivaldi/Default/Preferences` que o Vivaldi
+  # Sync não cobre e que queremos replicar entre máquinas. O arquivo é
+  # lido e re-emitido via `writeText` para que o activation script tenha
+  # um path estável no /nix/store e a checagem do `check.sh --eval` não
+  # dependa do estado do filesystem do usuário.
+  managedPrefsPath = pkgs.writeText "vivaldi-managed-prefs.json" (
+    builtins.readFile ./vivaldi-prefs.json
+  );
+  jq = lib.getExe pkgs.jq;
+in
 lib.mkIf osConfig.lcars.user.vivaldi.enable {
   programs.vivaldi = {
     enable = true;
@@ -93,6 +137,41 @@ lib.mkIf osConfig.lcars.user.vivaldi.enable {
       { id = "aeblfdkhhhdcdjpifhhbdiojplfjncoa"; }
     ];
   };
+
+  # Deep-merge das preferências gerenciadas (lidas de `vivaldi-prefs.json`)
+  # no Preferences que o navegador mantém em
+  # `~/.config/vivaldi/Default/Preferences`. Roda em `home-manager switch`,
+  # depois do `writeBoundary` (qualquer escrita de arquivo do HM já
+  # aconteceu).
+  #
+  # O `jq -s '.[0] * .[1]' existing managed` faz deep-merge com override:
+  # para objetos, recursivamente; para arrays e escalares, substituição. As
+  # chaves gerenciadas (toolbars, tema, posições) sobrescrevem o que estiver
+  # lá; o resto — pinned_tabs, account_values, account_tracker_*, cookies,
+  # login data, sessões, o que o Sync grava — fica intacto porque não está
+  # no JSON gerenciado.
+  #
+  # O Vivaldi Sync usa o `account_values` para guardar preferências que ELE
+  # sincroniza — não toca em nada fora dali. Por isso é seguro sobrescrever
+  # as outras chaves a partir do Nix sem brigar com o Sync.
+  home.activation.vivaldiPrefs = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    prefs="$HOME/.config/vivaldi/Default/Preferences"
+    managed=${managedPrefsPath}
+
+    if [ ! -f "$prefs" ]; then
+      echo "lcars/vivaldi: $prefs ainda não existe — abra o Vivaldi uma vez para ele criar o perfil, depois rode \`home-manager switch\` de novo."
+      exit 0
+    fi
+
+    tmp="$prefs.tmp"
+    if ! ${jq} -s '.[0] * .[1]' "$prefs" "$managed" > "$tmp"; then
+      echo "lcars/vivaldi: falha no merge com jq — Preferences mantido como estava" >&2
+      rm -f "$tmp"
+      exit 0
+    fi
+    mv "$tmp" "$prefs"
+    echo "lcars/vivaldi: preferências gerenciadas aplicadas"
+  '';
 
   # Quem abre um link no sistema. Até a #60 isto não era declarado em lugar
   # nenhum: o `xdg-open` não achava associação, caía no fallback da variável

@@ -1067,11 +1067,33 @@ O módulo do Home Manager usado é `programs.vivaldi`, que sai do mesmo
 `chromium.nix` que serve chromium, brave e edge — daí ele também aceitar
 `extensions`, `dictionaries` e `nativeMessagingHosts`, nenhum deles usado aqui.
 
-**Nada de dentro do navegador é declarado.** Marcadores, abas, atalhos, tema,
-extensões e mecanismo de busca vivem no perfil do Vivaldi e sincronizam pela
-conta — pôr isso no Nix criaria uma segunda fonte de verdade que o primeiro
-login sobrescreve. O stylix também não o alcança: não há alvo para Vivaldi, e a
-cor da interface se escolhe na Configuração dele.
+**A parte do navegador que o Sync cobre fica por conta da conta do usuário.**
+Marcadores, abas, histórico, senhas, extensões, reading list e notes sincronizam
+via Vivaldi Sync; replicar isso no Nix seria uma segunda fonte de verdade que o
+próximo login sobrescreve.
+
+**O subconjunto que o Sync NÃO cobre é replicado via `vivaldi-prefs.json` ao
+lado do módulo.** Posição da barra de endereço, posição da tab bar, posição
+do painel lateral, ordem dos botões nas toolbars, status bar, densidade da UI,
+scrollbar, agendamento de tema, workspaces, macros (chained commands),
+retenção de histórico e default search engine. Na ativação, um hook de
+`home.activation` faz deep-merge (`jq -s '.[0] * .[1]'`) do JSON gerenciado
+por cima do `~/.config/vivaldi/Default/Preferences` que o navegador mantém —
+chaves gerenciadas sobrescrevem, o resto (incluindo o que o Sync grava em
+`account_values`) fica intacto.
+
+O trade-off é direto: ajustar uma chave gerenciada pela GUI reverte no
+próximo `home-manager switch` — é o preço de ter reprodutibilidade entre
+máquinas. O `vivaldi.theme.schedule.o_s.light` aponta para um UUID de tema
+custom; em uma máquina nova sem esse tema, o Vivaldi cai no default.
+Web panels (`WEBPANEL_*`) são UUIDs por perfil e ficam fora do JSON.
+
+Em uma máquina nova, o Preferences ainda não existe — ele nasce no primeiro
+boot do Vivaldi. O hook sai sem fazer nada e pede um `home-manager switch`
+depois do primeiro Sync.
+
+O stylix também não o alcança: não há alvo para Vivaldi, e a cor da interface
+se escolhe na Configuração dele.
 
 O chromium que `user/app/herdr.nix` traz **continua sendo outro programa**: ele
 é o motor CDP do painel de browser do multiplexador, fica fora do PATH, e o
