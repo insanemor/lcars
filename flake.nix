@@ -266,28 +266,6 @@
       flake = false;
     };
 
-    # Niri-glass — fork do niri com patches no shader para
-    # `background-effect { blur xray liquid-glass }`. O pacote do nixpkgs
-    # não sabe do bloco `liquid-glass`; o fork traz o próprio niri fixado
-    # num commit (49fc6117, jun/2026) com o overlay aplicado em cima. É o
-    # compositor de `lcars.system.wm.niri` quando a flag está ligada —
-    # `programs.niri-glass.enable = true` em system/wm/niri.nix delega ao
-    # `programs.niri` do nixpkgs trocando só o pacote.
-    #
-    # SEM `nixpkgs.follows` — de propósito. O overlay builda o niri
-    # patched a partir do niri fixado, e o `nixpkgs` interno do niri-glass
-    # (3e41b24, jun/2026) é o que ele conhece e valida. Seguir o nosso
-    # nixpkgs-unstable de agosto quebraria o overlay. É o mesmo padrão do
-    # noctalia, que também traz o próprio nixpkgs no lock.
-    #
-    # PRESO NO MAIN do upstream, sem tag: a versão que vale é o `rev`
-    # quando ele rodar; subir deliberadamente é editar a URL e regerar o
-    # lock. O upstream avisa: "If you bump the `niri` input, refresh the
-    # overlay files to match or the build may fail to compile."
-    niri-glass = {
-      url = "github:zaroutt/Niri-glass";
-    };
-
     # FUTURO — descomente para ligar um repo privado sobreposto:
     # lcars-private = {
     #   url = "git+ssh://git@github.com/<voce>/lcars-private.git";
@@ -389,19 +367,9 @@
                 };
                 # O módulo do noctalia declara programs.noctalia no Home
                 # Manager; user/wm/noctalia.nix é quem o liga e configura.
-                #
-                # O do niri-glass declara programs.niri-glass no Home
-                # Manager; em user/wm/niri.nix habilitamos só
-                # `programs.niri-glass.enable` (sem `config`, que
-                # escreveria um config.kdl via xdg.configFile e
-                # conflitaria com o do `wayland.windowManager.niri`). O
-                # pacote vai pra home.packages por via das dúvidas — o
-                # NixOS também o coloca em systemPackages via
-                # `programs.niri.package = <niri-glass>`.
                 sharedModules = [
                   ./user/personal
                   inputs.noctalia.homeModules.default
-                  inputs.niri-glass.homeManagerModules.default
                 ];
 
                 # Sem isto, o Home Manager ABORTA a ativação ao encontrar um
@@ -444,14 +412,6 @@
             })
 
             inputs.opnix.nixosModules.default
-
-            # O módulo NixOS do niri-glass é um wrapper fino em cima do
-            # `programs.niri` do nixpkgs: reusa toda a fiação de sessão
-            # (wayland-session, xdg-desktop-portal, polkit, dbus, gnome-
-            # keyring, systemd user) e troca só o pacote. Por isso basta
-            # `programs.niri-glass.enable = true` em system/wm/niri.nix —
-            # não precisamos reescrever o `programs.niri = { ... }` à mão.
-            inputs.niri-glass.nixosModules.default
           ]
           ++ extras;
         };

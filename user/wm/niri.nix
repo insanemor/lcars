@@ -27,7 +27,6 @@
   osConfig,
   lib,
   pkgs,
-  inputs,
   ...
 }:
 
@@ -82,20 +81,14 @@ lib.mkIf osConfig.lcars.user.niri.enable {
     enable = true;
 
     # O pacote aqui NÃO é para instalar o compositor — quem faz isso é o módulo
-    # NixOS (system/wm/niri.nix, via programs.niri-glass), e é o mesmo
-    # derivation, de modo que não há segunda cópia no store.
+    # NixOS (system/wm/niri.nix, via programs.niri), e é o mesmo derivation, de
+    # modo que não há segunda cópia no store.
     #
     # Ele está aqui pelo `checkConfig`, cujo default é `package != null`. Com o
     # pacote em null a validação não roda, e um erro de KDL só apareceria na
     # tela preta; com ele, `niri validate` roda no build e a configuração
     # inválida nunca chega à máquina.
-    #
-    # Apontar para o niri-glass e não para o `pkgs.niri` é obrigatório: o
-    # KDL abaixo tem o bloco `liquid-glass { ... }`, que o `pkgs.niri` do
-    # nixpkgs-unstable não conhece — `niri validate` rodaria contra o
-    # binário errado e falharia. O pacote do niri-glass é o fork com os
-    # patches no shader (#107).
-    package = inputs.niri-glass.packages.${pkgs.stdenv.hostPlatform.system}.niri-glass;
+    package = pkgs.niri;
 
     # false, e não é descuido. As unidades systemd do niri — que é de onde sai
     # o `graphical-session.target` de que o serviço do noctalia depende — já
@@ -140,19 +133,7 @@ lib.mkIf osConfig.lcars.user.niri.enable {
 
       # --- forma ---------------------------------------------------------
       layout = {
-        # 32, e não um valor estético qualquer: é o que o liquid-glass
-        # (#107/#108) precisa pra funcionar numa janela tiled em tela cheia.
-        #
-        # O xray refrata o que está ATRÁS da janela, e numa coluna tiled sem
-        # sobreposição — é a definição do scrollable tiling — o único "atrás"
-        # possível é a fresta de papel de parede que o gap expõe. Com 9px
-        # (o valor anterior) quase não sobrava nada pra refratar: o vidro só
-        # aparecia quando a janela perdia o foco, porque a #109 investigou e
-        # descartou scanout direto, piscar de cursor e o próprio foco antes
-        # de achar isto — confirmado ao vivo trocando o gap na sessão real:
-        # com 120px o vidro ficava nítido, com 32 já aparece nas bordas,
-        # focada ou não. A #110 é esse ajuste.
-        gaps = if rice then 32 else 4;
+        gaps = if rice then 9 else 4;
 
         # O anel de foco. Com `rice`, o gradiente base0D → base0A — que no
         # simbiot-dark é o ciano do logo indo ao lime, herdeiro direto da borda
@@ -354,54 +335,6 @@ lib.mkIf osConfig.lcars.user.niri.enable {
           ) 9
         )
       );
-
-      # --- efeito de vidro fosco (niri-glass) ------------------------------
-      # O bloco `liquid-glass` é o que o fork do niri-glass adiciona ao
-      # shader do compositor: faz a janela amostrar o wallpaper e mostrá-lo
-      # com efeito de vidro fosco. Só faz sentido aqui — o `pkgs.niri` do
-      # nixpkgs não reconhece o nó e abortaria o `niri validate` (#107).
-      #
-      # Preset "showcase" do README do Niri-glass — o primeiro exemplo da
-      # página do projeto, com refração, glow sutil, edge-lighting,
-      # vibrancy e adaptive-dim/boost. É ponto de partida, não definitivo:
-      # a #108 subiu do preset sutil da #107 (só `saturation 1.0`, que
-      # ficou imperceptível em wallpaper chapado) para este aqui, e ajustes
-      # finos (baixar refração, tirar glow) viram em outra entrega conforme
-      # o uso.
-      window-rule._children = [
-        {
-          match._props = {
-            app-id = ".*";
-          };
-          # _children, e não um attrset: um attrset do Nix não tem ordem
-          # garantida, e a serialização pro KDL ordenava as chaves
-          # alfabeticamente (blur, liquid-glass, xray) — diferente da ordem
-          # do exemplo no README do niri-glass (blur, xray, liquid-glass).
-          # Sem confirmação de que a ordem importa pro parser do niri
-          # (knuffel lê filhos pelo nome, não pela posição, tipicamente),
-          # mas eliminá-la tira uma variável da investigação #109/#110/#111.
-          background-effect._children = [
-            { blur = true; }
-            { xray = true; }
-            {
-              liquid-glass = {
-                refraction-strength = 3.0;
-                power-factor = 10;
-                refraction-power = 1.0;
-                glow-weight = 0.0001;
-                edge-lighting = 0.2;
-                saturation = 0.9;
-                vibrancy = 0.2;
-                adaptive-dim = 0.2;
-                adaptive-boost = 0.2;
-                physical-refraction = 0;
-                lens-distortion = 0;
-                fringing = 0;
-              };
-            }
-          ];
-        }
-      ];
     };
   };
 
