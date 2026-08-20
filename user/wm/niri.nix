@@ -349,13 +349,13 @@ lib.mkIf osConfig.lcars.user.niri.enable {
       # com efeito de vidro fosco. Só faz sentido aqui — o `pkgs.niri` do
       # nixpkgs não reconhece o nó e abortaria o `niri validate` (#107).
       #
-      # O preset é o mais sutil que o README do Niri-glass documenta:
-      # `background-effect { blur true xray true liquid-glass { saturation
-      # 1.0 } }` com todos os outros parâmetros do liquid-glass em zero
-      # (refraction, glow, edge-lighting, fringing, vibrancy, adaptive-dim,
-      # adaptive-boost, physical-refraction, lens-distortion). Janela
-      # desfoca o que está atrás e deixa o wallpaper passar com nitidez
-      # — "só um detalhe para ver o desenho do wallpaper", como pedido.
+      # Preset "showcase" do README do Niri-glass — o primeiro exemplo da
+      # página do projeto, com refração, glow sutil, edge-lighting,
+      # vibrancy e adaptive-dim/boost. É ponto de partida, não definitivo:
+      # a #108 subiu do preset sutil da #107 (só `saturation 1.0`, que
+      # ficou imperceptível em wallpaper chapado) para este aqui, e ajustes
+      # finos (baixar refração, tirar glow) viram em outra entrega conforme
+      # o uso.
       window-rule._children = [
         {
           match._props = {
@@ -365,7 +365,18 @@ lib.mkIf osConfig.lcars.user.niri.enable {
             blur = true;
             xray = true;
             liquid-glass = {
-              saturation = 1.0;
+              refraction-strength = 3.0;
+              power-factor = 10;
+              refraction-power = 1.0;
+              glow-weight = 0.0001;
+              edge-lighting = 0.2;
+              saturation = 0.9;
+              vibrancy = 0.2;
+              adaptive-dim = 0.2;
+              adaptive-boost = 0.2;
+              physical-refraction = 0;
+              lens-distortion = 0;
+              fringing = 0;
             };
           };
         }
