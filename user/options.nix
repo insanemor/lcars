@@ -86,5 +86,7 @@
     lazygit.enable = lib.mkEnableOption "o lazygit (TUI de git) com config versionado em ~/.config/lazygit/config.yml — painéis de stash, reflog e o command log escondidos; o popup no herdr é `prefix+Shift+g`";
 
     onedrive.enable = lib.mkEnableOption "o cliente OneDrive (abi-1/onedrive) com sync contínuo em ~/OneDrive — refresh_token materializado na ativação a partir do 1Password (item op://Dotfiles/onedrive/refresh_token)";
+
+    sudoAskpass.enable = lib.mkEnableOption "o diálogo gráfico do sudo (zenity, via SUDO_ASKPASS) para quando um programa pede elevação sem terminal — ex.: o botão Update do plugin nix-monitor do noctalia; a senha continua obrigatória, só muda o canal de entrada";
   };
 }
