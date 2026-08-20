@@ -173,6 +173,44 @@ let
     (lib.optionals temaLigado gerenciadosPeloStylix) ++ (lib.optionals (!animacoes) efeitos)
   );
 
+  # O CLI que o plugin felipeartur/ai-usagebar chama por nome
+  # (github.com/akitaonrails/ai-usagebar). Não está no nixpkgs — diferente do
+  # gSlapper (não seguido, ver #116/#117: C, meson, GStreamer, empacotar do
+  # zero não compensava), este é Rust puro, com Cargo.lock na raiz e sem
+  # dependência de sistema incomum. Fixado na tag v1.3.1, não no branch: o
+  # mesmo motivo do herdr (user/app/herdr.nix) — reprodutível, sem quebrar
+  # num `nupdate --inputs` por conta alheia.
+  #
+  # `checkFlags` pula só um teste (`rollback_archives_and_their_directory_
+  # are_private`): ele espera o binário `tar` num jeito que o sandbox do Nix
+  # não fornece pra esse caso específico, e o teste é sobre rollback de
+  # arquivos do Claude Desktop — sem relação com o que o plugin realmente
+  # usa (`ai-usagebar usage --json`). Os outros 1058+ testes continuam
+  # rodando; build real confirmado com `nix build`, não só `nix eval`.
+  aiUsagebarCli = pkgs.rustPlatform.buildRustPackage rec {
+    pname = "ai-usagebar";
+    version = "1.3.1";
+
+    src = pkgs.fetchFromGitHub {
+      owner = "akitaonrails";
+      repo = "ai-usagebar";
+      rev = "685ecc65c0022e471c3892637a95046bdf894730"; # tag v1.3.1
+      hash = "sha256-9PWYgcdLnBYEUGvgAOSeBRoXjsF21oA/SSAlupFwryE=";
+    };
+
+    cargoLock.lockFile = "${src}/Cargo.lock";
+
+    checkFlags = [
+      "--skip=claude_desktop::app::tests::rollback_archives_and_their_directory_are_private"
+    ];
+
+    meta = {
+      description = "CLI que lê a cota de uso de provedores de IA (Claude, Codex, Cursor...)";
+      homepage = "https://github.com/akitaonrails/ai-usagebar";
+      mainProgram = "ai-usagebar";
+    };
+  };
+
   # Plugins do noctalia habilitados por flag. Cada plugin vira uma entrada em
   # `[plugins].enabled`, e o noctalia baixa o repositório oficial sozinho na
   # primeira ativação. Adicionar um plugin novo é declarar a flag em
@@ -231,5 +269,13 @@ lib.mkIf osConfig.lcars.user.noctalia.enable {
     # série no sistema, sem precisar somar nada aqui.
     ++ (lib.optionals osConfig.lcars.user.noctalia.plugins.driveHealth.enable [
       pkgs.smartmontools
+    ])
+    # felipeartur/ai-usagebar: o CLI de verdade (aiUsagebarCli, definido
+    # acima) lê a cota de uso. `xdg-utils` é opcional — só serve o link
+    # "abrir a página do projeto" quando o CLI não está no PATH, o que nunca
+    # acontece aqui, mas custa pouco ter.
+    ++ (lib.optionals osConfig.lcars.user.noctalia.plugins.aiUsagebar.enable [
+      aiUsagebarCli
+      pkgs.xdg-utils
     ]);
 }
