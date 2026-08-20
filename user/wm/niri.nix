@@ -336,7 +336,31 @@ lib.mkIf osConfig.lcars.user.niri.enable {
         )
       );
     };
+
+    # O plugin niri-animations (noctalia) nunca toca o config.kdl — ele
+    # escreve em animations.kdl e espera que o config.kdl inclua esse
+    # arquivo por último, pra vencer as animações base por posição (docs do
+    # niri: includes são posicionais, o último campo declarado vence).
+    # `extraConfig` entra depois da config gerada a partir de `settings`
+    # (módulo do Home Manager), então a ordem já sai certa sozinha.
+    extraConfig = lib.mkIf osConfig.lcars.user.noctalia.plugins.niriAnimations.enable ''
+      include "./animations.kdl"
+    '';
   };
+
+  # A pasta de presets do niri-animations tem que ser gravável de verdade —
+  # o README recomenda soltar coleções de terceiros (ex.: nirimation) direto
+  # ali. Um xdg.configFile a deixaria como link simbólico pro nix store,
+  # somente leitura. `mkdir -p` na ativação, como o herdr faz pro registro de
+  # plugins dele (user/app/herdr.nix), só garante que a pasta existe — o
+  # conteúdo é seu, não muda em nenhum nupdate.
+  home.activation.criarPastaAnimacoesNiri =
+    lib.mkIf osConfig.lcars.user.noctalia.plugins.niriAnimations.enable
+      (
+        lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+          run mkdir -p "$HOME/.config/niri/animations"
+        ''
+      );
 
   # Nem o terminal nem o shell estão aqui, e é deliberado: quem os instala são
   # user/app/kitty.nix e user/wm/noctalia.nix, pelos módulos `programs.*`.
