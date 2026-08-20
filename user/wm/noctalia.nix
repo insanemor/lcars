@@ -217,12 +217,19 @@ lib.mkIf osConfig.lcars.user.noctalia.enable {
     settings = attrsetFinal;
   };
 
-  # O plugin em si é só um id que o noctalia baixa sozinho (acima). Os
-  # binários que ele chama em runtime não vêm junto — o README do
-  # noctalia/mpvpaper exige `mpvpaper` e `mpv` no PATH: o primeiro desenha o
-  # papel de parede, o segundo renderiza as miniaturas do seletor.
-  home.packages = lib.optionals osConfig.lcars.user.noctalia.plugins.mpvpaper.enable [
-    pkgs.mpvpaper
-    pkgs.mpv
-  ];
+  # Cada plugin em si é só um id que o noctalia baixa sozinho (acima). Os
+  # binários que eles chamam em runtime não vêm junto.
+  home.packages =
+    # noctalia/mpvpaper: `mpvpaper` desenha o papel de parede, `mpv`
+    # renderiza as miniaturas do seletor.
+    (lib.optionals osConfig.lcars.user.noctalia.plugins.mpvpaper.enable [
+      pkgs.mpvpaper
+      pkgs.mpv
+    ])
+    # gustav0ar/drive-health: `smartctl` lê temperatura e SMART. `lsblk`
+    # (util-linux) e `pkexec` (agente polkit do próprio noctalia) já vêm de
+    # série no sistema, sem precisar somar nada aqui.
+    ++ (lib.optionals osConfig.lcars.user.noctalia.plugins.driveHealth.enable [
+      pkgs.smartmontools
+    ]);
 }
