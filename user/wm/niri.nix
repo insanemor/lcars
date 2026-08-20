@@ -373,24 +373,33 @@ lib.mkIf osConfig.lcars.user.niri.enable {
           match._props = {
             app-id = ".*";
           };
-          background-effect = {
-            blur = true;
-            xray = true;
-            liquid-glass = {
-              refraction-strength = 3.0;
-              power-factor = 10;
-              refraction-power = 1.0;
-              glow-weight = 0.0001;
-              edge-lighting = 0.2;
-              saturation = 0.9;
-              vibrancy = 0.2;
-              adaptive-dim = 0.2;
-              adaptive-boost = 0.2;
-              physical-refraction = 0;
-              lens-distortion = 0;
-              fringing = 0;
-            };
-          };
+          # _children, e não um attrset: um attrset do Nix não tem ordem
+          # garantida, e a serialização pro KDL ordenava as chaves
+          # alfabeticamente (blur, liquid-glass, xray) — diferente da ordem
+          # do exemplo no README do niri-glass (blur, xray, liquid-glass).
+          # Sem confirmação de que a ordem importa pro parser do niri
+          # (knuffel lê filhos pelo nome, não pela posição, tipicamente),
+          # mas eliminá-la tira uma variável da investigação #109/#110/#111.
+          background-effect._children = [
+            { blur = true; }
+            { xray = true; }
+            {
+              liquid-glass = {
+                refraction-strength = 3.0;
+                power-factor = 10;
+                refraction-power = 1.0;
+                glow-weight = 0.0001;
+                edge-lighting = 0.2;
+                saturation = 0.9;
+                vibrancy = 0.2;
+                adaptive-dim = 0.2;
+                adaptive-boost = 0.2;
+                physical-refraction = 0;
+                lens-distortion = 0;
+                fringing = 0;
+              };
+            }
+          ];
         }
       ];
     };
