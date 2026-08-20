@@ -180,9 +180,12 @@ autosuggestion, syntax highlighting e histórico compartilhado; git com aliases
 e `pull.rebase`; direnv com nix-direnv; e o gancho para puxar dotfiles de itens
 Document do 1Password.
 
-**No profile `personal`** — [niri](https://github.com/YaLTeR/niri) com SDDM, o
-shell [noctalia](https://github.com/noctalia-dev/noctalia-shell), o terminal
-kitty com o multiplexador [herdr](https://herdr.dev) (workspaces e painéis
+**No profile `personal`** — [niri-glass](https://github.com/zaroutt/Niri-glass)
+(fork do [niri](https://github.com/YaLTeR/niri) com patches no shader para
+amostrar o wallpaper — efeito sutil de vidro fosco nas janelas, #107) com
+SDDM, o shell [noctalia](https://github.com/noctalia-dev/noctalia-shell), o
+terminal kitty com o multiplexador [herdr](https://herdr.dev) (workspaces e
+painéis
 persistentes, com os atalhos do tmux), o histórico de comandos no
 [atuin](https://atuin.sh) (busca no `CTRL+R`, sincronizado entre máquinas com a
 chave vinda do 1Password), o navegador

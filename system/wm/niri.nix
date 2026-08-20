@@ -12,14 +12,23 @@
 # um modo de layout: nenhuma configuração de Hyprland produz esse
 # comportamento, e foi por isso que ele entrou no lugar dele (#34).
 #
-# O que o módulo do nixpkgs já resolve
-# ------------------------------------
-# Bastante, e por isso este arquivo é curto. `programs.niri.enable` registra a
-# sessão em `displayManager.sessionPackages`, liga o gnome-keyring, e monta os
-# portais XDG com a combinação que o upstream recomenda (gnome para screencast
-# e captura, gtk para o resto).
+# Por que `programs.niri-glass` e não `programs.niri`
+# ----------------------------------------------------
+# O pacote `pkgs.niri` do nixpkgs-unstable não conhece o bloco
+# `background-effect { blur xray liquid-glass }` que faz a janela amostrar o
+# wallpaper com vidro fosco (#107). O `niri-glass` é um fork do source com
+# patches no shader, exposto como input do flake (flake.nix). O módulo NixOS
+# dele (`inputs.niri-glass.nixosModules.default`, importado em flake.nix) é
+# um wrapper fino: reusa toda a fiação de `programs.niri` (sessão wayland,
+# xdg-desktop-portal, polkit, dbus, gnome-keyring, systemd user) e troca
+# só o pacote. Por isso basta `programs.niri-glass.enable = true` — não
+# precisamos escrever `programs.niri = { ... }` à mão.
 #
-# O que ele NÃO faz, e nós fazemos aqui: os utilitários de sessão.
+# O que este arquivo faz
+# ----------------------
+# Liga a flag do nosso lado e passa adiante a única opção do `programs.niri`
+# que nos importa (`useNautilus`, para o file-chooser do portal). O resto da
+# fiação de sessão/portal/polkit fica com o módulo do niri-glass.
 {
   config,
   lib,
@@ -52,10 +61,15 @@ in
   };
 
   config = mkIf cfg.enable {
-    programs.niri = {
-      enable = true;
-      inherit (cfg) useNautilus;
-    };
+    # O módulo do niri-glass (importado em flake.nix) cuida de
+    # programs.niri.enable e programs.niri.package. Não setamos
+    # `programs.niri` aqui para não competir com ele.
+    programs.niri-glass.enable = true;
+
+    # `useNautilus` é uma option do `programs.niri` do nixpkgs — segue
+    # valendo independente do pacote, e o módulo do niri-glass não toca
+    # nela. Passamos adiante o que o usuário optou.
+    programs.niri.useNautilus = cfg.useNautilus;
 
     # XWayland NÃO vem daqui. O módulo do nixpkgs monta a sessão com
     # `enableXWayland = false`, porque o niri não embute um servidor X: ele usa
