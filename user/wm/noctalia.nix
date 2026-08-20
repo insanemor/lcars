@@ -42,6 +42,7 @@
 {
   osConfig,
   lib,
+  pkgs,
   ...
 }:
 
@@ -216,4 +217,13 @@ lib.mkIf osConfig.lcars.user.noctalia.enable {
 
     settings = attrsetFinal;
   };
+
+  # O plugin em si é só um id que o noctalia baixa sozinho (acima). Os
+  # binários que ele chama em runtime não vêm junto — o README do
+  # noctalia/mpvpaper exige `mpvpaper` e `mpv` no PATH: o primeiro desenha o
+  # papel de parede, o segundo renderiza as miniaturas do seletor.
+  home.packages = lib.optionals osConfig.lcars.user.noctalia.plugins.mpvpaper.enable [
+    pkgs.mpvpaper
+    pkgs.mpv
+  ];
 }
