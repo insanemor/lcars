@@ -183,7 +183,6 @@ let
     ++ (lib.optional osConfig.lcars.user.noctalia.plugins.niriDisplays.enable "raycursive/niri-displays")
     ++ (lib.optional osConfig.lcars.user.noctalia.plugins.niriAnimations.enable "imjustdoingmypart/niri-animations")
     ++ (lib.optional osConfig.lcars.user.noctalia.plugins.miniDocker.enable "8bury/mini-docker")
-    ++ (lib.optional osConfig.lcars.user.noctalia.plugins.gslapper.enable "nomadcxx/gslapper")
     ++ (lib.optional osConfig.lcars.user.noctalia.plugins.gitCompanion.enable "tphilippot/git_companion")
     ++ (lib.optional osConfig.lcars.user.noctalia.plugins.driveHealth.enable "gustav0ar/drive-health")
     ++ (lib.optional osConfig.lcars.user.noctalia.plugins.aiUsagebar.enable "felipeartur/ai-usagebar")

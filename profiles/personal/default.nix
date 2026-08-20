@@ -70,7 +70,6 @@ with lib;
     lcars.user.noctalia.plugins.niriDisplays.enable = mkDefault true;
     lcars.user.noctalia.plugins.niriAnimations.enable = mkDefault true;
     lcars.user.noctalia.plugins.miniDocker.enable = mkDefault true;
-    lcars.user.noctalia.plugins.gslapper.enable = mkDefault true;
     lcars.user.noctalia.plugins.gitCompanion.enable = mkDefault true;
     lcars.user.noctalia.plugins.driveHealth.enable = mkDefault true;
     lcars.user.noctalia.plugins.aiUsagebar.enable = mkDefault true;

@@ -71,8 +71,6 @@
 
     noctalia.plugins.miniDocker.enable = lib.mkEnableOption "o plugin mini-docker do noctalia — gerencia containers, imagens, volumes e redes docker, com status na barra e controles em painel";
 
-    noctalia.plugins.gslapper.enable = lib.mkEnableOption "o plugin gslapper do noctalia — escolhe papéis de parede de imagem ou vídeo num único seletor, por output ou para todos";
-
     noctalia.plugins.gitCompanion.enable = lib.mkEnableOption "o plugin git_companion do noctalia — monitora repositórios git na barra e dá acesso a pull requests e issues do GitHub e GitLab";
 
     noctalia.plugins.driveHealth.enable = lib.mkEnableOption "o plugin drive-health do noctalia — descobre SSDs e HDDs, mostra temperatura e uso de espaço montado, com SMART completo opcional";
