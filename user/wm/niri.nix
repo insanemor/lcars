@@ -27,6 +27,7 @@
   osConfig,
   lib,
   pkgs,
+  inputs,
   ...
 }:
 
@@ -81,14 +82,20 @@ lib.mkIf osConfig.lcars.user.niri.enable {
     enable = true;
 
     # O pacote aqui NÃO é para instalar o compositor — quem faz isso é o módulo
-    # NixOS (system/wm/niri.nix, via programs.niri), e é o mesmo derivation, de
-    # modo que não há segunda cópia no store.
+    # NixOS (system/wm/niri.nix, via programs.niri-glass), e é o mesmo
+    # derivation, de modo que não há segunda cópia no store.
     #
     # Ele está aqui pelo `checkConfig`, cujo default é `package != null`. Com o
     # pacote em null a validação não roda, e um erro de KDL só apareceria na
     # tela preta; com ele, `niri validate` roda no build e a configuração
     # inválida nunca chega à máquina.
-    package = pkgs.niri;
+    #
+    # Apontar para o niri-glass e não para o `pkgs.niri` é obrigatório: o
+    # KDL abaixo tem o bloco `liquid-glass { ... }`, que o `pkgs.niri` do
+    # nixpkgs-unstable não conhece — `niri validate` rodaria contra o
+    # binário errado e falharia. O pacote do niri-glass é o fork com os
+    # patches no shader (#107).
+    package = inputs.niri-glass.packages.${pkgs.stdenv.hostPlatform.system}.niri-glass;
 
     # false, e não é descuido. As unidades systemd do niri — que é de onde sai
     # o `graphical-session.target` de que o serviço do noctalia depende — já
@@ -335,6 +342,34 @@ lib.mkIf osConfig.lcars.user.niri.enable {
           ) 9
         )
       );
+
+      # --- efeito de vidro fosco (niri-glass) ------------------------------
+      # O bloco `liquid-glass` é o que o fork do niri-glass adiciona ao
+      # shader do compositor: faz a janela amostrar o wallpaper e mostrá-lo
+      # com efeito de vidro fosco. Só faz sentido aqui — o `pkgs.niri` do
+      # nixpkgs não reconhece o nó e abortaria o `niri validate` (#107).
+      #
+      # O preset é o mais sutil que o README do Niri-glass documenta:
+      # `background-effect { blur true xray true liquid-glass { saturation
+      # 1.0 } }` com todos os outros parâmetros do liquid-glass em zero
+      # (refraction, glow, edge-lighting, fringing, vibrancy, adaptive-dim,
+      # adaptive-boost, physical-refraction, lens-distortion). Janela
+      # desfoca o que está atrás e deixa o wallpaper passar com nitidez
+      # — "só um detalhe para ver o desenho do wallpaper", como pedido.
+      window-rule._children = [
+        {
+          match._props = {
+            app-id = ".*";
+          };
+          background-effect = {
+            blur = true;
+            xray = true;
+            liquid-glass = {
+              saturation = 1.0;
+            };
+          };
+        }
+      ];
     };
   };
 
