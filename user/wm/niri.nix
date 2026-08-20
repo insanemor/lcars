@@ -140,19 +140,7 @@ lib.mkIf osConfig.lcars.user.niri.enable {
 
       # --- forma ---------------------------------------------------------
       layout = {
-        # 32, e não um valor estético qualquer: é o que o liquid-glass
-        # (#107/#108) precisa pra funcionar numa janela tiled em tela cheia.
-        #
-        # O xray refrata o que está ATRÁS da janela, e numa coluna tiled sem
-        # sobreposição — é a definição do scrollable tiling — o único "atrás"
-        # possível é a fresta de papel de parede que o gap expõe. Com 9px
-        # (o valor anterior) quase não sobrava nada pra refratar: o vidro só
-        # aparecia quando a janela perdia o foco, porque a #109 investigou e
-        # descartou scanout direto, piscar de cursor e o próprio foco antes
-        # de achar isto — confirmado ao vivo trocando o gap na sessão real:
-        # com 120px o vidro ficava nítido, com 32 já aparece nas bordas,
-        # focada ou não. A #110 é esse ajuste.
-        gaps = if rice then 32 else 4;
+        gaps = if rice then 9 else 4;
 
         # O anel de foco. Com `rice`, o gradiente base0D → base0A — que no
         # simbiot-dark é o ciano do logo indo ao lime, herdeiro direto da borda
