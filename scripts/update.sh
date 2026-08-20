@@ -4,6 +4,8 @@
 #
 #   nupdate              sincroniza com o repositório e aplica
 #   nupdate --inputs     também atualiza o nixpkgs (build longo)
+#   nupdate --preview    mostra o que mudaria (nix store diff-closures) antes
+#                        de aplicar --inputs, e pergunta — implica --inputs
 #   nupdate --no-check   pula a avaliação e vai direto ao rebuild
 #
 # O alias `nupdate` está em user/shell/zsh.nix e aponta para cá.
@@ -13,6 +15,8 @@
 #   1. sincroniza ~/.dotfiles com o repositório
 #   2. (com --inputs) nix flake update
 #   3. avalia os .nix — erro de código aparece em segundos, não no meio do build
+#   3.5. (com --preview) constrói sem ativar, mostra o diff-closures contra o
+#        sistema rodando, e pergunta; "não" reverte o flake.lock e para aqui
 #   4. renomeia .hm-bak que colidiriam com a ativação do home-manager (#37)
 #   5. nixos-rebuild switch
 #   6. autentica o atuin, se ainda não houver sessão — aqui, e não num módulo,
@@ -48,12 +52,14 @@ REPO="${LCARS_REPO_DIR:-$HOME/.dotfiles}"
 BRANCH="main"
 
 INPUTS=no
+PREVIEW=no
 CHECK=yes
 for arg in "$@"; do
   case "$arg" in
     --inputs)   INPUTS=yes ;;
+    --preview)  PREVIEW=yes; INPUTS=yes ;;
     --no-check) CHECK=no ;;
-    -h|--help)  sed -n '2,31p' "$0" | sed 's/^# \?//'; exit 0 ;;
+    -h|--help)  sed -n '2,35p' "$0" | sed 's/^# \?//'; exit 0 ;;
     *) printf 'opção desconhecida: %s (use --help)\n' "$arg" >&2; exit 2 ;;
   esac
 done
@@ -187,6 +193,38 @@ if [[ "$CHECK" == "yes" && -x ./scripts/check.sh ]]; then
   step "avaliando os .nix antes de aplicar"
   if ! ./scripts/check.sh --eval; then
     die "a avaliação falhou — rebuild NÃO executado."
+  fi
+fi
+
+# --- 3.5. prévia (opcional) --------------------------------------------
+# `nix build` sem `--elevate`/`switch`: só constrói, não ativa nada — é lido,
+# não escrito, então não tem o problema de `.git/objects` com dono root que
+# o comentário do passo 5 explica.
+#
+# `diff-closures` compara duas gerações já construídas, pacote por pacote,
+# com a diferença de versão e de tamanho. Testado ao vivo antes de entrar
+# aqui: com `/run/current-system` (o que está rodando) contra o build novo,
+# a saída já é a lista que se quer ver antes de decidir.
+#
+# Responder não à pergunta reverte só o `flake.lock` — nenhum outro arquivo
+# foi tocado até aqui, e o build que ficou no store não atrapalha ninguém,
+# só ocupa espaço até o próximo garbage collect.
+if [[ "$PREVIEW" == "yes" ]]; then
+  step "construindo a nova geração para comparar (sem aplicar ainda)"
+  novo="$(nix --extra-experimental-features 'nix-command flakes' build \
+    ".#nixosConfigurations.$HOST.config.system.build.toplevel" --no-link --print-out-paths)"
+
+  step "o que mudaria"
+  nix --extra-experimental-features 'nix-command flakes' store diff-closures \
+    /run/current-system "$novo" || note "diff-closures não achou o que comparar"
+
+  printf '\n'
+  resposta=""
+  read -r -p "Aplicar essas mudanças? [y/N] " resposta || resposta="n"
+  if [[ ! "$resposta" =~ ^[Yy]$ ]]; then
+    git checkout -- flake.lock
+    note "flake.lock revertido — nada foi aplicado."
+    exit 0
   fi
 fi
 
