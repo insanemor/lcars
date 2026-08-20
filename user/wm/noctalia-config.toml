@@ -1,3 +1,56 @@
+[bar.default]
+background_opacity = 0.69999998435378075
+border = "primary"
+capsule = true
+capsule_fill = "shadow"
+capsule_thickness = 0.4999999925494194
+center = [ "clock", "spacer_2", "bar" ]
+color = "primary"
+end = [
+    "notes",
+    "media",
+    "bar_3",
+    "tray",
+    "notifications",
+    "clipboard",
+    "network",
+    "bluetooth",
+    "volume",
+    "brightness",
+    "battery",
+    "control-center",
+    "session"
+]
+font_family = "JetBrainsMono Nerd Font"
+font_weight = 400
+margin_opposite_edge = 10
+padding = 10
+scale = 1.2000000104308128
+shadow = false
+start = [ "launcher", "group:g1", "nix-monitor", "spacer_2", "summary", "workspaces", "group:g2", "spacer_2", "widget" ]
+thickness = 35
+widget_spacing = 10
+
+    [[bar.default.capsule_group]]
+    accordion = false
+    accordion_direction = "end"
+    enabled = true
+    fill = "shadow"
+    id = "g1"
+    members = [ "wallpaper", "mpvpaper", "wallhaven" ]
+    opacity = 1.0
+    padding = 6.0
+
+    [[bar.default.capsule_group]]
+    accordion = false
+    accordion_direction = "end"
+    enabled = true
+    fill = "shadow"
+    id = "g2"
+    members = [ "sysmon", "ram", "temp", "network_rx", "network_tx" ]
+    opacity = 1.0
+    padding = 6.0
+
 [control_center]
 hidden_tabs = [ "media", "weather" ]
 
@@ -28,21 +81,75 @@ show_dots = true
 [lockscreen_widgets]
 enabled = false
 schema_version = 2
-widget_order = [ "lockscreen-login-box@Virtual-1" ]
+widget_order = [ "lockscreen-login-box@HDMI-A-1", "lockscreen-login-box@DP-3", "lockscreen-login-box@Virtual-1" ]
 
     [lockscreen_widgets.grid]
     cell_size = 16
     major_interval = 4
     visible = true
 
+    [lockscreen_widgets.widget."lockscreen-login-box@DP-3"]
+    box_height = 196.0
+    box_width = 810.0
+    cx = 1720.0
+    cy = 1258.0
+    output = "DP-3"
+    placement_height = 1440.0
+    placement_width = 3440.0
+    rotation = 0.0
+    type = "login_box"
+
+        [lockscreen_widgets.widget."lockscreen-login-box@DP-3".settings]
+        background_color = "surface_variant"
+        background_opacity = 0.88
+        background_radius = 12.0
+        center_password_text = false
+        input_opacity = 1.0
+        input_radius = 6.0
+        layout = "regular"
+        show_caps_lock = true
+        show_keyboard_layout = true
+        show_login_button = true
+        show_media = true
+        show_session_buttons = true
+        show_unlock_hint = true
+        show_weather = true
+
+    [lockscreen_widgets.widget."lockscreen-login-box@HDMI-A-1"]
+    box_height = 196.0
+    box_width = 810.0
+    cx = 960.0
+    cy = 898.0
+    output = "HDMI-A-1"
+    placement_height = 1080.0
+    placement_width = 1920.0
+    rotation = 0.0
+    type = "login_box"
+
+        [lockscreen_widgets.widget."lockscreen-login-box@HDMI-A-1".settings]
+        background_color = "surface_variant"
+        background_opacity = 0.88
+        background_radius = 12.0
+        center_password_text = false
+        input_opacity = 1.0
+        input_radius = 6.0
+        layout = "regular"
+        show_caps_lock = true
+        show_keyboard_layout = true
+        show_login_button = true
+        show_media = true
+        show_session_buttons = true
+        show_unlock_hint = true
+        show_weather = true
+
     [lockscreen_widgets.widget."lockscreen-login-box@Virtual-1"]
     box_height = 196.0
     box_width = 810.0
-    cx = 512.0
-    cy = 586.0
+    cx = 640.0
+    cy = 610.4166259765625
     output = "Virtual-1"
-    placement_height = 768.0
-    placement_width = 1024.0
+    placement_height = 800.0
+    placement_width = 1280.0
     rotation = 0.0
     type = "login_box"
 
@@ -68,6 +175,29 @@ background_opacity = 1.0
 [osd]
 background_opacity = 1.0
 
+[plugin_settings."avivbintangaringga/nix-monitor"]
+update_command = "$HOME/.dotfiles/scripts/update.sh"
+
+[plugin_settings."noctalia/mpvpaper"]
+video_directory = "/home/ins/Vídeos"
+
+[plugin_settings."noctalia/wallhaven"]
+download_dir = "/home/ins/Imagens/wallhaven"
+
+[plugins]
+enabled = [
+    "noctalia/wallhaven",
+    "avivbintangaringga/nix-monitor",
+    "raycursive/niri-displays",
+    "imjustdoingmypart/niri-animations",
+    "8bury/mini-docker",
+    "tphilippot/git_companion",
+    "gustav0ar/drive-health",
+    "felipeartur/ai-usagebar",
+    "noctalia/mpvpaper",
+    "noctalia/notes"
+]
+
 [shell]
 app_icon_colorize = true
 external_ip_enabled = true
@@ -82,7 +212,7 @@ community_palette = "Catppuccin Macchiato Lavender"
 custom_palette = "stylix"
 mode = "dark"
 source = "custom"
-wallpaper_scheme = "m3-content"
+wallpaper_scheme = "m3-tonal-spot"
 
     [theme.templates]
     builtin_ids = [ "kitty", "niri" ]
@@ -91,7 +221,55 @@ wallpaper_scheme = "m3-content"
 fill_mode = "stretch"
 
     [wallpaper.default]
-    path = "/nix/store/hf47w2xxai1bdas9f89hwrzlqk9nqyci-noctalia-5.0.0/share/noctalia/assets/noctalia-wallpaper.png"
+    path = "/home/ins/Imagens/wallhaven/wallhaven-zp93qo.jpg"
 
     [wallpaper.last]
-    path = "/nix/store/hf47w2xxai1bdas9f89hwrzlqk9nqyci-noctalia-5.0.0/share/noctalia/assets/noctalia-wallpaper.png"
+    path = "/home/ins/.cache/noctalia/mpvpaper/_home_ins_V__deos_matrix_code_rain_moewalls_com_mp4.jpg"
+
+    [wallpaper.monitors.DP-3]
+    path = "/home/ins/.cache/noctalia/mpvpaper/_home_ins_V__deos_matrix_code_rain_moewalls_com_mp4.jpg"
+
+    [wallpaper.monitors.HDMI-A-1]
+    path = "/home/ins/.cache/noctalia/mpvpaper/_home_ins_V__deos_matrix_code_rain_moewalls_com_mp4.jpg"
+
+[widget.bar]
+type = "felipeartur/ai-usagebar:bar"
+
+[widget.bar_3]
+type = "raycursive/niri-displays:bar"
+
+[widget.clock]
+color = "secondary"
+
+[widget.control-center]
+color = "secondary"
+glyph = "menu-order"
+
+[widget.launcher]
+custom_image = "/home/ins/Imagens/simbioit-logo-reduzido.png"
+
+[widget.mpvpaper]
+type = "noctalia/mpvpaper:mpvpaper"
+
+[widget.network]
+show_label = false
+
+[widget.nix-monitor]
+type = "avivbintangaringga/nix-monitor:nix-monitor"
+
+[widget.notes]
+color = "secondary"
+type = "noctalia/notes:notes"
+
+[widget.spacer_2]
+length = 50
+type = "spacer"
+
+[widget.summary]
+type = "gustav0ar/drive-health:summary"
+
+[widget.wallhaven]
+type = "noctalia/wallhaven:wallhaven"
+
+[widget.widget]
+type = "tphilippot/git_companion:widget"
