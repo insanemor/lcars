@@ -16,6 +16,7 @@ with lib;
     lcars.system.security.enable = mkDefault true;
 
     lcars.system.app.onePassword.enable = mkDefault true;
+    lcars.system.app.onedrive.enable = mkDefault true;
 
     # O niri é o ambiente gráfico, e é o único: Plasma e Hyprland saíram na
     # #34. Como não há segunda sessão na tela de login, se ele não subir a
