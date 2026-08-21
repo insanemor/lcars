@@ -57,6 +57,8 @@
 
     opencode.enable = lib.mkEnableOption "o CLI do OpenCode (sst/opencode, \"OpenCode Go\") — pacote no PATH, provider MiniMax configurado em ~/.config/opencode/opencode.json, e a key puxada do 1Password na ativação (item op://Dotfiles/minimax token/token)";
 
+    beeptui.enable = lib.mkEnableOption "o cliente TUI do Beeper Desktop (beeptui.com) — binário linux-x64 buscado da release do GitHub (não está no nixpkgs), requer o Beeper Desktop rodando localmente";
+
     niri.enable = lib.mkEnableOption "a configuração do niri — atalhos, forma e cores (o compositor é lcars.system.wm.niri)";
 
     noctalia.enable = lib.mkEnableOption "o shell do desktop — barra, launcher, notificações, lock e dock numa peça só; substitui waybar, rofi e swaync";
