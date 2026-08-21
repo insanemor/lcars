@@ -37,6 +37,21 @@
 # A unit só falha visível em `systemctl --user status onedrive@onedrive`,
 # não no `nixos-rebuild`, que é o que se quer.
 #
+# POR QUE A ATIVAÇÃO REINICIA O SERVIÇO
+# --------------------------------------
+# `onedrive-launcher.service` é system-level (`services.onedrive`,
+# `wantedBy = default.target`) e pode subir `onedrive@onedrive.service` como
+# parte da troca de config do `nixos-rebuild switch`, numa ordem que não
+# espera esta activation terminar. Sem token em disco, o cliente cai num
+# fluxo de OAuth interativo que TRAVA esperando input de terminal — e como
+# o processo trava em vez de sair, o `Restart=on-failure` do unit nunca
+# dispara, porque não há falha detectável. O mesmo vale para um token
+# expirado sendo renovado com o serviço já de pé: o cliente só lê o token na
+# inicialização. Por isso, depois de escrever o token com sucesso, a
+# activation reinicia a unit — `|| true` porque, se `services.onedrive.enable`
+# ainda não tiver subido a unit nesta mesma ativação, o restart falha por ela
+# não existir, e isso não deve quebrar o rebuild.
+#
 # O TOKEN NO ATOMIC WRITE
 # -----------------------
 # A escrita vai por `tmp + mv`, e não direto no destino: o serviço pode estar
@@ -91,6 +106,7 @@ lib.mkIf osConfig.lcars.user.onedrive.enable {
         printf '%s' "$token" > "$tmp"
         mv "$tmp" "$token_file"
         chmod 600 "$token_file"
+        systemctl --user restart onedrive@onedrive.service 2>/dev/null || true
         echo "lcars: onedrive refresh_token atualizado a partir do 1Password."
       else
         echo "lcars: não consegui ler $ref — abra o app 1Password, desbloqueie a CLI, e siga o procedimento em docs/secrets.md."
