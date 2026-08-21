@@ -50,6 +50,12 @@
 # `start_minimized = True` no `gui_settings` evita abrir janela toda sessão
 # gráfica — ele minimiza pra bandeja se houver uma disponível, ou fica numa
 # janela minimizada/taskbar como fallback (o niri não garante bandeja).
+# `autostart_enabled = False` também é explícito, não confiado ao default:
+# numa máquina real ele virou `True` sozinho depois do primeiro start, e o
+# `onedrivegui` recriou `~/.config/autostart/OneDriveGUI.desktop` — que o
+# `systemd-xdg-autostart-generator` converte numa SEGUNDA unit, concorrente
+# com `systemd.user.services.onedrivegui` abaixo, e o app abria duas vezes
+# (issue #135).
 #
 # O REFRESH_TOKEN
 # ----------------
@@ -168,9 +174,22 @@ lib.mkIf osConfig.lcars.user.onedrive.enable {
       {
         printf '[SETTINGS]\n'
         printf 'start_minimized = True\n'
+        # Explícito, não confiar no default da classe GuiSettings (issue
+        # #135): numa máquina real, autostart_enabled acabou virando True
+        # sozinho depois do primeiro start com este seed — sem essa chave
+        # explícita, algo na inicialização da janela de configurações
+        # (gui_settings_window.py, instanciada no boot do app) decidiu
+        # ligar o autostart. O `onedrivegui` então recriou
+        # ~/.config/autostart/OneDriveGUI.desktop, e o
+        # systemd-xdg-autostart-generator converteu esse .desktop numa
+        # SEGUNDA unit (app-OneDriveGUI@autostart.service), concorrente com
+        # o systemd.user.services.onedrivegui abaixo — duas instâncias
+        # abrindo juntas. `False` aqui garante que o único autostart é a
+        # nossa unit.
+        printf 'autostart_enabled = False\n'
       } > "$tmp"
       mv "$tmp" "$gui_settings"
-      echo "lcars: onedrivegui settings semeado em $gui_settings (start_minimized = True)."
+      echo "lcars: onedrivegui settings semeado em $gui_settings (start_minimized = True, autostart_enabled = False)."
     fi
   '';
 
