@@ -45,6 +45,12 @@ lib.mkIf osConfig.lcars.user.nvim.enable {
   programs.neovim = {
     enable = true;
     defaultEditor = true;
+
+    # herdr-nvim é lua puro — sem require de python nem ruby (conferido na
+    # árvore do input). Sem os providers legados, o eval não avisa mais e o
+    # fechamento fica menor.
+    withRuby = false;
+    withPython3 = false;
   };
 
   # O init.lua do usuário: carrega o herdr-nvim a partir do store e chama o
