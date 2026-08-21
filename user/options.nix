@@ -87,6 +87,12 @@
 
     onedrive.enable = lib.mkEnableOption "o cliente OneDrive (abi-1/onedrive) com sync contínuo em ~/OneDrive — refresh_token materializado na ativação a partir do 1Password (item op://Dotfiles/onedrive/refresh_token)";
 
+    onedrive.syncDir = lib.mkOption {
+      type = lib.types.str;
+      default = "~/OneDrive";
+      description = "Diretório sincronizado pelo cliente OneDrive — vira `sync_dir` em ~/.config/onedrive/config, escrito declarativamente pelo Home Manager.";
+    };
+
     sudoAskpass.enable = lib.mkEnableOption "o diálogo gráfico do sudo (zenity, via SUDO_ASKPASS) para quando um programa pede elevação sem terminal — ex.: o botão Update do plugin nix-monitor do noctalia; a senha continua obrigatória, só muda o canal de entrada";
   };
 }

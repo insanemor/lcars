@@ -165,11 +165,14 @@ Daí em diante, toda ativação sobrescreve o arquivo a partir do 1Password, e
 `--monitor`. Se o token expirar (a Microsoft não avisa), basta re-rodar o
 passo 2 com o novo conteúdo do arquivo local.
 
-**O config (`sync_dir`, free space, etc.) não mora no 1Password.** O cliente
-cria `~/.config/onedrive/config` na primeira execução, e ajustes finos são
-editados nesse arquivo — que o serviço lê em runtime. A activation só toca
-no `refresh_token`, e só porque ele é o que precisa estar em disco **antes**
-do serviço subir para o `ExecStart` não falhar com "no account".
+**O `sync_dir` é declarativo, e não mora no 1Password.** O Home Manager
+escreve `~/.config/onedrive/config` a partir de `lcars.user.onedrive.syncDir`
+(default `~/OneDrive`) — um `xdg.configFile`, symlink somente-leitura para o
+Nix store. Para trocar o diretório sincronizado, mude a flag e rode
+`nupdate`; editar o arquivo à mão não persiste, porque a próxima ativação
+sobrescreve. A activation separada (a que fala em "token" acima) só toca no
+`refresh_token`, porque esse sim precisa estar em disco **antes** do serviço
+subir para o `ExecStart` não falhar com "no account".
 
 ## Escape hatch
 
