@@ -1,36 +1,61 @@
-# onedrive.nix — o cliente OneDrive (abi-1/onedrive) do lado do usuário.
+# onedrive.nix — o cliente OneDrive (abi-1/onedrive) e o onedrivegui, do
+# lado do usuário.
 #
 # Opt-in por `lcars.user.onedrive.enable`, ligado no profile. A flag vem do
 # config do NixOS (veja user/options.nix).
 #
+# POR QUE O MOTOR É O ONEDRIVEGUI, NÃO O SYSTEMD `onedrive@onedrive.service`
+# ----------------------------------------------------------------------------
+# Este repo já tentou o caminho "óbvio": `services.onedrive` (módulo do
+# NixOS, ligado em `system/app/onedrive`) como motor, com o `onedrivegui`
+# (#129) só de visor por cima. Não funciona — o `onedrivegui` não tem modo
+# "observar" um processo alheio: toda a tela de status/progresso vem de
+# parsear o `stdout` do subprocesso que ELE MESMO lança
+# (`workers.py:MonitorWorker`, via `subprocess.Popen`). Como o cliente
+# `onedrive` recusa uma segunda instância no mesmo confdir, clicar "Play" na
+# tela sempre esbarrava no `onedrive@onedrive.service` já rodando (issue
+# #132). A troca: `services.onedrive` sai do profile personal
+# (`profiles/personal/default.nix`, era da #126), e quem sincroniza agora é
+# o próprio `onedrivegui`, supervisionado pelo `systemd.user.services.onedrivegui`
+# abaixo — mesma filosofia de "serviço, nunca exec-once" do CLAUDE.md, só
+# muda qual é o serviço.
+#
+# `system/app/onedrive/default.nix` continua existindo no repositório (não
+# é removido): é o motor certo para outro host/profile que prefira sync
+# puro sem GUI, ou que precise sincronizar antes de qualquer login gráfico
+# — o `onedrivegui.service` só sobe com `graphical-session.target`.
+#
 # CONFIG SEMEADO UMA VEZ, DEPOIS MUTÁVEL — POR CAUSA DO ONEDRIVEGUI
 # --------------------------------------------------------------------
-# `~/.config/onedrive/config` e `~/.config/onedrive-gui/profiles` nasceram
-# como `xdg.configFile` (symlink somente-leitura pro Nix store) nas #127 e
-# #130, mas isso quebrou o `onedrivegui`: `OneDriveGUI.py:55` chama
-# `save_global_config()` incondicionalmente TODA VEZ que o app abre — não só
-# ao importar ou salvar manualmente — e essa função regrava os dois arquivos
-# com `open(path, "w")` direto. Symlink somente-leitura vira
-# `OSError: [Errno 30] Read-only file system` no primeiro start (issue #131).
+# `~/.config/onedrive/config`, `~/.config/onedrive-gui/profiles` e
+# `~/.config/onedrive-gui/gui_settings` nasceram como `xdg.configFile`
+# (symlink somente-leitura pro Nix store) nas #127 e #130, mas isso quebrou
+# o `onedrivegui`: `OneDriveGUI.py:55` chama `save_global_config()`
+# incondicionalmente TODA VEZ que o app abre — não só ao importar ou salvar
+# manualmente — e essa função regrava os arquivos com `open(path, "w")`
+# direto. Symlink somente-leitura vira `OSError: [Errno 30] Read-only file
+# system` no primeiro start (issue #131); o mesmo valeria para
+# `gui_settings`, que `GuiSettings.save()` regrava a cada mudança de
+# configuração.
 #
-# Por isso os dois nascem como arquivo REAL e gravável, escrito pela
+# Por isso os três nascem como arquivo REAL e gravável, escrito pela
 # activation abaixo só na primeira vez (se já existe, não mexe) — o
 # onedrivegui fica livre para reescrevê-los depois. Trade-off: `sync_dir`
 # (vindo de `lcars.user.onedrive.syncDir`) só vale na primeira ativação;
 # mudar depois é editar `~/.config/onedrive/config` direto ou pelo
 # onedrivegui, não força mais pela flag em todo `nupdate`. O valor no
 # arquivo fica entre aspas (`sync_dir = "~/OneDrive"`), formato confirmado
-# no config de exemplo do próprio pacote onedrive.
+# no config de exemplo do próprio pacote onedrive. `auto_sync = True` no
+# profile é o que faz o app sincronizar sozinho, sem precisar de "Play"; e
+# `start_minimized = True` no `gui_settings` evita abrir janela toda sessão
+# gráfica — ele minimiza pra bandeja se houver uma disponível, ou fica numa
+# janela minimizada/taskbar como fallback (o niri não garante bandeja).
 #
-# POR QUE ESTE ARQUIVO EXISTE, SENDO QUE O SERVIÇO É DECLARADO EM system/
-# ------------------------------------------------------------------------
-# O `services.onedrive` cria a unit `onedrive@.service` com ExecStart
-# `onedrive --monitor --confdir=%h/.config/%i`, e um `onedrive-launcher.service`
-# que sobe `onedrive@onedrive` no login (sem o arquivo
-# `~/.config/onedrive-launcher`, que é o nosso caso). Para a unit não
-# falhar calada no primeiro start, o cliente precisa de um
+# O REFRESH_TOKEN
+# ----------------
+# Para o cliente não falhar calado no primeiro start, precisa de um
 # `~/.config/onedrive/refresh_token` válido em disco — o que ele cria na
-# primeira execução interativa, e é o que esta activation reproduz.
+# primeira execução interativa, e é o que a activation abaixo reproduz.
 #
 # O ciclo é:
 #
@@ -43,24 +68,20 @@
 #
 # A mesma tolerância a `op` indisponível que `user/cli/opencode/default.nix`
 # já usa vale aqui: sem CLI ou sem login, sai uma linha amarela e o serviço
-# não sobe — o usuário autentica à mão (passo 1) e roda `nupdate` de novo.
-# A unit só falha visível em `systemctl --user status onedrive@onedrive`,
+# não sincroniza — o usuário autentica à mão (passo 1) e roda `nupdate` de
+# novo. A falha só fica visível em `systemctl --user status onedrivegui`,
 # não no `nixos-rebuild`, que é o que se quer.
 #
 # POR QUE A ATIVAÇÃO REINICIA O SERVIÇO
 # --------------------------------------
-# `onedrive-launcher.service` é system-level (`services.onedrive`,
-# `wantedBy = default.target`) e pode subir `onedrive@onedrive.service` como
-# parte da troca de config do `nixos-rebuild switch`, numa ordem que não
-# espera esta activation terminar. Sem token em disco, o cliente cai num
-# fluxo de OAuth interativo que TRAVA esperando input de terminal — e como
-# o processo trava em vez de sair, o `Restart=on-failure` do unit nunca
-# dispara, porque não há falha detectável. O mesmo vale para um token
-# expirado sendo renovado com o serviço já de pé: o cliente só lê o token na
-# inicialização. Por isso, depois de escrever o token com sucesso, a
-# activation reinicia a unit — `|| true` porque, se `services.onedrive.enable`
-# ainda não tiver subido a unit nesta mesma ativação, o restart falha por ela
-# não existir, e isso não deve quebrar o rebuild.
+# O cliente `onedrive` só lê o `refresh_token` na sua própria inicialização
+# — se o token for renovado (rotação, ou simplesmente porque expirou) com o
+# `onedrivegui` já rodando e sincronizando, o processo em curso continua com
+# o token velho até cair. Por isso, depois de escrever o token com sucesso,
+# a activation reinicia `onedrivegui.service` (o app inteiro, que já sobe de
+# novo autenticado e sincronizando via `auto_sync`) — `|| true` porque, numa
+# ativação em que `lcars.user.onedrive.enable` acabou de ligar, a unit pode
+# ainda não existir, e isso não deve quebrar o rebuild.
 #
 # O TOKEN NO ATOMIC WRITE
 # -----------------------
@@ -83,13 +104,34 @@
 }:
 
 lib.mkIf osConfig.lcars.user.onedrive.enable {
-  # onedrivegui é companion do cliente, não precisa de flag própria: lê o
-  # mesmo confdir (~/.config/onedrive) e o mesmo serviço systemd já
-  # configurado abaixo, só dá visão visual do que já está rodando.
-  home.packages = [ pkgs.onedrivegui ];
+  # O binário CLI ainda é necessário — é ele que o onedrivegui invoca por
+  # baixo. Antes vinha do módulo services.onedrive (system/app/onedrive);
+  # agora o motor é o onedrivegui, então o pacote vem direto daqui.
+  home.packages = [
+    pkgs.onedrive
+    pkgs.onedrivegui
+  ];
 
-  # Semeia os dois arquivos como reais/graváveis, só se ainda não existem —
-  # ver comentário no topo do arquivo (issue #131). `config_file` no
+  # onedrivegui é o motor de sync (ver comentário no topo do arquivo) — sobe
+  # com a sessão gráfica, supervisionado como qualquer outro serviço deste
+  # repo. graphical-session.target é o mesmo alvo que o serviço do noctalia
+  # usa — confirmado que o niri o publica via programs/wayland/niri.nix do
+  # nixpkgs (user/wm/niri.nix:105-108).
+  systemd.user.services.onedrivegui = {
+    Unit = {
+      Description = "OneDriveGUI — sincroniza o OneDrive com progresso visual";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      ExecStart = "${pkgs.onedrivegui}/bin/onedrivegui";
+      Restart = "on-failure";
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
+  };
+
+  # Semeia os três arquivos como reais/graváveis, só se ainda não existem —
+  # ver comentário no topo do arquivo (issues #131, #132). `config_file` no
   # profiles precisa ser caminho absoluto: global_config.py abre com
   # `open()` direto, sem expandir `~`.
   home.activation.onedriveConfigSeed = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
@@ -111,12 +153,24 @@ lib.mkIf osConfig.lcars.user.onedrive.enable {
       {
         printf '[onedrive]\n'
         printf 'config_file = %s\n' "$config_file"
-        printf 'auto_sync = False\n'
+        printf 'auto_sync = True\n'
         printf 'account_type =\n'
         printf 'free_space =\n'
       } > "$tmp"
       mv "$tmp" "$gui_profiles"
-      echo "lcars: onedrivegui profile semeado em $gui_profiles."
+      echo "lcars: onedrivegui profile semeado em $gui_profiles (auto_sync = True)."
+    fi
+
+    gui_settings="$gui_dir/gui_settings"
+    if [ ! -e "$gui_settings" ]; then
+      mkdir -p "$gui_dir"
+      tmp="$gui_settings.tmp"
+      {
+        printf '[SETTINGS]\n'
+        printf 'start_minimized = True\n'
+      } > "$tmp"
+      mv "$tmp" "$gui_settings"
+      echo "lcars: onedrivegui settings semeado em $gui_settings (start_minimized = True)."
     fi
   '';
 
@@ -150,7 +204,7 @@ lib.mkIf osConfig.lcars.user.onedrive.enable {
         printf '%s' "$token" > "$tmp"
         mv "$tmp" "$token_file"
         chmod 600 "$token_file"
-        systemctl --user restart onedrive@onedrive.service 2>/dev/null || true
+        systemctl --user restart onedrivegui.service 2>/dev/null || true
         echo "lcars: onedrive refresh_token atualizado a partir do 1Password."
       else
         echo "lcars: não consegui ler $ref — abra o app 1Password, desbloqueie a CLI, e siga o procedimento em docs/secrets.md."
