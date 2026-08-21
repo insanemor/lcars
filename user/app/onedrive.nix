@@ -3,14 +3,24 @@
 # Opt-in por `lcars.user.onedrive.enable`, ligado no profile. A flag vem do
 # config do NixOS (veja user/options.nix).
 #
-# O SYNC_DIR É DECLARATIVO
-# -------------------------
-# `~/.config/onedrive/config` é escrito pelo `xdg.configFile`, com
-# `sync_dir` vindo de `lcars.user.onedrive.syncDir`. Isso vira um symlink
-# somente-leitura para o Nix store: mudar o diretório sincronizado é editar
-# a flag e rodar `nupdate`, não editar o arquivo à mão — o valor do arquivo
-# precisa ficar entre aspas (`sync_dir = "~/OneDrive"`), formato confirmado
-# no config de exemplo do próprio pacote.
+# CONFIG SEMEADO UMA VEZ, DEPOIS MUTÁVEL — POR CAUSA DO ONEDRIVEGUI
+# --------------------------------------------------------------------
+# `~/.config/onedrive/config` e `~/.config/onedrive-gui/profiles` nasceram
+# como `xdg.configFile` (symlink somente-leitura pro Nix store) nas #127 e
+# #130, mas isso quebrou o `onedrivegui`: `OneDriveGUI.py:55` chama
+# `save_global_config()` incondicionalmente TODA VEZ que o app abre — não só
+# ao importar ou salvar manualmente — e essa função regrava os dois arquivos
+# com `open(path, "w")` direto. Symlink somente-leitura vira
+# `OSError: [Errno 30] Read-only file system` no primeiro start (issue #131).
+#
+# Por isso os dois nascem como arquivo REAL e gravável, escrito pela
+# activation abaixo só na primeira vez (se já existe, não mexe) — o
+# onedrivegui fica livre para reescrevê-los depois. Trade-off: `sync_dir`
+# (vindo de `lcars.user.onedrive.syncDir`) só vale na primeira ativação;
+# mudar depois é editar `~/.config/onedrive/config` direto ou pelo
+# onedrivegui, não força mais pela flag em todo `nupdate`. O valor no
+# arquivo fica entre aspas (`sync_dir = "~/OneDrive"`), formato confirmado
+# no config de exemplo do próprio pacote onedrive.
 #
 # POR QUE ESTE ARQUIVO EXISTE, SENDO QUE O SERVIÇO É DECLARADO EM system/
 # ------------------------------------------------------------------------
@@ -67,7 +77,6 @@
 # mascara config quebrada. Veja `user/cli/opencode/default.nix`.
 {
   osConfig,
-  config,
   lib,
   pkgs,
   ...
@@ -79,32 +88,36 @@ lib.mkIf osConfig.lcars.user.onedrive.enable {
   # configurado abaixo, só dá visão visual do que já está rodando.
   home.packages = [ pkgs.onedrivegui ];
 
-  xdg.configFile."onedrive/config".text = ''
-    sync_dir = "${osConfig.lcars.user.onedrive.syncDir}"
-  '';
+  # Semeia os dois arquivos como reais/graváveis, só se ainda não existem —
+  # ver comentário no topo do arquivo (issue #131). `config_file` no
+  # profiles precisa ser caminho absoluto: global_config.py abre com
+  # `open()` direto, sem expandir `~`.
+  home.activation.onedriveConfigSeed = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    conf_dir="$HOME/.config/onedrive"
+    config_file="$conf_dir/config"
+    if [ ! -e "$config_file" ]; then
+      mkdir -p "$conf_dir"
+      tmp="$config_file.tmp"
+      printf 'sync_dir = "%s"\n' "${osConfig.lcars.user.onedrive.syncDir}" > "$tmp"
+      mv "$tmp" "$config_file"
+      echo "lcars: onedrive config semeado em $config_file (sync_dir = ${osConfig.lcars.user.onedrive.syncDir})."
+    fi
 
-  # O onedrivegui mantém seu próprio registro de "profiles" (formato INI,
-  # lido por global_config.py:create_global_config), com cada seção
-  # apontando para um config_file existente. Pré-declarar essa seção evita
-  # o assistente de importação — e é a ÚNICA forma segura de importar aqui:
-  # a wizard (wizard.py:import_profile) sempre termina chamando
-  # save_global_config(), que reabre e REGRAVA o config_file apontado. No
-  # nosso caso isso é ~/.config/onedrive/config, um symlink somente-leitura
-  # para o Nix store — importar pela tela falha com erro de permissão.
-  # create_global_config(), chamada no boot do app, só LÊ os dois arquivos,
-  # nunca escreve; por isso declarar aqui é seguro. O mesmo vale depois de
-  # aberto: NÃO use "Save" na tela de Profile Settings do onedrivegui, pelo
-  # mesmo motivo — o app continua sendo só visor, quem sincroniza é o
-  # onedrive@onedrive.service (ver home.activation abaixo).
-  #
-  # `config_file` precisa ser caminho absoluto: global_config.py abre o
-  # arquivo direto com `open()`, sem expandir `~`.
-  xdg.configFile."onedrive-gui/profiles".text = ''
-    [onedrive]
-    config_file = ${config.home.homeDirectory}/.config/onedrive/config
-    auto_sync = False
-    account_type =
-    free_space =
+    gui_dir="$HOME/.config/onedrive-gui"
+    gui_profiles="$gui_dir/profiles"
+    if [ ! -e "$gui_profiles" ]; then
+      mkdir -p "$gui_dir"
+      tmp="$gui_profiles.tmp"
+      {
+        printf '[onedrive]\n'
+        printf 'config_file = %s\n' "$config_file"
+        printf 'auto_sync = False\n'
+        printf 'account_type =\n'
+        printf 'free_space =\n'
+      } > "$tmp"
+      mv "$tmp" "$gui_profiles"
+      echo "lcars: onedrivegui profile semeado em $gui_profiles."
+    fi
   '';
 
   home.activation.onedriveRefreshToken = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
