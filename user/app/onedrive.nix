@@ -67,6 +67,7 @@
 # mascara config quebrada. Veja `user/cli/opencode/default.nix`.
 {
   osConfig,
+  config,
   lib,
   pkgs,
   ...
@@ -80,6 +81,30 @@ lib.mkIf osConfig.lcars.user.onedrive.enable {
 
   xdg.configFile."onedrive/config".text = ''
     sync_dir = "${osConfig.lcars.user.onedrive.syncDir}"
+  '';
+
+  # O onedrivegui mantém seu próprio registro de "profiles" (formato INI,
+  # lido por global_config.py:create_global_config), com cada seção
+  # apontando para um config_file existente. Pré-declarar essa seção evita
+  # o assistente de importação — e é a ÚNICA forma segura de importar aqui:
+  # a wizard (wizard.py:import_profile) sempre termina chamando
+  # save_global_config(), que reabre e REGRAVA o config_file apontado. No
+  # nosso caso isso é ~/.config/onedrive/config, um symlink somente-leitura
+  # para o Nix store — importar pela tela falha com erro de permissão.
+  # create_global_config(), chamada no boot do app, só LÊ os dois arquivos,
+  # nunca escreve; por isso declarar aqui é seguro. O mesmo vale depois de
+  # aberto: NÃO use "Save" na tela de Profile Settings do onedrivegui, pelo
+  # mesmo motivo — o app continua sendo só visor, quem sincroniza é o
+  # onedrive@onedrive.service (ver home.activation abaixo).
+  #
+  # `config_file` precisa ser caminho absoluto: global_config.py abre o
+  # arquivo direto com `open()`, sem expandir `~`.
+  xdg.configFile."onedrive-gui/profiles".text = ''
+    [onedrive]
+    config_file = ${config.home.homeDirectory}/.config/onedrive/config
+    auto_sync = False
+    account_type =
+    free_space =
   '';
 
   home.activation.onedriveRefreshToken = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
