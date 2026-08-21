@@ -74,4 +74,28 @@
   #
   #   lcars.user.direnv.enable               = false;     # ambiente do usuário
   #   lcars.user.dotfiles.enable             = false;
+
+  # --- fundo da tela de login (regreet) --------------------------------
+  # Direto no regreet, não em lcars.system.theme.wallpaper: aquela flag
+  # alimenta stylix.image, que auto-liga o alvo hyprpaper do stylix NO
+  # DESKTOP também (system/theme/default.nix documenta o efeito colateral).
+  # Entraria em conflito com o mpvpaper que já toca um vídeo como wallpaper
+  # do desktop (plugin noctalia/mpvpaper, escolhido pela própria interface,
+  # não declarado aqui). O regreet só teria de fato ganhado o mesmo
+  # tratamento se essa opção global fosse usada — o que este bloco evita.
+  #
+  # A imagem é um frame extraído desse mesmo vídeo (não é o vídeo em si: o
+  # cage, que hospeda o regreet, só roda um app em modo kiosk, sem camada de
+  # fundo separada — vídeo de verdade exigiria reescrever o compositor do
+  # greeter do zero, risco desproporcional pra tela de login, issue #134).
+  #
+  # `./matrix-login.png`, e não um path absoluto: flakes avaliam em modo
+  # puro e só leem arquivo rastreado pelo git — testado ao vivo, um path
+  # absoluto fora do repo aborta com "access to absolute path ... is
+  # forbidden in pure evaluation mode". Mesmo padrão que
+  # `system/theme/default.nix` já usa para os esquemas base16.
+  services.displayManager.regreet.settings.background = {
+    path = ./matrix-login.png;
+    fit = "Cover";
+  };
 }
