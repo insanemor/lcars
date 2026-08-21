@@ -165,14 +165,23 @@ Daí em diante, toda ativação sobrescreve o arquivo a partir do 1Password, e
 `--monitor`. Se o token expirar (a Microsoft não avisa), basta re-rodar o
 passo 2 com o novo conteúdo do arquivo local.
 
-**O `sync_dir` é declarativo, e não mora no 1Password.** O Home Manager
-escreve `~/.config/onedrive/config` a partir de `lcars.user.onedrive.syncDir`
-(default `~/OneDrive`) — um `xdg.configFile`, symlink somente-leitura para o
-Nix store. Para trocar o diretório sincronizado, mude a flag e rode
-`nupdate`; editar o arquivo à mão não persiste, porque a próxima ativação
-sobrescreve. A activation separada (a que fala em "token" acima) só toca no
-`refresh_token`, porque esse sim precisa estar em disco **antes** do serviço
-subir para o `ExecStart` não falhar com "no account".
+**O `sync_dir` é semeado uma vez a partir de `lcars.user.onedrive.syncDir`
+(default `~/OneDrive`), e não mora no 1Password.** `~/.config/onedrive/config`
+nasce como arquivo real e gravável na primeira ativação — não como
+`xdg.configFile`/symlink, porque o `onedrivegui` (instalado junto, veja
+`user/app/onedrive.nix`) regrava esse arquivo sempre que abre, e symlink
+somente-leitura pro Nix store quebra o app (issue #131). Na prática isso
+quer dizer que a flag só vale na primeira vez: depois que o arquivo existe,
+mudar o `sync_dir` é editar `~/.config/onedrive/config` direto ou pelo
+`onedrivegui`, não mais pela flag + `nupdate`. Pelo mesmo motivo,
+`~/.config/onedrive-gui/profiles` também nasce semeado, já apontando para o
+`config_file` certo — o `onedrivegui` deve abrir direto na conta, sem passar
+pelo assistente de importação.
+
+A activation do token (a que fala em "refresh_token" acima) é separada e
+continua tocando só nele a cada ativação, porque esse sim precisa estar em
+disco **antes** do serviço subir para o `ExecStart` não falhar com "no
+account".
 
 ## Escape hatch
 
