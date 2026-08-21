@@ -41,3 +41,6 @@ secrets/*.asc
 # Nix
 *.swp
 *~
+
+# Python: cache de bytecode, gerado ao rodar os scripts do logo-fonte
+__pycache__/

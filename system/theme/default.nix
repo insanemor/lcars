@@ -25,6 +25,20 @@ with lib;
 
 let
   cfg = config.lcars.system.theme;
+
+  # A MESMA FONTE, COM O LOGO DA SIMBIOIT DENTRO
+  #
+  # O prompt mostra o logo no lugar do ícone de sistema, e um logo só existe
+  # no terminal como glifo de fonte. Não adianta instalar uma fonte separada
+  # com ele: o Konsole não faz fallback para outra família, e o que aparece
+  # são caixinhas. Os glifos precisam estar na fonte que o terminal carrega —
+  # veja logo-fonte/default.nix, que explica o teste que mostrou isso.
+  #
+  # A troca é transparente para quem lê `cfg.fonts.monospace`: o nome da
+  # família não muda, só o arquivo ganha quatro glifos em U+F8F0 a U+F8F3.
+  fonteComLogo = pkgs.callPackage ./logo-fonte {
+    fonte = pkgs.nerd-fonts.jetbrains-mono;
+  };
 in
 {
   options.lcars.system.theme = {
@@ -195,15 +209,17 @@ in
 
       fonts = {
         monospace = {
-          package = pkgs.nerd-fonts.jetbrains-mono;
+          package = fonteComLogo;
           name = cfg.fonts.monospace;
         };
-        # O pacote é o mesmo da monospace porque o padrão é a mesma família.
+        # O pacote é o mesmo da monospace porque o padrão é a mesma família —
+        # inclusive o logo, já que a interface também pode mostrar o ícone.
         # Trocar apenas o NOME acima para uma fonte de outra família funciona
         # se ela já estiver instalada — Noto Sans, Liberation e DejaVu estão,
-        # por system/wm/default.nix —, mas não puxa pacote novo.
+        # por system/wm/default.nix —, mas não puxa pacote novo. E aí o logo
+        # do prompt sai como caixinha: ele vive nesta fonte, não naquela.
         sansSerif = {
-          package = pkgs.nerd-fonts.jetbrains-mono;
+          package = fonteComLogo;
           name = cfg.fonts.sansSerif;
         };
         serif = {

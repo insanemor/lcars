@@ -662,7 +662,7 @@ profile — os títulos abaixo trazem a flag de cada um.
 ### zsh · `user/shell/zsh.nix` · `lcars.user.zsh.enable` · basic + personal
 
 - **oh-my-zsh**, com três plugins: `git`, `sudo` (ESC ESC repete com sudo) e `systemd`
-- **powerlevel10k** como prompt, do preset *rainbow*
+- **powerlevel10k** como prompt, em três linhas, com o logo da SimbioIT como ícone
 - Autosuggestion, syntax highlighting e completion
 - Histórico de 50 000 linhas, compartilhado entre sessões, sem duplicatas
 - Aliases: `ll`, `la`, `l`, `lt`, `ls`, `cat`, `gs` (git status), `gp` (push), `gpl` (pull) — veja abaixo
@@ -753,6 +753,18 @@ do preset:
 | git com arquivo novo | `base0C` |
 | git em conflito, erro | `base08` |
 | tempo de execução, relógio | `base02` e `base01` |
+| moldura das três linhas | `base03` — a cor de "invisível" do base16 |
+| `user@máquina` | `base04`, e a máquina em `base0D` |
+| AWS e Kubernetes em produção | `base08` |
+| AWS e Kubernetes em homolog | `base0A` |
+| AWS no resto | `base09` — a única laranja da paleta |
+| Kubernetes no resto | `base0E` |
+| virtualenv, pyenv, asdf | fundo `base02`, texto `base0C` |
+
+As classes `PROD` e `TEST` vêm ligadas nos dois segmentos de nuvem, com
+padrões que cobrem português: `*prod*` pega `producao`. A hierarquia é por
+consequência, não por tecnologia — o comando errado num contexto de produção
+custa caro, e é isso que a cor anuncia.
 
 Trocar `scheme` repinta o prompt junto com o resto do sistema.
 
@@ -772,8 +784,55 @@ arquivo é rodar `p10k configure` e copiar o resultado por cima. Se ele fosse um
 template, o assistente o sobrescreveria com índices numéricos no primeiro uso.
 Assim o preset continua seu, e a cor continua do tema.
 
-Os segmentos raros — ícone de sistema, bateria, versões de linguagem, nuvens —
-ficam com os índices do preset. Aparecem pouco e não valem a manutenção.
+Ficam com os índices do preset só a bateria e os segmentos que dependem de uma
+ferramenta específica (nordvpn, ranger, toolbox). Aparecem pouco e não valem a
+manutenção.
+
+**Duas classes de cor não eram alcançáveis pela sobreposição**, e essa é a
+parte que surpreende:
+
+1. **Variável local de função.** As cores do *texto* do git — o nome do branch,
+   inclusive — são `local` dentro de `my_git_formatter`, no `p10k.zsh`. Nenhum
+   `typeset -g` sobrescreve uma variável local, então o branch saía em preto
+   puro ao lado de um fundo que seguia o esquema. Hoje aquelas cinco linhas
+   leem parâmetros `POWERLEVEL9K_VCS_*`, com o valor do preset como padrão.
+2. **Cor dentro do conteúdo.** O `user@máquina` e o ícone do logo carregam a
+   cor no próprio texto, via `%F{}`, e não num parâmetro de cor. Por isso os
+   dois são gerados no `zsh.nix`.
+
+#### O logo no lugar do ícone de sistema · `system/theme/logo-fonte/`
+
+O primeiro segmento do prompt mostra o logo da SimbioIT. Num terminal, um logo
+só pode ser um glifo de fonte — e nenhum glifo existente se parece com ele.
+
+Então o desenho virou fonte: `system/theme/logo-fonte/logo.py` tem a arte, 24
+por 11 pixels, em ASCII art que dá para editar; `patch.py` injeta quatro
+glifos em U+F8F0 a U+F8F3 na Nerd Font do tema; e `default.nix` faz disso uma
+derivation, de modo que o pacote que o stylix instala já vem com eles.
+
+**Por que patchear a fonte inteira em vez de instalar uma fonte só com o
+logo:** porque o terminal não vai procurar. Uma fonte separada depende de
+fallback do fontconfig, e o Konsole não faz — o `fc-match` aponta para ela, o
+`fc-list` a encontra, e ainda assim aparecem caixinhas, porque o processo abre
+outro arquivo (dá para conferir em `/proc/<pid>/maps`). O glifo precisa estar
+dentro da fonte que o terminal carrega, exatamente como a casinha que o p10k
+mostra no diretório: ela é o `U+F015` da própria Nerd Font.
+
+Três coisas que o desenho precisa respeitar, e que a autoverificação do
+`logo.py` cobre:
+
+- **A arte é feita para 11 pixels.** Reduzir o PNG original para esse tamanho
+  dá uma mancha — os quadrados do logo têm menos de um pixel ali.
+- **Uma cor por célula do terminal.** O glifo é monocromático; o gradiente do
+  logo vira quatro caracteres, cada um com seu `%F{}`. Nenhum quadrado pode
+  cruzar a fronteira entre células, ou sai metade numa cor e metade na outra.
+- **As bordas se sobrepõem meio pixel.** O glifo tem a largura exata da célula,
+  mas o terminal arredonda a célula para pixel inteiro; sem a sobra, o traço
+  do D — que atravessa duas células — parte no meio.
+
+Trocar `cfg.fonts.monospace` para uma família que não seja a do pacote
+patcheado faz o logo virar caixinha: ele vive naquela fonte, não em qualquer
+uma.
 
 ### Histórico · `user/shell/atuin.nix` · `lcars.user.atuin.enable` · só personal
 
