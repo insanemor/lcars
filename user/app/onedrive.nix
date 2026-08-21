@@ -3,6 +3,15 @@
 # Opt-in por `lcars.user.onedrive.enable`, ligado no profile. A flag vem do
 # config do NixOS (veja user/options.nix).
 #
+# O SYNC_DIR É DECLARATIVO
+# -------------------------
+# `~/.config/onedrive/config` é escrito pelo `xdg.configFile`, com
+# `sync_dir` vindo de `lcars.user.onedrive.syncDir`. Isso vira um symlink
+# somente-leitura para o Nix store: mudar o diretório sincronizado é editar
+# a flag e rodar `nupdate`, não editar o arquivo à mão — o valor do arquivo
+# precisa ficar entre aspas (`sync_dir = "~/OneDrive"`), formato confirmado
+# no config de exemplo do próprio pacote.
+#
 # POR QUE ESTE ARQUIVO EXISTE, SENDO QUE O SERVIÇO É DECLARADO EM system/
 # ------------------------------------------------------------------------
 # O `services.onedrive` cria a unit `onedrive@.service` com ExecStart
@@ -48,6 +57,10 @@
 }:
 
 lib.mkIf osConfig.lcars.user.onedrive.enable {
+  xdg.configFile."onedrive/config".text = ''
+    sync_dir = "${osConfig.lcars.user.onedrive.syncDir}"
+  '';
+
   home.activation.onedriveRefreshToken = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     conf_dir="$HOME/.config/onedrive"
     token_file="$conf_dir/refresh_token"

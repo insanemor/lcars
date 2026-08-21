@@ -23,17 +23,15 @@
 #
 # O QUE ELE NÃO FAZ, E QUE O HOME MANAGER FAZ
 # --------------------------------------------
-# O `services.onedrive` não expõe `syncDir` nem `configFile`: o `sync_dir` vive
-# em `~/.config/onedrive/config` (gerado pelo próprio cliente na primeira
-# execução, default `~/OneDrive`), e o `refresh_token` em
-# `~/.config/onedrive/refresh_token` (gerado pelo OAuth inicial). A ativação
-# do Home Manager materializa esse token a partir de um item 1Password —
-# ver `user/app/onedrive.nix`.
+# O `services.onedrive` não expõe `syncDir` nem `configFile`: quem escreve
+# `~/.config/onedrive/config` (com `sync_dir`, via `lcars.user.onedrive.syncDir`)
+# e `~/.config/onedrive/refresh_token` (a partir de um item 1Password) é o
+# Home Manager — ver `user/app/onedrive.nix`.
 #
 # Por que duas árvores: `services.onedrive` é uma unit **do usuário** que sobe
-# na sessão, e a ativação que escreve o token também é do usuário (roda na
+# na sessão, e o que escreve config e token também é do usuário (roda na
 # `home-manager-<user>.service`). Os dois lados têm que concordar sobre o
-# caminho, e a fonte da verdade do diretório é a activation.
+# caminho, e a fonte da verdade do diretório é o Home Manager.
 {
   config,
   lib,
