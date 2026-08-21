@@ -9,9 +9,20 @@
 # de um WM em particular, e declará-las dentro de cada módulo geraria conflito
 # de definição no instante em que dois estivessem ligados:
 #
-#   - o SDDM em si
+#   - a tela de login em si (regreet)
 #   - qual sessão abre por padrão
 #   - as fontes e o dconf
+#
+# POR QUE REGREET, E NÃO SDDM
+# ----------------------------
+# O SDDM não é tematizado pelo stylix (system/theme/default.nix) — ficava
+# de fora do esquema de cores que pinta o resto do sistema. `regreet` (GTK)
+# tem suporte nativo: o módulo do stylix (autoEnable no source do próprio
+# stylix) tematiza cor, fonte, cursor, ícone e papel de fundo automaticamente,
+# a partir das mesmas flags de `lcars.system.theme`, sem configuração extra
+# aqui. `services.displayManager.regreet.enable = true` já é auto-suficiente:
+# liga `services.greetd`, PAM, o compositor `cage` que hospeda o regreet — não
+# precisa configurar nenhum dos dois à mão (issue #133).
 {
   config,
   lib,
@@ -48,25 +59,13 @@ in
         existem.
       '';
     };
-
-    sddm.wayland = mkOption {
-      type = types.bool;
-      default = true;
-      description = ''
-        Roda o próprio SDDM em Wayland. Independe de qual sessão você escolhe
-        depois — é só a tela de login.
-      '';
-    };
   };
 
   config = mkIf algumWm {
-    services.displayManager.sddm = {
-      enable = true;
-      wayland.enable = cfg.sddm.wayland;
-    };
+    services.displayManager.regreet.enable = true;
 
     # `sessao` pode ser vazia se alguém ligar um WM sem sessão conhecida; aí
-    # não declaramos nada e o SDDM usa a ordem dele.
+    # não declaramos nada e o regreet usa a ordem dele.
     services.displayManager.defaultSession = mkIf (sessao != "") sessao;
 
     # As fontes moraram dentro do plasma.nix, e não eram do KDE: qualquer
