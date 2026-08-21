@@ -68,10 +68,16 @@
 {
   osConfig,
   lib,
+  pkgs,
   ...
 }:
 
 lib.mkIf osConfig.lcars.user.onedrive.enable {
+  # onedrivegui é companion do cliente, não precisa de flag própria: lê o
+  # mesmo confdir (~/.config/onedrive) e o mesmo serviço systemd já
+  # configurado abaixo, só dá visão visual do que já está rodando.
+  home.packages = [ pkgs.onedrivegui ];
+
   xdg.configFile."onedrive/config".text = ''
     sync_dir = "${osConfig.lcars.user.onedrive.syncDir}"
   '';
