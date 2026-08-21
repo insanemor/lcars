@@ -32,5 +32,9 @@ lib.mkIf osConfig.lcars.user.yazi.enable {
   programs.yazi = {
     enable = true;
     enableZshIntegration = true;
+
+    # Explícito porque o default legado (stateVersion < 26.05) seria "yy" —
+    # e o resto deste módulo já documenta e assume o wrapper como `y`.
+    shellWrapperName = "y";
   };
 }
