@@ -170,6 +170,11 @@ let
   # decide pelo ambiente: dentro de um painel do herdr abre no plugin, fora
   # dele chama o navegador de verdade.
   #
+  # `--placement tab`, não split: autenticação e Ctrl+clique acontecem sem o
+  # usuário pedir espaço de tela de propósito, então não vale ocupar um split.
+  # Split continua existindo só para quem pede explicitamente pelo atalho
+  # `prefix+b` (ver [[keys.command]] mais abaixo).
+  #
   # `HERDR_ENV=1` é o que marca "estou dentro": todo pty que o herdr cria
   # recebe essa variável (src/pty/backend/unix.rs:77). Não é heurística, é o
   # mesmo sinal que o próprio herdr usa para recusar rodar aninhado.
@@ -193,7 +198,7 @@ let
     # Sem URL não há o que abrir no painel: cai direto no navegador, que sabe
     # subir sozinho.
     if [ -n "$url" ]       && [ "''${LCARS_BROWSER_EXTERNO:-}" != "1" ]       && { [ "''${HERDR_ENV:-}" = "1" ] || [ "''${LCARS_BROWSER_FORCA_PAINEL:-}" = "1" ]; }; then
-      if "${lib.getExe herdr}" plugin pane open         --plugin official.browser --entrypoint browser         --placement split --direction right --focus         --env HERDR_BROWSER_CHROME=${chromium}         --env HERDR_BROWSER_INITIAL_URL="$url" >/dev/null 2>&1; then
+      if "${lib.getExe herdr}" plugin pane open         --plugin official.browser --entrypoint browser         --placement tab --focus         --env HERDR_BROWSER_CHROME=${chromium}         --env HERDR_BROWSER_INITIAL_URL="$url" >/dev/null 2>&1; then
         exit 0
       fi
       echo "lcars-browser: painel do herdr não abriu; indo para o navegador" >&2
