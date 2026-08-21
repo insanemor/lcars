@@ -76,9 +76,45 @@ let
   # esta sobreposição fosse gerada lá dentro, o assistente a apagaria no
   # primeiro uso.
   #
-  # O que fica de fora e continua com os índices do preset: ícone de sistema,
-  # bateria, versões de linguagem, nuvens. Aparecem raramente e não valem a
-  # manutenção de mais trinta linhas.
+  # O que fica de fora e continua com os índices do preset: bateria, e os
+  # segmentos que só aparecem em ferramenta específica (nordvpn, ranger,
+  # toolbox, midnight commander). Aparecem raramente e não valem a manutenção.
+  #
+  # DUAS CLASSES DE COR QUE ESTE BLOCO NÃO ALCANÇAVA, e hoje alcança:
+  #
+  #   1. Variável local de função. As cores do texto do git são `local` dentro
+  #      de my_git_formatter, e nenhum `typeset -g` sobrescreve uma local. O
+  #      p10k.zsh agora lê parâmetros ali, com o valor do preset como padrão.
+  #   2. Conteúdo, e não cor. O template do `context` e o ícone do `os_icon`
+  #      carregam cor dentro do próprio texto, via `%F{}`. Por isso o logo da
+  #      SimbioIT é gerado aqui embaixo, e não no p10k.zsh.
+  # O LOGO DA SIMBIOIT NO LUGAR DO ÍCONE DE SISTEMA
+  #
+  # Quatro glifos, um por célula do terminal, injetados na fonte por
+  # system/theme/logo-fonte (veja lá o desenho e o porquê de ser fonte, e não
+  # um caractere Unicode qualquer). O terminal pinta uma cor por célula, então
+  # o gradiente do logo vira uma cor por caractere.
+  #
+  # As quatro cores espelham CORES_CELULA em system/theme/logo-fonte/logo.py,
+  # que é onde o desenho vive. Mudou lá, muda aqui.
+  #
+  # `$'...'` e não aspas simples: é a única forma de citação do zsh que
+  # interpreta `\u`, e escrever os codepoints é bem melhor de manter do que
+  # colar quatro caracteres invisíveis da área de uso privado no meio do
+  # arquivo.
+  #
+  # Sem fundo, ao contrário do resto da linha 1: com um bloco claro atrás, as
+  # cores do logo perdem contraste — o ciano sobre base07 fica em 2:1.
+  #
+  # Os dois espaços no fim não são enfeite. O segmento seguinte é o dir, com
+  # fundo ciano e separador  no MESMO ciano: sem a folga, o lado direito do
+  # arco encosta no triângulo e as duas formas viram uma só.
+  logoNoPrompt = ''
+    typeset -g POWERLEVEL9K_OS_ICON_BACKGROUND=
+    typeset -g POWERLEVEL9K_OS_ICON_FOREGROUND='${cores.base0D}'
+    typeset -g POWERLEVEL9K_OS_ICON_CONTENT_EXPANSION=$'%F{${cores.base0A}}\uf8f0%F{${cores.base0C}}\uf8f1%F{${cores.base0D}}\uf8f2\uf8f3  '
+  '';
+
   promptCores = ''
     # --- cores do prompt, geradas de lcars.system.theme.scheme ---------
     # Editar aqui não adianta: este bloco é gerado por user/shell/zsh.nix.
@@ -101,6 +137,19 @@ let
     typeset -g POWERLEVEL9K_VCS_CONFLICTED_BACKGROUND='${cores.base08}'
     typeset -g POWERLEVEL9K_VCS_LOADING_BACKGROUND='${cores.base03}'
     typeset -g POWERLEVEL9K_VCS_FOREGROUND='${cores.base00}'
+
+    # O TEXTO do segmento de git, que até então escapava daqui
+    #
+    # O nome do branch saía em preto puro. As cores dele são variáveis LOCAIS
+    # da função my_git_formatter, no p10k.zsh, e nenhum `typeset -g` alcança
+    # uma variável local — o bloco inteiro passava ao largo delas. Lá elas
+    # viraram parâmetros com o valor do preset como padrão; aqui os quatro
+    # fundos acima são cores CLARAS, então todo texto sobre eles é escuro.
+    typeset -g POWERLEVEL9K_VCS_META_FOREGROUND='%F{${cores.base00}}'
+    typeset -g POWERLEVEL9K_VCS_CLEAN_TEXT_FOREGROUND='%F{${cores.base00}}'
+    typeset -g POWERLEVEL9K_VCS_MODIFIED_TEXT_FOREGROUND='%F{${cores.base00}}'
+    typeset -g POWERLEVEL9K_VCS_UNTRACKED_TEXT_FOREGROUND='%F{${cores.base00}}'
+    typeset -g POWERLEVEL9K_VCS_CONFLICTED_TEXT_FOREGROUND='%F{${cores.base00}}'
 
     # o caractere do prompt: verde quando o último comando deu certo
     typeset -g POWERLEVEL9K_PROMPT_CHAR_OK_{VIINS,VICMD,VIVIS,VIOWR}_FOREGROUND='${cores.base0B}'
@@ -129,6 +178,92 @@ let
     typeset -g POWERLEVEL9K_BACKGROUND_JOBS_FOREGROUND='${cores.base00}'
     typeset -g POWERLEVEL9K_DIRENV_BACKGROUND='${cores.base0A}'
     typeset -g POWERLEVEL9K_DIRENV_FOREGROUND='${cores.base00}'
+
+    # a moldura das três linhas: base03 é a cor de "comentário e invisível" no
+    # base16, que é exatamente o papel dela. No preset são índices de terminal
+    # (240), e o valor certo aqui é o mesmo parâmetro, redefinido depois.
+    typeset -g POWERLEVEL9K_MULTILINE_FIRST_PROMPT_PREFIX='%F{${cores.base03}}╭─'
+    typeset -g POWERLEVEL9K_MULTILINE_NEWLINE_PROMPT_PREFIX='%F{${cores.base03}}├─'
+    typeset -g POWERLEVEL9K_MULTILINE_LAST_PROMPT_PREFIX='%F{${cores.base03}}╰─'
+    typeset -g POWERLEVEL9K_MULTILINE_FIRST_PROMPT_SUFFIX='%F{${cores.base03}}─╮'
+    typeset -g POWERLEVEL9K_MULTILINE_NEWLINE_PROMPT_SUFFIX='%F{${cores.base03}}─┤'
+    typeset -g POWERLEVEL9K_MULTILINE_LAST_PROMPT_SUFFIX='%F{${cores.base03}}─╯'
+    typeset -g POWERLEVEL9K_MULTILINE_FIRST_PROMPT_GAP_FOREGROUND='${cores.base03}'
+    typeset -g POWERLEVEL9K_MULTILINE_NEWLINE_PROMPT_GAP_FOREGROUND='${cores.base03}'
+
+    # CONTEXT (user@máquina), na linha de digitação
+    #
+    # Sem fundo, ao contrário do resto: as linhas 1 e 2 já são blocos
+    # powerline cheios, e mais um bloco logo antes do cursor deixava a linha
+    # de digitar tão pesada quanto as de cima. Sem fundo também não há seta
+    # ⁠ entre o segmento e o que você digita.
+    typeset -g POWERLEVEL9K_CONTEXT_BACKGROUND=
+    typeset -g POWERLEVEL9K_CONTEXT_{ROOT,SUDO,REMOTE,REMOTE_SUDO}_BACKGROUND=
+    typeset -g POWERLEVEL9K_CONTEXT_LEFT_PROMPT_LAST_SEGMENT_END_SYMBOL=
+    typeset -g POWERLEVEL9K_CONTEXT_LEFT_PROMPT_FIRST_SEGMENT_START_SYMBOL=
+
+    # O FOREGROUND não pinta o conteúdo — quem faz isso é o template logo
+    # abaixo. Ele pinta o espaço de separação, que sem isto ficava com o
+    # amarelo 3 do preset pendurado no fim da linha.
+    typeset -g POWERLEVEL9K_CONTEXT_FOREGROUND='${cores.base04}'
+    typeset -g POWERLEVEL9K_CONTEXT_ROOT_FOREGROUND='${cores.base08}'
+    typeset -g POWERLEVEL9K_CONTEXT_{REMOTE,REMOTE_SUDO}_FOREGROUND='${cores.base0A}'
+
+    # No dia a dia: usuário apagado, `@` mais apagado ainda, e a MÁQUINA no
+    # ciano da marca, em negrito. É o dado que muda quando você troca de host,
+    # e o único que precisa ser lido de relance numa linha que está sempre à
+    # vista.
+    typeset -g POWERLEVEL9K_CONTEXT_TEMPLATE='%F{${cores.base04}}%n%f%F{${cores.base03}}@%f%B%F{${cores.base0D}}%m%f%b'
+
+    # Root e SSH têm classes próprias, cada uma com o seu template — a linha
+    # inteira muda de cor, porque é o caso em que você precisa perceber sem
+    # ler.
+    typeset -g POWERLEVEL9K_CONTEXT_ROOT_TEMPLATE='%B%F{${cores.base08}}%n@%m%f%b'
+    typeset -g POWERLEVEL9K_CONTEXT_{REMOTE,REMOTE_SUDO}_TEMPLATE='%B%F{${cores.base0A}}%n@%m%f%b'
+
+    # NUVEM E LINGUAGEM
+    #
+    # Estes vinham com índice de terminal — aws em %K{1}, kubecontext em
+    # %K{5}, virtualenv em %K{4} — e aparecem os três na MESMA linha, um do
+    # lado do outro. Era ali que o prompt saía da paleta de vez.
+    #
+    # A hierarquia é por consequência, não por tecnologia:
+    #
+    #   produção   vermelho  o comando errado aqui custa caro
+    #   homolog    lime      atenção, sem pânico
+    #   o resto    laranja (aws) e violeta (k8s), cada nuvem com a sua cor
+    #   linguagem  fundo escuro, é informação e não aviso
+
+    typeset -g POWERLEVEL9K_AWS_DEFAULT_BACKGROUND='${cores.base09}'
+    typeset -g POWERLEVEL9K_AWS_DEFAULT_FOREGROUND='${cores.base00}'
+    typeset -g POWERLEVEL9K_AWS_PROD_BACKGROUND='${cores.base08}'
+    typeset -g POWERLEVEL9K_AWS_PROD_FOREGROUND='${cores.base00}'
+    typeset -g POWERLEVEL9K_AWS_TEST_BACKGROUND='${cores.base0A}'
+    typeset -g POWERLEVEL9K_AWS_TEST_FOREGROUND='${cores.base00}'
+
+    typeset -g POWERLEVEL9K_KUBECONTEXT_DEFAULT_BACKGROUND='${cores.base0E}'
+    typeset -g POWERLEVEL9K_KUBECONTEXT_DEFAULT_FOREGROUND='${cores.base00}'
+    typeset -g POWERLEVEL9K_KUBECONTEXT_PROD_BACKGROUND='${cores.base08}'
+    typeset -g POWERLEVEL9K_KUBECONTEXT_PROD_FOREGROUND='${cores.base00}'
+    typeset -g POWERLEVEL9K_KUBECONTEXT_TEST_BACKGROUND='${cores.base0A}'
+    typeset -g POWERLEVEL9K_KUBECONTEXT_TEST_FOREGROUND='${cores.base00}'
+
+    typeset -g POWERLEVEL9K_TERRAFORM_OTHER_BACKGROUND='${cores.base0E}'
+    typeset -g POWERLEVEL9K_TERRAFORM_OTHER_FOREGROUND='${cores.base00}'
+
+    # Os gerenciadores de versão são os segmentos que mais aparecem e os que
+    # menos precisam ser vistos. Com fundo cheio, a direita do prompt virava
+    # uma faixa contínua de cor.
+    typeset -g POWERLEVEL9K_VIRTUALENV_BACKGROUND='${cores.base02}'
+    typeset -g POWERLEVEL9K_VIRTUALENV_FOREGROUND='${cores.base0C}'
+    typeset -g POWERLEVEL9K_PYENV_BACKGROUND='${cores.base02}'
+    typeset -g POWERLEVEL9K_PYENV_FOREGROUND='${cores.base0C}'
+    typeset -g POWERLEVEL9K_ANACONDA_BACKGROUND='${cores.base02}'
+    typeset -g POWERLEVEL9K_ANACONDA_FOREGROUND='${cores.base0C}'
+    typeset -g POWERLEVEL9K_ASDF_{PYTHON,NODEJS,GOLANG,RUBY,RUST,TERRAFORM,JAVA}_BACKGROUND='${cores.base02}'
+    typeset -g POWERLEVEL9K_ASDF_{PYTHON,NODEJS,GOLANG,RUBY,RUST,TERRAFORM,JAVA}_FOREGROUND='${cores.base0C}'
+
+    ${logoNoPrompt}
   '';
 
   # O hook do plugin herdr-automatic-rename (user/app/herdr.nix): renomeia a

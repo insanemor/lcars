@@ -1,6 +1,6 @@
 # p10k.zsh — a aparência do prompt, versionada.
 #
-# Cópia do preset "rainbow" do pacote zsh-powerlevel10k
+# Começou como cópia do preset "rainbow" do pacote zsh-powerlevel10k
 # (share/zsh/themes/powerlevel10k/config/p10k-rainbow.zsh), trazida para cá
 # para poder ser editada e viajar com o repositório.
 #
@@ -12,17 +12,37 @@
 #
 #        cp ~/.p10k.zsh ~/.dotfiles/user/shell/p10k.zsh
 #
-#   3. confira o diff e publique com `nsave`.
+#   3. reaplique as marcações da seção seguinte, confira o diff e publique
+#      com `nsave`.
 #
 # É o mesmo ciclo do noctalia, com um passo a mais: o assistente não escreve
 # direto no repositório.
 #
+# O QUE FOI ALTERADO EM RELAÇÃO AO PRESET
+#
+# O `p10k configure` sobrescreve tudo isto. Se você rodar o assistente, é esta
+# lista que precisa voltar:
+#
+#   três linhas       o preset tem duas. `dir` e a hora na primeira, `vcs` e o
+#                     estado do ambiente na segunda, `context` na terceira,
+#                     onde você digita
+#   os_icon           ligado, e com o logo da SimbioIT — veja zsh.nix
+#   context           saiu da direita e virou o primeiro segmento da linha 3;
+#                     a linha que apagava seu conteúdo fora de SSH/root saiu
+#   time              ligado, sozinho à direita da linha 1
+#   filler `─`        nas duas primeiras linhas, e a da segunda usa
+#                     MULTILINE_NEWLINE_PROMPT_GAP_CHAR, que o preset não
+#                     documenta mas o p10k lê (internal/p10k.zsh, função
+#                     _p9k_build_gap_post)
+#   classes           PROD e TEST ligadas em `aws` e `kubecontext`, com padrões
+#                     que cobrem português — `*prod*` pega "producao"
+#   my_git_formatter  as cinco cores agora saem de parâmetros, veja abaixo
+#
 # AS CORES DAQUI SÃO SOBRESCRITAS
 #
-# Os índices de terminal (0-255) que você vê abaixo valem para os segmentos
-# raros. Os do dia a dia — diretório, git, status, hora, prompt char — são
-# repintados depois, por um bloco que user/shell/zsh.nix gera a partir do
-# esquema base16 e injeta no fim do .zshrc.
+# Os índices de terminal (0-255) que você vê abaixo valem só para os segmentos
+# raros. Todo o resto é repintado depois, por um bloco que user/shell/zsh.nix
+# gera a partir do esquema base16 e injeta no fim do .zshrc.
 #
 # Isso é o que faz o prompt seguir `lcars.system.theme.scheme` como o resto do
 # sistema, sem transformar ESTE arquivo em template — o que quebraria o ciclo
@@ -31,7 +51,7 @@
 # Mudar uma cor de segmento principal aqui não tem efeito. Mude o esquema, ou
 # o mapeamento em zsh.nix.
 #
-# A partir daqui é o preset, sem uma linha alterada.
+# A partir daqui é o preset, com as alterações listadas acima.
 # =====================================================================
 
 # Config for Powerlevel10k with powerline prompt style with colorful background.
@@ -61,11 +81,14 @@
   # The list of segments shown on the left. Fill it with the most important segments.
   typeset -g POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(
     # =========================[ Line #1 ]=========================
-    # os_icon               # os identifier
+    os_icon                 # os identifier
     dir                     # current directory
-    vcs                     # git status
     # =========================[ Line #2 ]=========================
     newline                 # \n
+    vcs                     # git status
+    # =========================[ Line #3 ]=========================
+    newline                 # \n
+    context                 # user@hostname
     # prompt_char           # prompt symbol
   )
 
@@ -75,6 +98,9 @@
   # last prompt line gets hidden if it would overlap with left prompt.
   typeset -g POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(
     # =========================[ Line #1 ]=========================
+    time                    # current time
+    # =========================[ Line #2 ]=========================
+    newline
     status                  # exit code of the last command
     command_execution_time  # duration of the last command
     background_jobs         # presence of background jobs
@@ -114,7 +140,6 @@
     gcloud                  # google cloud cli account and project (https://cloud.google.com/)
     google_app_cred         # google application credentials (https://cloud.google.com/docs/authentication/production)
     toolbox                 # toolbox name (https://github.com/containers/toolbox)
-    context                 # user@hostname
     nordvpn                 # nordvpn connection status, linux only (https://nordvpn.com/)
     ranger                  # ranger shell (https://github.com/ranger/ranger)
     yazi                    # yazi shell (https://github.com/sxyazi/yazi)
@@ -125,7 +150,7 @@
     midnight_commander      # midnight commander shell (https://midnight-commander.org/)
     nix_shell               # nix shell (https://nixos.org/nixos/nix-pills/developing-with-nix-shell.html)
     chezmoi_shell           # chezmoi shell (https://www.chezmoi.io/)
-    # vi_mode               # vi mode (you don't need this if you've enabled prompt_char)
+    vi_mode                 # vi mode (you don\'t need this if you\'ve enabled prompt_char)
     # vpn_ip                # virtual private network indicator
     # load                  # CPU load
     # disk_usage            # disk usage
@@ -136,8 +161,7 @@
     taskwarrior             # taskwarrior task count (https://taskwarrior.org/)
     per_directory_history   # Oh My Zsh per-directory-history local/global indicator
     # cpu_arch              # CPU architecture
-    # time                  # current time
-    # =========================[ Line #2 ]=========================
+    # =========================[ Line #3 ]=========================
     newline
     # ip                    # ip address and bandwidth usage for a specified network interface
     # public_ip             # public IP address
@@ -148,7 +172,7 @@
   )
 
   # Defines character set used by powerlevel10k. It's best to let `p10k configure` set it for you.
-  typeset -g POWERLEVEL9K_MODE=nerdfont-complete
+  typeset -g POWERLEVEL9K_MODE=nerdfont-v3
   # When set to `moderate`, some icons will have an extra space after them. This is meant to avoid
   # icon overlap when using non-monospace fonts. When set to `none`, spaces are not added.
   typeset -g POWERLEVEL9K_ICON_PADDING=none
@@ -171,25 +195,32 @@
 
   # Connect left prompt lines with these symbols. You'll probably want to use the same color
   # as POWERLEVEL9K_MULTILINE_FIRST_PROMPT_GAP_FOREGROUND below.
-  typeset -g POWERLEVEL9K_MULTILINE_FIRST_PROMPT_PREFIX='%242F╭─'
-  typeset -g POWERLEVEL9K_MULTILINE_NEWLINE_PROMPT_PREFIX='%242F├─'
-  typeset -g POWERLEVEL9K_MULTILINE_LAST_PROMPT_PREFIX='%242F╰─'
+  typeset -g POWERLEVEL9K_MULTILINE_FIRST_PROMPT_PREFIX='%240F╭─'
+  typeset -g POWERLEVEL9K_MULTILINE_NEWLINE_PROMPT_PREFIX='%240F├─'
+  typeset -g POWERLEVEL9K_MULTILINE_LAST_PROMPT_PREFIX='%240F╰─'
   # Connect right prompt lines with these symbols.
-  typeset -g POWERLEVEL9K_MULTILINE_FIRST_PROMPT_SUFFIX='%242F─╮'
-  typeset -g POWERLEVEL9K_MULTILINE_NEWLINE_PROMPT_SUFFIX='%242F─┤'
-  typeset -g POWERLEVEL9K_MULTILINE_LAST_PROMPT_SUFFIX='%242F─╯'
+  typeset -g POWERLEVEL9K_MULTILINE_FIRST_PROMPT_SUFFIX='%240F─╮'
+  typeset -g POWERLEVEL9K_MULTILINE_NEWLINE_PROMPT_SUFFIX='%240F─┤'
+  typeset -g POWERLEVEL9K_MULTILINE_LAST_PROMPT_SUFFIX='%240F─╯'
 
   # Filler between left and right prompt on the first prompt line. You can set it to ' ', '·' or
   # '─'. The last two make it easier to see the alignment between left and right prompt and to
   # separate prompt from command output. You might want to set POWERLEVEL9K_PROMPT_ADD_NEWLINE=false
   # for more compact prompt if using this option.
-  typeset -g POWERLEVEL9K_MULTILINE_FIRST_PROMPT_GAP_CHAR=' '
+  typeset -g POWERLEVEL9K_MULTILINE_FIRST_PROMPT_GAP_CHAR='─'
   typeset -g POWERLEVEL9K_MULTILINE_FIRST_PROMPT_GAP_BACKGROUND=
   typeset -g POWERLEVEL9K_MULTILINE_NEWLINE_PROMPT_GAP_BACKGROUND=
+
+  # A linha do meio ganha o mesmo filler da primeira. O preset só documenta
+  # FIRST, mas o p10k lê MULTILINE_<FIRST|NEWLINE>_PROMPT_GAP_CHAR conforme a
+  # linha (internal/p10k.zsh:8154, _p9k_build_gap_post). Sem isto a linha 2
+  # fica com um vao de espacos entre o git e o status.
+  typeset -g POWERLEVEL9K_MULTILINE_NEWLINE_PROMPT_GAP_CHAR='─'
+  typeset -g POWERLEVEL9K_MULTILINE_NEWLINE_PROMPT_GAP_FOREGROUND=240
   if [[ $POWERLEVEL9K_MULTILINE_FIRST_PROMPT_GAP_CHAR != ' ' ]]; then
     # The color of the filler. You'll probably want to match the color of POWERLEVEL9K_MULTILINE
     # ornaments defined above.
-    typeset -g POWERLEVEL9K_MULTILINE_FIRST_PROMPT_GAP_FOREGROUND=242
+    typeset -g POWERLEVEL9K_MULTILINE_FIRST_PROMPT_GAP_FOREGROUND=240
     # Start filler from the edge of the screen if there are no left segments on the first line.
     typeset -g POWERLEVEL9K_EMPTY_LINE_LEFT_PROMPT_FIRST_SEGMENT_END_SYMBOL='%{%}'
     # End filler on the edge of the screen if there are no right segments on the first line.
@@ -212,9 +243,9 @@
   # The left end of right prompt.
   typeset -g POWERLEVEL9K_RIGHT_PROMPT_FIRST_SEGMENT_START_SYMBOL='\uE0B2'
   # The left end of left prompt.
-  typeset -g POWERLEVEL9K_LEFT_PROMPT_FIRST_SEGMENT_START_SYMBOL=
+  typeset -g POWERLEVEL9K_LEFT_PROMPT_FIRST_SEGMENT_START_SYMBOL='\uE0B2'
   # The right end of right prompt.
-  typeset -g POWERLEVEL9K_RIGHT_PROMPT_LAST_SEGMENT_END_SYMBOL=
+  typeset -g POWERLEVEL9K_RIGHT_PROMPT_LAST_SEGMENT_END_SYMBOL='\uE0B0'
   # Left prompt terminator for lines without any segments.
   typeset -g POWERLEVEL9K_EMPTY_LINE_LEFT_PROMPT_LAST_SEGMENT_END_SYMBOL=
 
@@ -397,7 +428,7 @@
   typeset -g POWERLEVEL9K_VCS_LOADING_BACKGROUND=8
 
   # Branch icon. Set this parameter to '\UE0A0 ' for the popular Powerline branch icon.
-  typeset -g POWERLEVEL9K_VCS_BRANCH_ICON=
+  typeset -g POWERLEVEL9K_VCS_BRANCH_ICON='\uF126 '
 
   # Untracked files icon. It's really a question mark, your font isn't broken.
   # Change the value of this parameter to show a different icon.
@@ -422,11 +453,25 @@
     fi
 
     # Styling for different parts of Git status.
-    local       meta='%7F' # white foreground
-    local      clean='%0F' # black foreground
-    local   modified='%0F' # black foreground
-    local  untracked='%0F' # black foreground
-    local conflicted='%1F' # red foreground
+    #
+    # ESTAS CINCO CORES NÃO ERAM ALCANÇADAS PELO ESQUEMA
+    #
+    # No preset elas são literais aqui dentro — `%7F` branco, `%0F` preto,
+    # `%1F` vermelho. E, por serem variáveis LOCAIS de uma função, nenhum
+    # `typeset -g` as sobrescreve: o bloco que o user/shell/zsh.nix injeta no
+    # fim do .zshrc não tem como chegar nelas. O sintoma era o nome do branch
+    # saindo em preto puro, ao lado de um fundo que seguia o esquema.
+    #
+    # Agora cada uma tem um parâmetro correspondente, que o zsh.nix define. O
+    # valor do preset fica como padrão: sem o bloco de cores — máquina sem
+    # tema, profile basic — o formatador continua funcionando como antes.
+    #
+    # Os nomes seguem o padrão dos outros parâmetros do segmento, POWERLEVEL9K_VCS_*.
+    local       meta=${POWERLEVEL9K_VCS_META_FOREGROUND:-'%7F'}
+    local      clean=${POWERLEVEL9K_VCS_CLEAN_TEXT_FOREGROUND:-'%0F'}
+    local   modified=${POWERLEVEL9K_VCS_MODIFIED_TEXT_FOREGROUND:-'%0F'}
+    local  untracked=${POWERLEVEL9K_VCS_UNTRACKED_TEXT_FOREGROUND:-'%0F'}
+    local conflicted=${POWERLEVEL9K_VCS_CONFLICTED_TEXT_FOREGROUND:-'%1F'}
 
     local res
 
@@ -532,7 +577,7 @@
   # Custom icon.
   # typeset -g POWERLEVEL9K_VCS_VISUAL_IDENTIFIER_EXPANSION='⭐'
   # Custom prefix.
-  # typeset -g POWERLEVEL9K_VCS_PREFIX='on '
+  typeset -g POWERLEVEL9K_VCS_PREFIX='on '
 
   # Show status of repositories of these types. You can add svn and/or hg if you are
   # using them. If you do, your prompt may become slow even when your current directory
@@ -593,7 +638,7 @@
   # Custom icon.
   # typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_VISUAL_IDENTIFIER_EXPANSION='⭐'
   # Custom prefix.
-  # typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_PREFIX='took '
+  typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_PREFIX='took '
 
   #######################[ background_jobs: presence of background jobs ]#######################
   # Background jobs color.
@@ -1017,9 +1062,8 @@
   # Default context format (no privileges, no SSH): user@hostname.
   typeset -g POWERLEVEL9K_CONTEXT_TEMPLATE='%n@%m'
 
-  # Don't show context unless running with privileges or in SSH.
-  # Tip: Remove the next line to always show context.
-  typeset -g POWERLEVEL9K_CONTEXT_{DEFAULT,SUDO}_{CONTENT,VISUAL_IDENTIFIER}_EXPANSION=
+  # O preset esconde o context fora de SSH/root. Aqui ele e' fixo na linha
+  # de digitacao, entao a linha que apagava o conteudo saiu.
 
   # Custom icon.
   # typeset -g POWERLEVEL9K_CONTEXT_VISUAL_IDENTIFIER_EXPANSION='⭐'
@@ -1436,9 +1480,11 @@
   #   typeset -g POWERLEVEL9K_KUBECONTEXT_TEST_VISUAL_IDENTIFIER_EXPANSION='⭐'
   #   typeset -g POWERLEVEL9K_KUBECONTEXT_TEST_CONTENT_EXPANSION='> ${P9K_CONTENT} <'
   typeset -g POWERLEVEL9K_KUBECONTEXT_CLASSES=(
-      # '*prod*'  PROD    # These values are examples that are unlikely
-      # '*test*'  TEST    # to match your needs. Customize them as needed.
-      '*'       DEFAULT)
+      '*prod*'          PROD
+      '*prd*'           PROD
+      '*stag*|*hml*'    TEST
+      '*test*|*dev*'    TEST
+      '*'               DEFAULT)
   typeset -g POWERLEVEL9K_KUBECONTEXT_DEFAULT_FOREGROUND=7
   typeset -g POWERLEVEL9K_KUBECONTEXT_DEFAULT_BACKGROUND=5
   # typeset -g POWERLEVEL9K_KUBECONTEXT_DEFAULT_VISUAL_IDENTIFIER_EXPANSION='⭐'
@@ -1490,12 +1536,12 @@
   POWERLEVEL9K_KUBECONTEXT_DEFAULT_CONTENT_EXPANSION+='${${:-/$P9K_KUBECONTEXT_NAMESPACE}:#/default}'
 
   # Custom prefix.
-  # typeset -g POWERLEVEL9K_KUBECONTEXT_PREFIX='at '
+  typeset -g POWERLEVEL9K_KUBECONTEXT_PREFIX='at '
 
   #[ aws: aws profile (https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html) ]#
   # Show aws only when the command you are typing invokes one of these tools.
   # Tip: Remove the next line to always show aws.
-  typeset -g POWERLEVEL9K_AWS_SHOW_ON_COMMAND='aws|awless|cdk|terraform|pulumi|terragrunt'
+  typeset -g POWERLEVEL9K_AWS_SHOW_ON_COMMAND='aws|awless|cdk|terraform|tofu|pulumi|terragrunt'
 
   # POWERLEVEL9K_AWS_CLASSES is an array with even number of elements. The first element
   # in each pair defines a pattern against which the current AWS profile gets matched.
@@ -1521,9 +1567,11 @@
   #   typeset -g POWERLEVEL9K_AWS_TEST_VISUAL_IDENTIFIER_EXPANSION='⭐'
   #   typeset -g POWERLEVEL9K_AWS_TEST_CONTENT_EXPANSION='> ${P9K_CONTENT} <'
   typeset -g POWERLEVEL9K_AWS_CLASSES=(
-      # '*prod*'  PROD    # These values are examples that are unlikely
-      # '*test*'  TEST    # to match your needs. Customize them as needed.
-      '*'       DEFAULT)
+      '*prod*'          PROD
+      '*prd*'           PROD
+      '*stag*|*hml*'    TEST
+      '*test*|*dev*'    TEST
+      '*'               DEFAULT)
   typeset -g POWERLEVEL9K_AWS_DEFAULT_FOREGROUND=7
   typeset -g POWERLEVEL9K_AWS_DEFAULT_BACKGROUND=1
   # typeset -g POWERLEVEL9K_AWS_DEFAULT_VISUAL_IDENTIFIER_EXPANSION='⭐'
@@ -1544,7 +1592,7 @@
   ##########[ azure: azure account name (https://docs.microsoft.com/en-us/cli/azure) ]##########
   # Show azure only when the command you are typing invokes one of these tools.
   # Tip: Remove the next line to always show azure.
-  typeset -g POWERLEVEL9K_AZURE_SHOW_ON_COMMAND='az|terraform|pulumi|terragrunt'
+  typeset -g POWERLEVEL9K_AZURE_SHOW_ON_COMMAND='az|terraform|tofu|pulumi|terragrunt'
 
   # POWERLEVEL9K_AZURE_CLASSES is an array with even number of elements. The first element
   # in each pair defines a pattern against which the current azure account name gets matched.
@@ -1626,7 +1674,7 @@
   #[ google_app_cred: google application credentials (https://cloud.google.com/docs/authentication/production) ]#
   # Show google_app_cred only when the command you are typing invokes one of these tools.
   # Tip: Remove the next line to always show google_app_cred.
-  typeset -g POWERLEVEL9K_GOOGLE_APP_CRED_SHOW_ON_COMMAND='terraform|pulumi|terragrunt'
+  typeset -g POWERLEVEL9K_GOOGLE_APP_CRED_SHOW_ON_COMMAND='terraform|tofu|pulumi|terragrunt'
 
   # Google application credentials classes for the purpose of using different colors, icons and
   # expansions with different credentials.
@@ -1687,7 +1735,7 @@
   # Custom icon.
   # typeset -g POWERLEVEL9K_TOOLBOX_VISUAL_IDENTIFIER_EXPANSION='⭐'
   # Custom prefix.
-  # typeset -g POWERLEVEL9K_TOOLBOX_PREFIX='in '
+  typeset -g POWERLEVEL9K_TOOLBOX_PREFIX='in '
 
   ###############################[ public_ip: public IP address ]###############################
   # Public IP color.
@@ -1752,7 +1800,7 @@
   # Show battery in yellow when it's discharging.
   typeset -g POWERLEVEL9K_BATTERY_DISCONNECTED_FOREGROUND=3
   # Battery pictograms going from low to high level of charge.
-  typeset -g POWERLEVEL9K_BATTERY_STAGES=('%K{232}▁' '%K{232}▂' '%K{232}▃' '%K{232}▄' '%K{232}▅' '%K{232}▆' '%K{232}▇' '%K{232}█')
+  typeset -g POWERLEVEL9K_BATTERY_STAGES='\UF008E\UF007A\UF007B\UF007C\UF007D\UF007E\UF007F\UF0080\UF0081\UF0082\UF0079'
   # Don't show the remaining time to charge/discharge.
   typeset -g POWERLEVEL9K_BATTERY_VERBOSE=false
   typeset -g POWERLEVEL9K_BATTERY_BACKGROUND=0
@@ -1797,7 +1845,7 @@
   # Custom icon.
   # typeset -g POWERLEVEL9K_TIME_VISUAL_IDENTIFIER_EXPANSION='⭐'
   # Custom prefix.
-  # typeset -g POWERLEVEL9K_TIME_PREFIX='at '
+  typeset -g POWERLEVEL9K_TIME_PREFIX='at '
 
   # Example of a user-defined prompt segment. Function prompt_example will be called on every
   # prompt if `example` prompt segment is added to POWERLEVEL9K_LEFT_PROMPT_ELEMENTS or
@@ -1840,7 +1888,7 @@
   #   - always:   Trim down prompt when accepting a command line.
   #   - same-dir: Trim down prompt when accepting a command line unless this is the first command
   #               typed after changing current working directory.
-  typeset -g POWERLEVEL9K_TRANSIENT_PROMPT=off
+  typeset -g POWERLEVEL9K_TRANSIENT_PROMPT=always
 
   # Instant prompt mode.
   #
@@ -1870,3 +1918,4 @@ typeset -g POWERLEVEL9K_CONFIG_FILE=${${(%):-%x}:a}
 
 (( ${#p10k_config_opts} )) && setopt ${p10k_config_opts[@]}
 'builtin' 'unset' 'p10k_config_opts'
+
