@@ -63,7 +63,6 @@ with lib;
     lcars.user.claudeCode.enable = mkDefault true;
     lcars.user.opencode.enable = mkDefault true;
     lcars.user.crush.enable = mkDefault false;
-    lcars.user.beeptui.enable = mkDefault true;
     lcars.user.niri.enable = mkDefault true;
     lcars.user.noctalia.enable = mkDefault true;
     lcars.user.noctalia.plugins.wallhaven.enable = mkDefault true;

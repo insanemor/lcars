@@ -33,7 +33,6 @@
     ./app/sudo-askpass.nix
     ./cli/crush/default.nix
     ./cli/opencode/default.nix
-    ./cli/beeptui/default.nix
     ./wm/niri.nix
     ./wm/noctalia.nix
   ];
