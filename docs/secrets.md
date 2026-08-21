@@ -132,12 +132,13 @@ Durante `nixos-rebuild switch`, o Home Manager lê os itens Document corresponde
 ## Refresh token do OneDrive
 
 O cliente [abi-1/onedrive](https://github.com/abraunegg/onedrive) precisa de um
-`refresh_token` em `~/.config/onedrive/refresh_token` para subir a unit
-`onedrive@onedrive.service` sem prompt de OAuth. O `user/app/onedrive.nix`
-materializa esse arquivo na ativação do Home Manager a partir do item
+`refresh_token` em `~/.config/onedrive/refresh_token` para o `onedrivegui`
+sincronizar sem prompt de OAuth (é ele quem roda o cliente por baixo — ver
+"O motor é o onedrivegui" abaixo). O `user/app/onedrive.nix` materializa
+esse arquivo na ativação do Home Manager a partir do item
 `onedrive/refresh_token` do vault — mesmo padrão de tolerância a `op`
 indisponível usado pelos dotfiles e pelo opencode: sem CLI ou sem login, sai
-uma linha amarela e o serviço não sobe, em vez de quebrar o rebuild.
+uma linha amarela e a sincronização não sobe, em vez de quebrar o rebuild.
 
 O item **existe, mas você precisa criá-lo** na primeira instalação. O ciclo é
 uma vez por máquina — na prática, uma vez por conta Microsoft:
@@ -161,27 +162,39 @@ nupdate
 ```
 
 Daí em diante, toda ativação sobrescreve o arquivo a partir do 1Password, e
-`systemctl --user status onedrive@onedrive` mostra o serviço rodando com
-`--monitor`. Se o token expirar (a Microsoft não avisa), basta re-rodar o
-passo 2 com o novo conteúdo do arquivo local.
+`systemctl --user status onedrivegui` mostra o serviço rodando. Se o token
+expirar (a Microsoft não avisa), basta re-rodar o passo 2 com o novo
+conteúdo do arquivo local.
+
+**O motor é o `onedrivegui`, não `services.onedrive`.** O jeito "óbvio"
+(unit systemd do NixOS como motor, GUI só de visor por cima) não funciona:
+o `onedrivegui` não tem modo "observar" um processo alheio — a tela de
+progresso só existe para o processo que ele mesmo lança, e o cliente
+`onedrive` recusa uma segunda instância no mesmo confdir. Por isso quem
+sincroniza é o próprio `onedrivegui`, subindo como `systemd.user.services.onedrivegui`
+(ver `user/app/onedrive.nix`) junto da sessão gráfica — sem sessão gráfica,
+não sincroniza (diferente do `services.onedrive` original, que subia antes
+de qualquer login). `system/app/onedrive/default.nix` continua existindo
+para quem preferir esse motor puro noutro host/profile.
 
 **O `sync_dir` é semeado uma vez a partir de `lcars.user.onedrive.syncDir`
-(default `~/OneDrive`), e não mora no 1Password.** `~/.config/onedrive/config`
-nasce como arquivo real e gravável na primeira ativação — não como
-`xdg.configFile`/symlink, porque o `onedrivegui` (instalado junto, veja
-`user/app/onedrive.nix`) regrava esse arquivo sempre que abre, e symlink
-somente-leitura pro Nix store quebra o app (issue #131). Na prática isso
-quer dizer que a flag só vale na primeira vez: depois que o arquivo existe,
-mudar o `sync_dir` é editar `~/.config/onedrive/config` direto ou pelo
-`onedrivegui`, não mais pela flag + `nupdate`. Pelo mesmo motivo,
-`~/.config/onedrive-gui/profiles` também nasce semeado, já apontando para o
-`config_file` certo — o `onedrivegui` deve abrir direto na conta, sem passar
-pelo assistente de importação.
+(default `~/OneDrive`), e não mora no 1Password.** `~/.config/onedrive/config`,
+`~/.config/onedrive-gui/profiles` e `~/.config/onedrive-gui/gui_settings`
+nascem como arquivo real e gravável na primeira ativação — não como
+`xdg.configFile`/symlink, porque o `onedrivegui` regrava esses arquivos
+sempre que abre, e symlink somente-leitura pro Nix store quebra o app
+(issue #131). Na prática isso quer dizer que a flag só vale na primeira
+vez: depois que o arquivo existe, mudar o `sync_dir` é editar
+`~/.config/onedrive/config` direto ou pelo `onedrivegui`, não mais pela
+flag + `nupdate`. O profile já nasce com `auto_sync = True` (sincroniza sem
+precisar de "Play") e o `gui_settings` com `start_minimized = True` (não
+abre janela toda sessão gráfica) — o app deve abrir direto na conta, sem
+passar pelo assistente de importação.
 
-A activation do token (a que fala em "refresh_token" acima) é separada e
-continua tocando só nele a cada ativação, porque esse sim precisa estar em
-disco **antes** do serviço subir para o `ExecStart` não falhar com "no
-account".
+A activation do token (a que fala em "refresh_token" acima) é separada:
+continua tocando só nele a cada ativação, e reinicia `onedrivegui.service`
+depois de escrever um token novo, porque o cliente só lê o token na própria
+inicialização.
 
 ## Escape hatch
 
