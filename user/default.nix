@@ -23,6 +23,7 @@
     ./app/kitty.nix
     ./app/vivaldi.nix
     ./app/herdr.nix
+    ./app/herdr-telegram.nix
     ./app/direnv.nix
     ./app/dotfiles.nix
     ./app/nvim.nix

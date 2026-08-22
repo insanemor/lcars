@@ -343,6 +343,24 @@
         "url": "https://github.com/persiyanov/herdr-reviewr"
       }
     },
+    "herdr-telegram-plugin": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1785519725,
+        "narHash": "sha256-xuNjiLc3u+RwvMMRPnSsR2+T/ZACIWmPJAF5X1jhF1I=",
+        "ref": "main",
+        "rev": "af947630fe0b6081247665956b2df5d6922f2eb7",
+        "revCount": 155,
+        "type": "git",
+        "url": "https://github.com/mvallebr/herdr-telegram-plugin"
+      },
+      "original": {
+        "ref": "main",
+        "rev": "af947630fe0b6081247665956b2df5d6922f2eb7",
+        "type": "git",
+        "url": "https://github.com/mvallebr/herdr-telegram-plugin"
+      }
+    },
     "herdr-usage-bar": {
       "flake": false,
       "locked": {
@@ -504,6 +522,7 @@
         "herdr-notes": "herdr-notes",
         "herdr-nvim": "herdr-nvim",
         "herdr-reviewr": "herdr-reviewr",
+        "herdr-telegram-plugin": "herdr-telegram-plugin",
         "herdr-usage-bar": "herdr-usage-bar",
         "herdr-yazi": "herdr-yazi",
         "home-manager": "home-manager",

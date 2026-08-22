@@ -85,6 +85,8 @@
 
     lazygit.enable = lib.mkEnableOption "o lazygit (TUI de git) com config versionado em ~/.config/lazygit/config.yml — painéis de stash, reflog e o command log escondidos; o popup no herdr é `prefix+Shift+g`";
 
+    herdrTelegram.enable = lib.mkEnableOption "o herdr-telegram-plugin — cada pane do herdr vira um tópico de fórum num grupo do Telegram, daemon persistente via systemd.user, bot_token puxado do 1Password (item op://Dotfiles/herdr telegram bot/token)";
+
     onedrive.enable = lib.mkEnableOption "o cliente OneDrive (abi-1/onedrive) com sync contínuo em ~/OneDrive — refresh_token materializado na ativação a partir do 1Password (item op://Dotfiles/onedrive/refresh_token)";
 
     onedrive.syncDir = lib.mkOption {

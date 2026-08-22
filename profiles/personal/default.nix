@@ -59,6 +59,7 @@ with lib;
     lcars.user.kitty.enable = mkDefault true;
     lcars.user.vivaldi.enable = mkDefault true;
     lcars.user.herdr.enable = mkDefault true;
+    lcars.user.herdrTelegram.enable = mkDefault true;
     lcars.user.nvim.enable = mkDefault true;
     lcars.user.claudeCode.enable = mkDefault true;
     lcars.user.opencode.enable = mkDefault true;

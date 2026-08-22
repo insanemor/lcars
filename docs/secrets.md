@@ -196,6 +196,46 @@ continua tocando só nele a cada ativação, e reinicia `onedrivegui.service`
 depois de escrever um token novo, porque o cliente só lê o token na própria
 inicialização.
 
+## bot_token do herdr-telegram-plugin
+
+O [herdr-telegram-plugin](https://github.com/mvallebr/herdr-telegram-plugin)
+(cada pane do herdr como um tópico de fórum no Telegram) precisa de um
+`bot_token` para o daemon (`systemd.user.services.herdr-telegram`, ver
+`user/app/herdr-telegram.nix`) autenticar contra a API do Telegram. Mesmo
+padrão de tolerância a `op` indisponível usado pelo onedrive e pelo opencode:
+sem CLI ou sem login, a ativação avisa e segue — a unit sobe e falha por
+falta de token até o segredo existir (visível em
+`journalctl --user -u herdr-telegram`).
+
+O item **não existe por padrão** — crie-o na primeira instalação:
+
+```bash
+# 1. Fale com @BotFather no Telegram, /newbot, e guarde o token que ele der.
+
+# 2. Cria o item no vault com o token
+op item create \
+  --category "Login" \
+  --title "herdr telegram bot" \
+  --vault "Dotfiles" \
+  "token=<token do @BotFather>"
+
+# 3. Re-roda a ativação para puxar do 1Password
+nupdate
+```
+
+Daí em diante, toda ativação sobrescreve
+`~/.config/herdr-telegram/bot_token.env` a partir do 1Password e reinicia
+`herdr-telegram.service`. Falta um passo manual, único por chat e não
+automatizável: depois do primeiro deploy com o token certo, mande `/pair`
+para o bot no grupo/tópico do Telegram para autorizar o chat — o daemon grava
+isso em `~/.local/state/herdr-telegram/state.json`, fora do Nix.
+
+**O `bot_token` nunca vai para o Nix store.** `~/.config/herdr-telegram/config.toml`
+é gerado por `xdg.configFile` (link read-only para o store) e só carrega
+ajustes sem segredo (`progress_interval_ms`); o token chega ao processo por
+`EnvironmentFile=` do systemd, apontando para o arquivo mutável que a
+ativação escreve — nunca por um valor embutido na unit nem no `config.toml`.
+
 ## Escape hatch
 
 Se algum pedaço pessoal se recusar a morar no 1Password (por exemplo, scripts locais referenciando `$HOME/<caminho-secreto>`), coloque em:
