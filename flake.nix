@@ -266,6 +266,27 @@
       flake = false;
     };
 
+    # Plugin herdr-telegram-plugin — cada pane do herdr vira um tópico de
+    # fórum num grupo do Telegram: mensagem no tópico é entrada de teclado no
+    # pane, saída do pane volta como mensagem. Zero LLM. Veja
+    # user/app/herdr-telegram.nix (módulo próprio, flag própria — não entra em
+    # herdr.nix porque, ao contrário dos demais plugins, este roda um daemon
+    # de vida longa via systemd.user.services, e não só uma ação sob demanda).
+    #
+    # `flake = false`: Node/TypeScript com build real (`tsc`, não
+    # `dontNpmBuild` como o herdr-annotations) — `pkgs.buildNpmPackage` roda o
+    # build de verdade, com `npmDepsHash` descoberto por `prefetch-npm-deps`
+    # (equivalente a "por tentativa" para hash de dependências npm — não
+    # precisa de fake-hash e nix build de erro, ele lê o package-lock.json
+    # offline). Build confirmado com `nix-build` de verdade antes desta
+    # entrega: `npm run build` produz dist/index.js e dist/plugin.js.
+    #
+    # PRESO NUM COMMIT, porque o upstream não publica tags.
+    herdr-telegram-plugin = {
+      url = "git+https://github.com/mvallebr/herdr-telegram-plugin?ref=main&rev=af947630fe0b6081247665956b2df5d6922f2eb7";
+      flake = false;
+    };
+
     # FUTURO — descomente para ligar um repo privado sobreposto:
     # lcars-private = {
     #   url = "git+ssh://git@github.com/<voce>/lcars-private.git";
