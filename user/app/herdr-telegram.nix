@@ -145,10 +145,21 @@ lib.mkIf osConfig.lcars.user.herdrTelegram.enable {
     Install.WantedBy = [ "graphical-session.target" ];
   };
 
-  # bot_token do 1Password — mesma receita e mesma tolerância do
-  # user/app/onedrive.nix (ver docs/secrets.md): sem `op` no PATH ou sem
-  # login, a ativação avisa e segue; a unit sobe e falha por falta de
-  # bot_token até o segredo existir (ver "O SEGREDO" no topo do arquivo).
+  # bot_token do 1Password. Sem `op` no PATH ou sem conseguir ler o item, a
+  # ativação avisa e segue; a unit sobe e falha por falta de bot_token até o
+  # segredo existir (ver "O SEGREDO" no topo do arquivo).
+  #
+  # SEM PRÉ-CHECAGEM POR `op whoami` — de propósito, ao contrário do
+  # onedrive.nix/opencode.nix. `op whoami` se mostrou um proxy não confiável
+  # pra "o `op read` vai funcionar" no modelo de integração deste repo
+  # (desbloqueio via app + "Integrate with 1Password CLI", sem `op signin`
+  # clássico — ver docs/secrets.md): reproduzido ao vivo, `op whoami` falhava
+  # ("account is not signed in") de forma estável enquanto `op read` contra
+  # este mesmo item funcionava normalmente, também de forma estável (issue
+  # #141). A pré-checagem só produzia um falso "sem login" e pulava a
+  # leitura de verdade — o `bot_token.env` nunca chegava a ser escrito, e o
+  # daemon ficava em crashloop por falta de token. A correção é tentar o
+  # `op read` direto e deixar o próprio código de saída dele decidir.
   home.activation.herdrTelegramSecret = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     conf_dir="$HOME/.config/herdr-telegram"
     env_file="$conf_dir/bot_token.env"
@@ -166,8 +177,6 @@ lib.mkIf osConfig.lcars.user.herdrTelegram.enable {
 
     if [ -z "$op" ]; then
       echo "lcars: herdr-telegram precisa de bot_token, mas o \`op\` (1Password CLI) não está no PATH — veja docs/secrets.md."
-    elif [ -z "''${OP_SERVICE_ACCOUNT_TOKEN:-}" ] && ! "$op" whoami >/dev/null 2>&1; then
-      echo "lcars: sem login no 1Password — herdr-telegram vai subir sem bot_token; veja docs/secrets.md."
     else
       ref="op://Dotfiles/herdr telegram bot/token"
       if token=$("$op" read "$ref" 2>/dev/null); then
@@ -181,7 +190,7 @@ lib.mkIf osConfig.lcars.user.herdrTelegram.enable {
         systemctl --user restart herdr-telegram.service 2>/dev/null || true
         echo "lcars: herdr-telegram bot_token atualizado a partir do 1Password."
       else
-        echo "lcars: não consegui ler $ref — crie o item no 1Password (vault Dotfiles) e rode nupdate. Veja docs/secrets.md."
+        echo "lcars: não consegui ler $ref — confira se o item existe no 1Password (vault Dotfiles) e se o app está desbloqueado (Settings → Developer → Integrate with 1Password CLI), depois rode nupdate. Veja docs/secrets.md."
       fi
     fi
   '';
