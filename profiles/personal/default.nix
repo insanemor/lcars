@@ -17,14 +17,17 @@ with lib;
 
     lcars.system.app.onePassword.enable = mkDefault true;
 
-    # Hyprland é o ambiente gráfico padrão desde a #142 — o ecossistema
+    # Os dois compositores ficam ligados ao mesmo tempo desde a #142/#151: o
+    # regreet lista as duas sessões, e quem escolhe em qual logar é você, a
+    # cada boot — não uma flag que precisa de `nupdate` para trocar. Hyprland
+    # vem pré-selecionado (system/wm/default.nix), porque o ecossistema dele
     # (hyprpaper, hyprlock, hypridle, hyprpicker, hyprshot) é mais maduro e
     # mais documentado que o do niri para "ricar", e é onde o noctalia sempre
-    # rodou melhor. O niri fica ligado, mas opt-in (mkDefault false): os dois
-    # convivem no flake, e trocar de um para o outro é uma linha aqui — sem o
-    # beco sem saída da #34, onde "se ele não subir, a volta é TTY".
+    # rodou melhor. O niri segue disponível na lista, tiling scrollable para
+    # quem preferir naquele login — sem o beco sem saída da #34, onde "se ele
+    # não subir, a volta é TTY".
     lcars.system.wm.hyprland.enable = mkDefault true;
-    lcars.system.wm.niri.enable = mkDefault false;
+    lcars.system.wm.niri.enable = mkDefault true;
 
     # Tema: um esquema base16 pinta o terminal, o shell, GTK, Qt, o console e
     # o Hyprland de uma vez. Trocar de esquema é uma linha —
@@ -91,13 +94,17 @@ with lib;
     lcars.user.opencode.enable = mkDefault true;
     lcars.user.crush.enable = mkDefault false;
     lcars.user.hyprland.enable = mkDefault true;
-    lcars.user.niri.enable = mkDefault false;
+    lcars.user.niri.enable = mkDefault true;
     lcars.user.noctalia.enable = mkDefault true;
     lcars.user.noctalia.plugins.wallhaven.enable = mkDefault true;
     lcars.user.noctalia.plugins.nixMonitor.enable = mkDefault true;
-    # niriDisplays e niriAnimations NÃO estão aqui: falam com o niri por IPC
-    # dele, e o Hyprland não tem o equivalente — animação, no Hyprland, é
-    # configuração no próprio hyprland.conf (user/wm/hyprland.nix).
+    # niriDisplays e niriAnimations falam com o niri por IPC dele, sem
+    # equivalente no Hyprland — mas o niri está ativo (é uma das duas
+    # sessões do regreet, não um rollback desligado), então os plugins
+    # continuam ligados; eles só não fazem nada enquanto a sessão do login
+    # for Hyprland.
+    lcars.user.noctalia.plugins.niriDisplays.enable = mkDefault true;
+    lcars.user.noctalia.plugins.niriAnimations.enable = mkDefault true;
     lcars.user.noctalia.plugins.miniDocker.enable = mkDefault true;
     lcars.user.noctalia.plugins.gitCompanion.enable = mkDefault true;
     lcars.user.noctalia.plugins.driveHealth.enable = mkDefault true;

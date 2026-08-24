@@ -90,6 +90,17 @@ lib.mkIf osConfig.lcars.user.niri.enable {
     # inválida nunca chega à máquina.
     package = pkgs.niri;
 
+    # null pelo mesmo motivo do Hyprland (user/wm/hyprland.nix): quem
+    # instala os portais XDG é o módulo NixOS (system/wm/niri.nix, via
+    # programs.niri — já monta gnome-keyring e a combinação gnome+gtk).
+    # Sem isto, o módulo do home-manager liga o `xdg.portal` dele por conta
+    # própria (`enable = true` sempre que `portalPackage != null`, e o
+    # default é xdg-desktop-portal-gnome) — redundante em silêncio quando só
+    # o niri estava ligado, e um erro de avaliação com os dois compositores
+    # juntos: o do Hyprland fica `false` (mesmo raciocínio, `portalPackage =
+    # null`), e as duas definições colidem (#151).
+    portalPackage = null;
+
     # Exceção à validação acima, e por um motivo que `niri validate` não tem
     # como contornar: ele roda dentro do sandbox da derivação, sem acesso a
     # nada fora do store. Com o plugin niri-animations ligado, `extraConfig`
