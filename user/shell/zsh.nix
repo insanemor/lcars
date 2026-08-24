@@ -435,6 +435,10 @@ lib.mkIf osConfig.lcars.user.zsh.enable {
     // lib.optionalAttrs osConfig.lcars.user.herdr.enable {
       lg = "lazygit";
     };
+
+    export PAGER=cat
+
+
   };
 
   # A integração do direnv com o zsh já é injetada pelo próprio módulo
