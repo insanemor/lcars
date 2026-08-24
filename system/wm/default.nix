@@ -1,9 +1,10 @@
 # system/wm — ambientes gráficos, e o que eles compartilham.
 #
 # Mais de um pode estar ligado ao mesmo tempo: todos aparecem na tela de login
-# e você escolhe na hora. Hoje só o niri está aqui — Plasma e Hyprland saíram
-# na #34 —, mas a estrutura continua preparada para conviverem, e é ela que
-# torna seguro experimentar um ambiente novo sem perder o que funciona.
+# e você escolhe na hora. Hoje são niri e Hyprland — Plasma saiu na #34, e o
+# Hyprland voltou na #142, como opção ao lado do niri, não no lugar dele — e a
+# estrutura continua preparada para conviverem, e é ela que torna seguro
+# experimentar um ambiente novo sem perder o que funciona.
 #
 # Este arquivo existe porque algumas coisas são de "ter ambiente gráfico", não
 # de um WM em particular, e declará-las dentro de cada módulo geraria conflito
@@ -34,15 +35,24 @@ with lib;
 
 let
   cfg = config.lcars.system.wm;
-  algumWm = cfg.niri.enable;
+  algumWm = cfg.niri.enable || cfg.hyprland.enable;
 
-  automatica = if cfg.niri.enable then "niri" else "";
+  # Hyprland vence quando os dois estão ligados: é o default do profile
+  # personal desde a #142. Niri é o fallback, para quem ligou só ele.
+  automatica =
+    if cfg.hyprland.enable then
+      "hyprland"
+    else if cfg.niri.enable then
+      "niri"
+    else
+      "";
 
   sessao = if cfg.defaultSession != "" then cfg.defaultSession else automatica;
 in
 {
   imports = [
     ./niri.nix
+    ./hyprland.nix
   ];
 
   options.lcars.system.wm = {

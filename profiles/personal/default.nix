@@ -17,16 +17,19 @@ with lib;
 
     lcars.system.app.onePassword.enable = mkDefault true;
 
-    # O niri é o ambiente gráfico, e é o único: Plasma e Hyprland saíram na
-    # #34. Como não há segunda sessão na tela de login, se ele não subir a
-    # volta é pelo TTY (Ctrl+Alt+F2), editando este arquivo ou o
-    # machines/<host> e rodando `nupdate`.
-    lcars.system.wm.niri.enable = mkDefault true;
+    # Hyprland é o ambiente gráfico padrão desde a #142 — o ecossistema
+    # (hyprpaper, hyprlock, hypridle, hyprpicker, hyprshot) é mais maduro e
+    # mais documentado que o do niri para "ricar", e é onde o noctalia sempre
+    # rodou melhor. O niri fica ligado, mas opt-in (mkDefault false): os dois
+    # convivem no flake, e trocar de um para o outro é uma linha aqui — sem o
+    # beco sem saída da #34, onde "se ele não subir, a volta é TTY".
+    lcars.system.wm.hyprland.enable = mkDefault true;
+    lcars.system.wm.niri.enable = mkDefault false;
 
-    # Tema: um esquema base16 pinta o terminal, o shell, GTK, Qt e o console
-    # de uma vez. Trocar de esquema é uma linha — lcars.system.theme.scheme.
-    # O niri é a exceção: o stylix não tem alvo para ele, e user/wm/niri.nix
-    # aplica as mesmas cores à mão.
+    # Tema: um esquema base16 pinta o terminal, o shell, GTK, Qt, o console e
+    # o Hyprland de uma vez. Trocar de esquema é uma linha —
+    # lcars.system.theme.scheme. O niri é a exceção: o stylix não tem alvo
+    # para ele, e user/wm/niri.nix aplica as mesmas cores à mão.
     lcars.system.theme.enable = mkDefault true;
 
     # Áudio é independente do desktop: o Plasma não o liga por trás, é aqui
@@ -64,12 +67,14 @@ with lib;
     lcars.user.claudeCode.enable = mkDefault true;
     lcars.user.opencode.enable = mkDefault true;
     lcars.user.crush.enable = mkDefault false;
-    lcars.user.niri.enable = mkDefault true;
+    lcars.user.hyprland.enable = mkDefault true;
+    lcars.user.niri.enable = mkDefault false;
     lcars.user.noctalia.enable = mkDefault true;
     lcars.user.noctalia.plugins.wallhaven.enable = mkDefault true;
     lcars.user.noctalia.plugins.nixMonitor.enable = mkDefault true;
-    lcars.user.noctalia.plugins.niriDisplays.enable = mkDefault true;
-    lcars.user.noctalia.plugins.niriAnimations.enable = mkDefault true;
+    # niriDisplays e niriAnimations NÃO estão aqui: falam com o niri por IPC
+    # dele, e o Hyprland não tem o equivalente — animação, no Hyprland, é
+    # configuração no próprio hyprland.conf (user/wm/hyprland.nix).
     lcars.user.noctalia.plugins.miniDocker.enable = mkDefault true;
     lcars.user.noctalia.plugins.gitCompanion.enable = mkDefault true;
     lcars.user.noctalia.plugins.driveHealth.enable = mkDefault true;

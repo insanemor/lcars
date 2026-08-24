@@ -88,6 +88,21 @@ Na dúvida sobre se algo entra no ciclo: entra.
   `nixosConfiguration`, exceto `template`. Não há registro manual em
   `flake.nix`.
 
+- **`system/wm/` e `user/wm/` têm dois compositores, ao mesmo tempo, de
+  propósito.** Hyprland é o default do profile `personal` desde a #142
+  (`lcars.system.wm.hyprland.enable` / `lcars.user.hyprland.enable`): o
+  ecossistema dele (hyprpaper, hyprlock, hypridle, hyprpicker, hyprshot) é
+  mais maduro para "ricar", e é onde o noctalia sempre rodou melhor — era o
+  alvo original do projeto. Niri (`lcars.system.wm.niri.enable` /
+  `lcars.user.niri.enable`) fica ligado no flake, mas com `mkDefault false`:
+  tiling scrollable é um modelo mental que o Hyprland não reproduz, e a
+  arquitetura já suportava os dois desde a #34 (que tirou o Plasma, não a
+  ideia de conviver). Trocar de um para o outro é mudar as quatro flags no
+  profile ou na máquina — não há push de código. Os plugins do noctalia
+  `niriDisplays` e `niriAnimations` falam por IPC do niri e não têm
+  equivalente no Hyprland; ficam desligados quando ele está no lugar do
+  niri.
+
 - **A hierarquia é por papel:** `machines/` (o que a máquina é) escolhe um
   `profiles/` (preset de flags, sempre com `mkDefault`), que liga módulos de
   `system/` (NixOS) e de `user/` (Home Manager). Nos dois lados tudo é
