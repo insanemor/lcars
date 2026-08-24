@@ -104,6 +104,22 @@
 # em vez do painel do ghzinga, é isso — ajustar o pattern do pluginBrowser
 # pra excluir `github.com/.../\(issues\|pull\)/` resolveria.
 #
+# herdr-spreader E herdr-command-center: OS CONFIGS FICAM FORA DO NIX
+# ---------------------------------------------------------------------
+# Diferente do herdr-notes (que tem um notes_dir fixo, não-secreto, e por
+# isso ganha um xdg.configFile), nenhum dos dois tem xdg.configFile aqui —
+# de propósito. O config.yaml do spreader (layout de workspace) e o
+# commands.toml do command-center (o que cada slot roda) são,
+# estruturalmente, dado do usuário, não configuração do módulo: mudam a
+# cada projeto novo ou atalho novo, e o command-center foi desenhado para
+# ser editado pela própria interface (shift+a adiciona um slot, shift+o
+# abre o arquivo no editor). Um xdg.configFile viraria link read-only para
+# o store, e tanto o `shift+a` quanto uma edição manual de qualquer um dos
+# dois arquivos falhariam. A saída dos dois plugins some (nenhum slot no
+# popup, "sem config" na ação apply) até o usuário criar os arquivos à mão
+# — mesmo espírito do bot_token do herdr-telegram: falha visível, não
+# escondida atrás de um fallback silencioso.
+#
 # COMANDO `shell` QUE FALHA NÃO DIZ NADA
 # --------------------------------------
 # Vale para os atalhos daqui e para qualquer um que se acrescente: um
@@ -500,6 +516,60 @@ let
     height = "45%"'
   '';
 
+  # --- herdr-spreader: aplica layouts de workspace a partir de YAML --------
+  # Rust, mesmo trato do herdr-file-viewer/herdr-reviewr: cargoLock.lockFile
+  # (sem dependência git no Cargo.lock, então o checksum do próprio lockfile
+  # basta) e doCheck = false — a suíte do upstream tem um teste de integração
+  # que sobe um binário `herdr` fake via fixture, e não é o alvo deste
+  # pacote.
+  herdrSpreaderBin = pkgs.rustPlatform.buildRustPackage {
+    pname = "herdr-spreader";
+    version = "0.2.1";
+    src = inputs.herdr-spreader;
+    cargoLock.lockFile = "${inputs.herdr-spreader}/Cargo.lock";
+    doCheck = false;
+  };
+
+  # O manifesto (herdr-plugin.toml) abre o binário por caminho RELATIVO
+  # (`./target/release/herdr-spreader apply`) — igual ao herdr-file-viewer e
+  # ao herdr-notes, não pelo PATH. Como `plugin link` pula o `[[build]]` do
+  # upstream (que é quem, no caminho normal, rodaria `cargo build --release`
+  # nesse mesmo caminho), a árvore que apontamos precisa já vir com o
+  # binário. Mesma receita: copia o input pro $out gravável e symlinka o
+  # binário buildado pelo Nix onde o manifesto espera achá-lo.
+  pluginSpreader = pkgs.runCommand "herdr-spreader-com-binario" { } ''
+    cp -r ${inputs.herdr-spreader} $out
+    chmod -R u+w $out
+    mkdir -p $out/target/release
+    ln -s ${herdrSpreaderBin}/bin/herdr-spreader $out/target/release/herdr-spreader
+  '';
+
+  # --- herdr-command-center: popup único de slots (1-9, a-z) ---------------
+  # Node/npm, mesmo trato do herdr-annotations: o package.json não declara
+  # script de build (só "test"), e o [[build]] do upstream roda só `npm ci` +
+  # `npm test` — não há nada para compilar, então `dontNpmBuild = true` e um
+  # installPhase que só copia a árvore (com node_modules já populado) bastam.
+  # `npmDepsHash` obtido por `prefetch-npm-deps` contra o package-lock.json do
+  # commit fixado — sem dependência git no lockfile, um hash só já serve.
+  #
+  # As ações do manifesto chamam `["node", "bin/popup.mjs"]` etc. — `node`
+  # pelo nome, resolvido no PATH do servidor do herdr (pkgs.nodejs já entra
+  # em home.packages abaixo, por causa do herdr-annotations), caminho do
+  # script relativo à raiz do plugin. Sem binário nenhum para symlinkar: ao
+  # contrário do spreader, o installPhase copia a árvore inteira e não
+  # precisa de mais nada em cima.
+  pluginCommandCenter = pkgs.buildNpmPackage {
+    pname = "herdr-command-center";
+    version = "1.2.0";
+    src = inputs.herdr-command-center;
+    npmDepsHash = "sha256-Q545lfSt2wGD0ELAz+zfZDB7ot7nTIaZxaVz16BZ/FM=";
+    dontNpmBuild = true;
+    installPhase = ''
+      mkdir -p $out
+      cp -r . $out
+    '';
+  };
+
   # As cores, do esquema base16 do stylix — o mesmo que pinta o terminal, o
   # prompt, GTK e Qt. O herdr aceita hex em todos os tokens (veja
   # src/config/theme.rs no upstream), então a paleta inteira é sobrescrita e
@@ -707,6 +777,20 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
           echo "$saida"
         fi
       '';
+
+      pluginSpreaderAtivacao = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        if ! saida=$(${lib.getExe herdr} plugin link ${pluginSpreader} 2>&1); then
+          echo "lcars: falha ao registrar o herdr-spreader — a ação apply não vai rodar"
+          echo "$saida"
+        fi
+      '';
+
+      pluginCommandCenterAtivacao = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        if ! saida=$(${lib.getExe herdr} plugin link ${pluginCommandCenter} 2>&1); then
+          echo "lcars: falha ao registrar o herdr-command-center — prefix+a não vai abrir"
+          echo "$saida"
+        fi
+      '';
     in
     {
       herdrPluginBrowser = pluginBrowserAtivacao;
@@ -719,6 +803,8 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
       herdrPluginYazi = pluginYaziAtivacao;
       herdrPluginAnnotations = pluginAnnotationsAtivacao;
       herdrPluginNotes = pluginNotesAtivacao;
+      herdrPluginSpreader = pluginSpreaderAtivacao;
+      herdrPluginCommandCenter = pluginCommandCenterAtivacao;
     }
     // lib.optionalAttrs osConfig.lcars.user.nvim.enable {
       herdrPluginHerdrNvim = pluginHerdrNvimAtivacao;
@@ -782,6 +868,7 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     #    yazi              = prefix + y        (split: prefix + Shift+y, em aba)
     #    anotar seleção    = Ctrl+Alt+a          (colar: Ctrl+Alt+v)
     #    notas do workspace = prefix + n        (popup pequeno, sem toggle — Esc fecha)
+    #    command center    = prefix + a        (popup de slots 1-9/a-z)
     #
     #  A tabela completa, dentro do programa: prefix + ?
     # =================================================================
@@ -1064,6 +1151,24 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
     type        = "shell"
     command     = '"''${HERDR_BIN_PATH}" plugin pane open --plugin herdr-notes --entrypoint notes --placement popup --focus'
     description = "notas: abre um popup do workspace (Esc fecha)"
+
+    # =================================================================
+    #  Plugin herdr-command-center (cdragon.command-center) — um popup só,
+    #  com "slots" (1-9, a-z) no lugar de uma tabela de prefix+tecla por
+    #  comando. Não há passo manual: o plugin é montado em
+    #  pluginCommandCenter (buildNpmPackage) e registrado na ativação
+    #  (home.activation.herdrPluginCommandCenter).
+    #
+    #  O commands.toml (o que cada slot roda) fica de fora do Nix, de
+    #  propósito — ver "OS DOIS CONFIGS FICAM FORA DO NIX" no cabeçalho do
+    #  arquivo. `prefix+a` está livre na tabela atual, e é o que o próprio
+    #  README do upstream sugere.
+    # =================================================================
+    [[keys.command]]
+    key         = "prefix+a"
+    type        = "plugin_action"
+    command     = "cdragon.command-center.open"
+    description = "command center: popup de slots (1-9, a-z)"
 
     ${tema}
 
