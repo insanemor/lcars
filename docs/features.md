@@ -78,6 +78,17 @@ num notebook ou numa VM, mude para `true` e rode o rebuild.
 - Com `grub` e `grubDevice` vazio, a avaliação para numa assertion dizendo o
   que preencher — antes de o instalador do GRUB falhar de forma mais obscura
 - Swapfile opcional via `lcars.system.core.swapFileSize` (desligado por padrão, para não colidir com o swap que o `hardware-configuration.nix` já traga)
+- **zram** ligado nos dois profiles (`lcars.system.core.zram.enable`,
+  `memoryPercent` em 50): swap em RAM comprimida, com prioridade acima de
+  qualquer disco — a página vai para a memória comprimida, e só quando ela
+  enche é que o disco entra
+- As três formas de swap convivem: zram, swapfile e a partição que o
+  `hardware-configuration.nix` declara. **Quem hiberna precisa da partição**:
+  a imagem é escrita no swap de disco com a máquina prestes a desligar, e o
+  zram não sobrevive ao desligamento. Além da partição, é preciso apontar o
+  initrd para ela com `boot.resumeDevice` na máquina — sem isso a hibernação
+  escreve, o boot seguinte ignora a imagem, e a máquina volta zerada sem erro
+  nenhum
 
 **Firmware** — o que faz o hardware existir para o kernel
 - `hardware.enableRedistributableFirmware` — os blobs de GPU, Wi-Fi, bluetooth
@@ -627,6 +638,93 @@ lcars.system.hardware.keyboard.variant = "abnt2";
 Para `model` e `options` (trocar layout por atalho, por exemplo), declare
 `services.xserver.xkb.model` / `.options` direto — são casos raros e não valem
 um espelho de option.
+
+---
+
+## Discos removíveis — só no profile `personal`
+
+`system/hardware/storage.nix` · option `lcars.system.hardware.storage`
+
+- **udisks2**, o daemon que enxerga o bloco novo e sabe montá-lo
+- **gvfs**, a camada que o Nautilus usa para falar com ele — e que dá lixeira
+  (`trash://`), rede (`smb://`, `sftp://`) e celular por MTP
+- `ntfs` (padrão ligado) — o `ntfs3g`, para ler e escrever no disco que veio do
+  Windows
+- `exfat` (padrão ligado) — as ferramentas do formato dos pendrives grandes; o
+  driver já está no kernel
+- `udisksctl` no PATH, para montar sem interface gráfica
+
+Sem este módulo o pendrive **não monta** e o Nautilus não lista dispositivo
+nenhum. A falta existia porque quem normalmente liga essas duas peças é um
+desktop environment completo (Plasma, GNOME), e não há nenhum aqui desde a #34
+— o niri é um compositor, não um DE. A VM nunca acusou o problema: ninguém
+espeta pendrive numa máquina virtual.
+
+Não há automontador (`udiskie`): o noctalia já traz o painel de dispositivos, e
+dois automontadores sobre o mesmo udisks2 repetiriam a armadilha da #24.
+
+---
+
+## Bluetooth — só no profile `personal`
+
+`system/hardware/bluetooth.nix` · option `lcars.system.hardware.bluetooth`
+
+- **BlueZ**, com `powerOnBoot` ligado por padrão
+- Perfis de mídia habilitados (`Source,Sink,Media,Socket`), sem os quais um
+  fone às vezes conecta só como headset mono e nunca oferece A2DP
+- Nome de pareamento = `networking.hostName`
+- `blueman` existe como option, **desligada**: o noctalia já tem o widget de
+  bluetooth na barra, e dois applets sobre o mesmo daemon é disputa, não
+  redundância
+
+O firmware do rádio vem de `hardware.enableRedistributableFirmware`, ligado
+para toda máquina em `system/core`. Os codecs (SBC, AAC, aptX, LDAC) são
+compilados dentro do PipeWire do nixpkgs — não há pacote a acrescentar.
+
+---
+
+## Impressão — só no profile `personal`
+
+`system/hardware/printing.nix` · option `lcars.system.hardware.printing`
+
+- **CUPS** com os drivers `gutenprint` (cobre a maioria das jato de tinta e
+  laser comuns)
+- **Avahi** com `nssmdns4` e `openFirewall` (5353/UDP), que é o que faz a
+  impressora de rede *aparecer*: ela não se declara por IP, se anuncia por
+  mDNS
+- É a única porta que o módulo abre — o CUPS aqui é cliente, não servidor de
+  impressão para a rede
+
+Impressora que exija blob próprio (HP com `hplip`, Brother, Epson novas) entra
+em `services.printing.drivers` no `machines/<host>`: o modelo é fato daquela
+casa, não do repositório.
+
+---
+
+## Jogos — desligado até no profile `personal`
+
+`system/app/steam/default.nix` · option `lcars.system.app.steam`
+
+- `programs.steam` (o FHS em que o Steam roda, e as regras de udev de controle
+  e headset, que o módulo do nixpkgs já traz)
+- **`hardware.graphics.enable32Bit`** — o motivo de o módulo existir
+- `gamemode` ligado junto (governor e prioridade enquanto o jogo roda; use
+  `gamemoderun %command%` na linha de lançamento)
+- `remotePlay` e `dedicatedServer` desligados: só abrem portas se você for
+  mesmo transmitir ou hospedar
+
+Ligar por máquina, não por profile:
+
+```nix
+# machines/<host>/default.nix
+lcars.system.app.steam.enable = true;
+```
+
+Está desligado até no `personal` de propósito. `home.packages = [ pkgs.steam ]`
+instalaria um Steam que abre e não roda quase nada: o que falta não é o
+programa, é a metade de 32 bits do driver gráfico, que é do sistema. E ela
+duplica os drivers Mesa no store de toda máquina que a herdar — num notebook
+que nunca vai jogar, é peso puro.
 
 ---
 

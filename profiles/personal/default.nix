@@ -35,6 +35,29 @@ with lib;
     lcars.system.hardware.audio.enable = mkDefault true;
     lcars.system.hardware.keyboard.enable = mkDefault true;
 
+    # O que uma máquina de trabalho tem e uma VM não tinha (#150). Os três
+    # faltavam porque quem normalmente os liga é um desktop environment
+    # completo, e não há nenhum aqui desde a #34 — o niri é um compositor.
+    #
+    #   storage    monta pendrive e HD externo (udisks2 + gvfs), e lê NTFS
+    #   bluetooth  o rádio; a interface é o widget do noctalia
+    #   printing   CUPS, com a impressora aparecendo pela rede via Avahi
+    lcars.system.hardware.storage.enable = mkDefault true;
+    lcars.system.hardware.bluetooth.enable = mkDefault true;
+    lcars.system.hardware.printing.enable = mkDefault true;
+
+    # Swap em RAM comprimida. Não dispensa a partição de swap de quem
+    # hiberna — o zram não sobrevive ao desligamento, e é lá que a imagem de
+    # hibernação seria escrita. Veja o bloco `zramSwap` em system/core.
+    lcars.system.core.zram.enable = mkDefault true;
+
+    # O Steam fica DESLIGADO mesmo neste profile, e é de propósito: ele liga
+    # `hardware.graphics.enable32Bit`, que duplica os drivers Mesa no store de
+    # toda máquina que o herdar. Quem joga liga em machines/<host>:
+    #
+    #   lcars.system.app.steam.enable = true;
+    lcars.system.app.steam.enable = mkDefault false;
+
     # Estes pacotes não são do sistema, são do usuário — e qual conjunto
     # faz sentido depende do papel da máquina, então é o profile que decide.
     lcars.system.core.userPackages = mkDefault [
