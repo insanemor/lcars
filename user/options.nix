@@ -25,7 +25,7 @@
 # profile. Para acrescentar um módulo em user/: declare a flag aqui, importe-o
 # em user/default.nix, envolva o corpo no mkIf e ligue-o nos profiles.
 # --------------------------------------------------------------------
-{ lib, ... }:
+{ config, lib, ... }:
 
 {
   options.lcars.user = {
@@ -100,5 +100,91 @@
     vscode.enable = lib.mkEnableOption "o VS Code como editor gráfico — perfil limpo, sem extensões geridas pelo Nix";
 
     nautilus.enable = lib.mkEnableOption "o Nautilus como gerenciador de arquivos gráfico, e o app padrão para abrir diretórios — sem isto só existia o seletor de arquivos do portal (useNautilus em system/wm/niri.nix), não um app abrível";
+
+    waynergy = {
+      enable = lib.mkEnableOption ''
+        o waynergy — cliente Synergy que fala Wayland nativo, para esta máquina
+        entrar como CLIENTE num servidor Synergy que roda em outro computador.
+
+        Só cliente, e isso não é limitação do módulo: o niri não implementa o
+        portal `org.freedesktop.portal.InputCapture` (upstream niri-wm/niri#823),
+        sem o qual nenhum software consegue capturar o cursor na borda da tela.
+        Servidor aqui é impossível hoje — veja o cabeçalho de
+        user/app/waynergy.nix.
+
+        Não ligue isto num profile: `host` é fato da sua rede, e um profile
+        vale para todo clone do repositório. O lugar é machines/<host>/default.nix.
+      '';
+
+      host = lib.mkOption {
+        type = lib.types.str;
+        default = "";
+        example = "192.168.0.10";
+        description = ''
+          Endereço do servidor Synergy ao qual conectar. Obrigatório quando
+          `enable` está ligado — a avaliação falha com mensagem explícita se
+          ficar vazio, em vez de subir um serviço que só erra no journal.
+        '';
+      };
+
+      port = lib.mkOption {
+        type = lib.types.port;
+        default = 24800;
+        description = "Porta do servidor Synergy. 24800 é o padrão do protocolo.";
+      };
+
+      screenName = lib.mkOption {
+        type = lib.types.str;
+        default = config.networking.hostName;
+        defaultText = lib.literalExpression "config.networking.hostName";
+        description = ''
+          Nome desta tela no layout do servidor. PRECISA bater exatamente com o
+          nome cadastrado lá: o servidor recusa cliente desconhecido, e o
+          sintoma é uma conexão que abre e fecha em seguida.
+        '';
+      };
+
+      tls = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Liga TLS (`--enable-crypto`) e o trust-on-first-use (`--enable-tofu`).
+
+          O TOFU é o que faz o certificado autoassinado do servidor ser aceito:
+          na primeira conexão o waynergy grava o hash dele em
+          ~/.config/waynergy e passa a exigir o mesmo daí em diante. Precisa
+          casar com o servidor — se ele roda com `--enable-crypto`, isto tem
+          que ficar ligado, e vice-versa.
+        '';
+      };
+
+      clipboard = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Sincroniza a área de transferência com as outras máquinas. Desligar
+          passa `--no-clip`.
+        '';
+      };
+
+      logLevel = lib.mkOption {
+        type = lib.types.enum [
+          "none"
+          "error"
+          "warn"
+          "info"
+          "debug"
+          "debugsyn"
+        ];
+        default = "info";
+        description = ''
+          Verbosidade do log, visível em `journalctl --user -u waynergy`.
+
+          ATENÇÃO com `debug` e `debugsyn`: o upstream avisa que log de debug é
+          log de teclas — tudo que você digitar passa por ali. Use para
+          diagnosticar e volte para `info` depois.
+        '';
+      };
+    };
   };
 }
