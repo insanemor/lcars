@@ -436,9 +436,20 @@ lib.mkIf osConfig.lcars.user.zsh.enable {
       lg = "lazygit";
     };
 
-    export PAGER=cat
-
-
+    # Sem paginador. `cat` no lugar do `less` faz git log, systemctl, man e
+    # afins despejarem tudo de uma vez e devolverem o prompt, em vez de
+    # segurarem o terminal esperando um `q`.
+    #
+    # O que motiva não é preferência de leitura: saída paginada trava quem
+    # consome o terminal sem ser uma pessoa — os panes do herdr e os agentes
+    # de CLI ficam parados num pager que ninguém vai fechar.
+    #
+    # `sessionVariables` do programs.zsh, e não `home.sessionVariables`, para
+    # o efeito ficar no shell interativo em vez de vazar para toda a sessão
+    # gráfica. E é option declarada, não texto solto: `export PAGER=cat` em
+    # sintaxe de shell no meio do attrset derrubou a avaliação dos dois
+    # profiles (#147).
+    sessionVariables.PAGER = "cat";
   };
 
   # A integração do direnv com o zsh já é injetada pelo próprio módulo
