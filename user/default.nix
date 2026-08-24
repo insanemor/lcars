@@ -38,6 +38,7 @@
     ./cli/crush/default.nix
     ./cli/opencode/default.nix
     ./wm/niri.nix
+    ./wm/hyprland.nix
     ./wm/noctalia.nix
   ];
 }

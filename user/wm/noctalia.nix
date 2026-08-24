@@ -249,7 +249,8 @@ lib.mkIf osConfig.lcars.user.noctalia.enable {
     # responde a `systemctl --user status noctalia`. Veja a regra no CLAUDE.md.
     #
     # O `graphical-session.target` de que ele depende vem das unidades que o
-    # módulo NixOS do niri instala (system/wm/niri.nix).
+    # módulo NixOS do compositor instala — niri (system/wm/niri.nix) ou
+    # Hyprland (system/wm/hyprland.nix), o que estiver ligado.
     systemd.enable = true;
 
     settings = attrsetFinal;
