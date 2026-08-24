@@ -570,6 +570,53 @@ let
     '';
   };
 
+  # --- Layout "dotfiles" (herdr-spreader) e slot "d" (command-center) -----
+  # Os dois arquivos abaixo (config.yaml do spreader, commands.toml do
+  # command-center) são deliberadamente MUTÁVEIS — ver "OS CONFIGS FICAM
+  # FORA DO NIX" no cabeçalho do arquivo. Um xdg.configFile aqui tornaria os
+  # dois arquivos INTEIROS read-only, não só o pedaço que queremos declarar
+  # — e o commands.toml já carrega slots que o usuário criou à mão (VS Code,
+  # gh browse, gh pr view), que precisam continuar editáveis.
+  #
+  # A saída, então, não é declarar o arquivo — é GARANTIR que um pedaço dele
+  # exista, deixando o resto intocado. Mesmo padrão de
+  # home.activation.vivaldiPrefs (user/app/vivaldi.nix:157): escreve/funde
+  # sem apagar o que já está lá. As duas ativações abaixo são idempotentes e
+  # nunca sobrescrevem uma edição posterior do usuário: rodar `nupdate` de
+  # novo, numa máquina que já tem os dois arquivos, não muda nada.
+  layoutDotfiles = ''
+    workspaces:
+      - name: dotfiles
+        root: ~/.dotfiles
+        focus: true
+        tabs:
+          - label: dotfiles
+            panes:
+              # coluna esquerda: claude, ocupa a altura inteira
+              - command: claude
+                focus: true
+              # coluna direita, linha de cima: terminal simples (sem
+              # command, abre um shell puro na raiz do repo)
+              - split: right
+                ratio: 0.5
+              # coluna direita, linha de baixo: lazygit — split "down" a
+              # partir do pane anterior (o terminal), não do claude
+              - split: down
+                ratio: 0.5
+                command: lazygit
+  '';
+
+  slotDotfiles = ''
+
+    [[commands]]
+    id = "dotfiles-layout"
+    slot = "d"
+    label = "Abrir layout: dotfiles"
+    type = "plugin_action"
+    command = "herdr-spreader.apply"
+    description = "Novo space no repo .dotfiles: claude à esquerda, terminal e lazygit à direita"
+  '';
+
   # As cores, do esquema base16 do stylix — o mesmo que pinta o terminal, o
   # prompt, GTK e Qt. O herdr aceita hex em todos os tokens (veja
   # src/config/theme.rs no upstream), então a paleta inteira é sobrescrita e
@@ -791,6 +838,36 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
           echo "$saida"
         fi
       '';
+
+      # Escreve o layout SOMENTE SE o arquivo ainda não existir — ver
+      # "Layout dotfiles e slot d" acima, junto de layoutDotfiles/slotDotfiles.
+      herdrLayoutDotfilesAtivacao = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+                layout="$HOME/.config/herdr/plugins/config/herdr-spreader/config.yaml"
+                if [ ! -f "$layout" ]; then
+                  mkdir -p "$(dirname "$layout")"
+                  cat > "$layout" <<'YAML'
+        ${layoutDotfiles}
+        YAML
+                  echo "lcars: layout dotfiles do herdr-spreader criado em $layout"
+                fi
+      '';
+
+      # Garante o bloco do slot "d" — cria o arquivo se faltar, faz append
+      # se faltar só o slot, não faz nada se ele já estiver lá (marcador:
+      # `id = "dotfiles-layout"`). Nunca sobrescreve os outros slots.
+      herdrSlotDotfilesAtivacao = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+                commands="$HOME/.config/herdr/plugins/config/cdragon.command-center/commands.toml"
+                mkdir -p "$(dirname "$commands")"
+                if [ ! -f "$commands" ]; then
+                  printf 'schema_version = 1\n' > "$commands"
+                fi
+                if ! grep -q 'id = "dotfiles-layout"' "$commands"; then
+                  cat >> "$commands" <<'TOML'
+        ${slotDotfiles}
+        TOML
+                  echo "lcars: slot 'd' (layout dotfiles) adicionado ao command center"
+                fi
+      '';
     in
     {
       herdrPluginBrowser = pluginBrowserAtivacao;
@@ -805,6 +882,8 @@ lib.mkIf osConfig.lcars.user.herdr.enable {
       herdrPluginNotes = pluginNotesAtivacao;
       herdrPluginSpreader = pluginSpreaderAtivacao;
       herdrPluginCommandCenter = pluginCommandCenterAtivacao;
+      herdrLayoutDotfiles = herdrLayoutDotfilesAtivacao;
+      herdrSlotDotfiles = herdrSlotDotfilesAtivacao;
     }
     // lib.optionalAttrs osConfig.lcars.user.nvim.enable {
       herdrPluginHerdrNvim = pluginHerdrNvimAtivacao;
