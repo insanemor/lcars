@@ -32,6 +32,8 @@
     ./app/onedrive.nix
     ./app/claude-code.nix
     ./app/sudo-askpass.nix
+    ./app/vscode.nix
+    ./app/nautilus.nix
     ./cli/crush/default.nix
     ./cli/opencode/default.nix
     ./wm/niri.nix

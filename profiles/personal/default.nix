@@ -80,5 +80,7 @@ with lib;
     lcars.user.lazygit.enable = mkDefault true;
     lcars.user.onedrive.enable = mkDefault true;
     lcars.user.sudoAskpass.enable = mkDefault true;
+    lcars.user.vscode.enable = mkDefault true;
+    lcars.user.nautilus.enable = mkDefault true;
   };
 }
