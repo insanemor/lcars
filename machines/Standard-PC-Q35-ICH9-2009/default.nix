@@ -75,6 +75,24 @@
   #   lcars.user.direnv.enable               = false;     # ambiente do usuário
   #   lcars.user.dotfiles.enable             = false;
 
+  # --- teclado e mouse compartilhados (waynergy) -----------------------
+  # Esta máquina entra como CLIENTE do servidor Synergy que roda no dragon-pc.
+  # Fica aqui, e não num profile, porque o endereço é fato desta rede — num
+  # profile ele valeria para todo clone do repositório.
+  #
+  # Cliente e não servidor não é escolha: o niri não implementa o portal
+  # InputCapture, sem o qual nada captura o cursor na borda da tela. O
+  # cabeçalho de user/app/waynergy.nix tem a investigação inteira.
+  #
+  # `screenName` PRECISA existir no layout do servidor com exatamente este
+  # nome, cadastrado na GUI do Synergy 3 — o servidor recusa cliente que não
+  # conhece, e o sintoma é conectar e cair em seguida.
+  lcars.user.waynergy = {
+    enable = true;
+    host = "192.168.0.10";
+    screenName = "nixos-niri";
+  };
+
   # --- fundo da tela de login (regreet) --------------------------------
   # Direto no regreet, não em lcars.system.theme.wallpaper: aquela flag
   # alimenta stylix.image, que auto-liga o alvo hyprpaper do stylix NO

@@ -34,6 +34,7 @@
     ./app/sudo-askpass.nix
     ./app/vscode.nix
     ./app/nautilus.nix
+    ./app/waynergy.nix
     ./cli/crush/default.nix
     ./cli/opencode/default.nix
     ./wm/niri.nix

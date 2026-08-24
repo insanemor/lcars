@@ -1395,6 +1395,70 @@ entre a `state` local e a nuvem, e oferece `--resync`. Sincronizar em duas
 máquinas ao mesmo tempo é receita para conflito — mantenha o serviço ligado
 só onde você está trabalhando, como em qualquer outro sync de nuvem.
 
+### Teclado e mouse compartilhados · `user/app/waynergy.nix` · `lcars.user.waynergy.enable` · ligado por máquina
+
+Compartilha um teclado e um mouse com outros computadores, movendo o cursor
+entre as telas como se fossem monitores da mesma máquina. Esta máquina entra
+sempre como **cliente**: o teclado e o mouse físicos ficam no computador que
+roda o servidor.
+
+**Cliente-só não é escolha do módulo.** Nenhum software consegue ser servidor
+sob o niri hoje, e a causa é o compositor:
+
+| Camada | Situação |
+|---|---|
+| `synergy` do nixpkgs (1.14) | X11-puro — sem `libei`, `libportal` ou `wayland` |
+| XWayland | Não resolve: grab só vê o domínio X, `XTEST` só injeta em janelas X11 |
+| Synergy com Wayland (1.15+/3) | Symless suporta só GNOME 46+ e KDE Plasma 6.1+ |
+| Portal `InputCapture` | **o niri não implementa** (upstream niri-wm/niri#823) |
+
+Sem o `InputCapture` não há como capturar o cursor ao encostar na borda da
+tela, que é a operação central de um servidor. A prova de que o problema não é
+empacotamento: o `deskflow` do nixpkgs **tem** `libei` e `libportal` e mesmo
+assim falha no niri. O cabeçalho de `user/app/waynergy.nix` traz a investigação
+completa, com arquivo e linha.
+
+O waynergy escapa porque não usa portal nenhum — injeta input pelos protocolos
+que o niri já implementa (`zwlr_virtual_pointer_manager_v1`,
+`zwp_virtual_keyboard_manager_v1`).
+
+**Serve para qualquer servidor da família.** O protocolo de fio na porta 24800
+é o mesmo em Synergy 1, Synergy 3, Barrier, Input Leap e Deskflow — verificado
+contra um Synergy 3.5.1, que anuncia "Synergy 1.8" no handshake.
+
+**Onde ligar.** Em `machines/<host>/default.nix`, nunca num profile: o `host` é
+o endereço do servidor na sua rede, e um profile vale para todo clone do
+repositório. A avaliação falha com mensagem explícita se `enable` estiver ligado
+sem `host`.
+
+```nix
+lcars.user.waynergy = {
+  enable = true;
+  host = "192.168.0.10";      # onde roda o servidor
+  screenName = "nixos-niri";  # precisa existir no layout de lá
+};
+```
+
+Options restantes: `port` (24800), `tls` (liga TLS e o trust-on-first-use;
+precisa casar com o servidor), `clipboard` e `logLevel`.
+
+**O passo manual.** Cadastre esta tela no layout do servidor com exatamente o
+mesmo `screenName` — no Synergy 3, arrastando um computador novo no canvas da
+GUI; no Synergy 1 e no Barrier, editando o `synergy.conf`. **O servidor recusa
+cliente cujo nome não conhece**, e o sintoma é uma conexão que abre e fecha em
+seguida (`new client disconnected` no log do servidor).
+
+**Diagnóstico.** É um serviço de verdade, não `exec-once` — reinicia sozinho
+(`Restart = always`) porque o waynergy não tem reconexão própria:
+
+```bash
+systemctl --user status waynergy
+journalctl --user -u waynergy -f
+```
+
+Cuidado com `logLevel = "debug"`: o upstream avisa que log de debug **é log de
+teclas**. Use para diagnosticar e volte para `info`.
+
 ### Escape hatch · `user/personal/default.nix` · sem flag
 
 Ponto de extensão para `~/.config/home-manager/private.nix`, um arquivo fora do
