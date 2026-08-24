@@ -31,6 +31,19 @@ with lib;
     lcars.system.hardware.keyboard.enable = mkDefault true;
     lcars.system.hardware.audio.enable = mkDefault false;
 
+    # Nada de desktop aqui (#150): sem sessão gráfica não há Nautilus a servir,
+    # ninguém espeta pendrive num servidor, e impressora e bluetooth só
+    # acrescentariam daemons e uma porta UDP aberta. Ligue à mão se a máquina
+    # for a exceção — um NAS que precise ler um disco NTFS, por exemplo.
+    lcars.system.hardware.storage.enable = mkDefault false;
+    lcars.system.hardware.bluetooth.enable = mkDefault false;
+    lcars.system.hardware.printing.enable = mkDefault false;
+    lcars.system.app.steam.enable = mkDefault false;
+
+    # zram sim, e é a exceção da lista: RAM comprimida vale ainda mais numa
+    # máquina pequena, e não custa daemon nenhum — é um dispositivo de bloco.
+    lcars.system.core.zram.enable = mkDefault true;
+
     # --- ambiente do usuário (user/) ----------------------------------
     # Só o que serve a quem entra por ssh para trabalhar. Ficam de fora:
     # direnv (não há projetos aqui), dotfiles e atuin (os dois dependem de

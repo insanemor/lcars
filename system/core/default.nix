@@ -98,6 +98,39 @@ in
       description = "Tamanho em MiB de /swapfile. null = não criar swapfile.";
     };
 
+    # zram é a terceira forma de swap deste repo, e as três convivem: zram
+    # (RAM comprimida), swapfile (acima) e partição de swap (declarada pelo
+    # hardware-configuration.nix). Veja o bloco de configuração abaixo.
+    zram = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+        description = ''
+          Swap em RAM comprimida. Em vez de mandar a página para o disco, o
+          kernel a comprime e a mantém na memória — ordens de grandeza mais
+          rápido que qualquer SSD, ao custo de um pouco de CPU.
+
+          NÃO substitui a partição de swap se você quiser hibernar: o zram
+          desaparece quando a máquina desliga, e é justamente aí que a imagem
+          de hibernação precisaria estar escrita. Ver o bloco de configuração.
+        '';
+      };
+
+      memoryPercent = mkOption {
+        type = types.int;
+        default = 50;
+        description = ''
+          Quanto da RAM o dispositivo zram pode ocupar, em porcentagem, já
+          contando a compressão — 50 numa máquina de 64 GB dá um swap de
+          32 GB que na prática cabe em bem menos memória real.
+
+          O default do NixOS é 50; valores acima de 100 existem e fazem
+          sentido com taxas de compressão altas, mas passam a disputar RAM
+          com o que você está de fato rodando.
+        '';
+      };
+    };
+
     # Sem isto, uma instalação nova fica sem nenhuma forma de login: o sshd de
     # system/security aceita apenas chave.
     initialPassword = mkOption {
@@ -189,6 +222,29 @@ in
         size = cfg.swapFileSize;
       }
     ];
+
+    # --- zram ------------------------------------------------------------
+    # As três formas de swap deste repo convivem, e o kernel escolhe por
+    # prioridade — o `zramSwap` do NixOS já nasce com prioridade 5, acima da
+    # de qualquer partição ou swapfile (que ficam em -2). Na prática:
+    #
+    #   1. a página comprimida vai para o zram, em RAM;
+    #   2. só quando ele enche é que o disco entra.
+    #
+    # HIBERNAR EXIGE A PARTIÇÃO, e é o ponto que se perde com facilidade: a
+    # imagem de hibernação é escrita no swap DE DISCO, com a máquina prestes a
+    # desligar. Um sistema só com zram não tem onde escrevê-la — o zram morre
+    # junto com a energia. Por isso o repo não trata as duas como alternativas.
+    #
+    # Quem declara a partição é o machines/<host>/hardware-configuration.nix,
+    # gerado pelo nixos-generate-config, e quem aponta o initrd para ela na
+    # volta é `boot.resumeDevice` — declarado na máquina, porque é o UUID
+    # daquele disco. Sem `resumeDevice`, a hibernação escreve e o boot seguinte
+    # ignora a imagem: a máquina volta zerada, como se tivesse desligado.
+    zramSwap = mkIf cfg.zram.enable {
+      enable = true;
+      inherit (cfg.zram) memoryPercent;
+    };
 
     # --- firmware -------------------------------------------------------
     # Os blobs que o kernel carrega em tempo de boot: GPU, Wi-Fi, bluetooth,

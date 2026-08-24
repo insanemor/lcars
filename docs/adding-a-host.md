@@ -192,6 +192,11 @@ Outras opções úteis:
 | `lcars.system.security.sshKeys` | chaves públicas autorizadas (o sshd só aceita chave) |
 | `lcars.system.core.initialPassword` | senha inicial do usuário, default `"lcars"` |
 | `lcars.system.core.swapFileSize` | MiB de `/swapfile`, se o hardware-config não trouxer swap |
+| `lcars.system.core.zram.memoryPercent` | quanto da RAM o zram pode ocupar (default 50) |
+| `boot.resumeDevice` | UUID da partição de swap — **obrigatório para hibernar** |
+| `lcars.system.app.steam.enable` | Steam e as bibliotecas gráficas de 32 bits; desligado até no profile `personal` |
+| `lcars.system.hardware.storage.ntfs` / `.exfat` | sistemas de arquivos dos discos que chegam depois do boot |
+| `lcars.system.hardware.bluetooth.blueman` | applet GTK, para máquina sem noctalia |
 | `lcars.system.core.extraPackages` | nomes de pacotes nixpkgs, a nível de sistema |
 | `lcars.system.core.userPackages` | idem, no usuário — **somado** a `userSettings.packages` |
 | `lcars.system.hardware.laptop.powerManager` | `"tlp"` ou `"ppd"` |

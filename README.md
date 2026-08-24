@@ -195,6 +195,13 @@ O herdr é o único programa que **compila na sua máquina**: ele não está no
 nixpkgs, vem do flake do upstream, e não há cache binário. Se isso não lhe
 serve, desligue com `lcars.user.herdr.enable = false`.
 
+Também no `personal`, o que uma máquina de trabalho tem e uma VM não precisava
+ter: montagem de pendrive e HD externo (udisks2 + gvfs, com NTFS e exFAT),
+bluetooth, e impressão por CUPS com a impressora aparecendo pela rede via
+Avahi. O Steam fica de fora mesmo aqui — ele liga as bibliotecas gráficas de
+32 bits, que duplicam os drivers Mesa no store, e por isso é ligado por
+máquina (`lcars.system.app.steam.enable`).
+
 O áudio é flag separada (`lcars.system.hardware.audio.enable`), não parte do
 desktop: dá para ter som sem ambiente gráfico. O teclado também é módulo
 próprio, ligado nos dois profiles — layout US internacional por padrão,

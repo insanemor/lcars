@@ -65,6 +65,13 @@
   #   lcars.profile                          = "basic";   # outro preset só aqui
   #   lcars.system.core.bootMountPath        = "/efi";    # se a ESP não é /boot
   #   lcars.system.core.swapFileSize         = 8192;
+  #   lcars.system.core.zram.memoryPercent   = 100;       # zram maior que o default
+  #   lcars.system.app.steam.enable          = true;      # esta máquina joga
+  #
+  #   # HIBERNAÇÃO: além da partição de swap que o hardware-configuration.nix
+  #   # declara, o initrd precisa saber onde procurar a imagem na volta. Sem
+  #   # esta linha a máquina hiberna e acorda zerada, sem erro nenhum:
+  #   boot.resumeDevice = "/dev/disk/by-uuid/<uuid-da-partição-de-swap>";
   #   lcars.system.wm.plasma.enable          = false;   # só Hyprland
   #   lcars.system.wm.defaultSession         = "hyprland";
   #   lcars.system.hardware.audio.enable     = true;      # som sem desktop

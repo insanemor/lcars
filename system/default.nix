@@ -8,10 +8,11 @@
 # O espelho disto do lado do Home Manager é `lcars.user.<módulo>`, declarado
 # em user/options.nix.
 #
-#   core/       identidade, locale, boot, usuário
+#   core/       identidade, locale, boot, usuário, swap
 #   unfree.nix  a liberação do software proprietário (allowUnfree) — sem flag
 #   security/   sshd e firewall
-#   hardware/   o que depende do hardware: áudio, teclado, notebook, VM
+#   hardware/   o que depende do hardware: áudio, bluetooth, teclado, notebook,
+#               impressão, discos removíveis, VM
 #   theme/      cor, fontes e papel de parede — transversal, não é de um WM
 #   wm/         ambientes gráficos (Plasma, Hyprland) e a tela de login
 #   app/        aplicativos de sistema
@@ -27,12 +28,16 @@
     ./unfree.nix
     ./security
     ./hardware/audio.nix
+    ./hardware/bluetooth.nix
     ./hardware/keyboard.nix
     ./hardware/laptop.nix
+    ./hardware/printing.nix
+    ./hardware/storage.nix
     ./hardware/vm.nix
     ./theme
     ./wm
     ./app/1password
     ./app/onedrive
+    ./app/steam
   ];
 }
