@@ -84,13 +84,29 @@
   # InputCapture, sem o qual nada captura o cursor na borda da tela. O
   # cabeçalho de user/app/waynergy.nix tem a investigação inteira.
   #
-  # `screenName` PRECISA existir no layout do servidor com exatamente este
-  # nome, cadastrado na GUI do Synergy 3 — o servidor recusa cliente que não
-  # conhece, e o sintoma é conectar e cair em seguida.
+  # `screenName` NÃO é escolha livre: ele tem que ser, caractere por caractere,
+  # o nome de tela que o SERVIDOR gera para esta máquina. O Synergy 3 monta
+  # esse nome como slug-do-nome + "-" + os últimos 8 hex do id do registro no
+  # db.json dele — daí o sufixo de aparência aleatória. Errar o nome não dá
+  # erro de conexão: o cliente completa o TLS, o servidor aceita o socket e só
+  # então expulsa, com "unrecognised client name" no log DELE. Do lado de cá o
+  # sintoma é um serviço que reconecta a cada 13s sem nunca funcionar, e nada
+  # no journal que explique.
+  #
+  # O valor abaixo foi lido do synergy.conf gerado no dragon-pc depois do
+  # registro (issue #149), não deduzido. Se a máquina for recadastrada lá, o
+  # sufixo muda e este campo tem que acompanhar.
+  #
+  # O registro teve de ser feito à mão no ~/.config/Synergy/db.json do
+  # servidor: a tela "Add computer" da GUI falha com um "Failed" genérico nesta
+  # instalação — foi o que motivou a #148. O que o Synergy exige para desenhar
+  # uma tela no canvas é o registro existir, não a máquina estar online; esta
+  # figura como desconectada mesmo funcionando, porque não roda o
+  # synergy-service.
   lcars.user.waynergy = {
     enable = true;
     host = "192.168.0.10";
-    screenName = "nixos-niri";
+    screenName = "nixos-b3cde609";
   };
 
   # A porta do waynergy em si (24800, saída) não precisa de nada aqui: quem
@@ -101,6 +117,11 @@
   # (DROP) no firewall. Ainda assim nada escuta em 24800 nesta máquina — o
   # waynergy não roda serviço de servidor — então isto pode não bastar; se o
   # cadastro continuar falhando depois, o problema está em outro lugar.
+  #
+  # E estava: a #149 mostrou que a rejeição não vinha do firewall, e sim do
+  # nome de tela, no db.json do servidor. Esta linha fica por ora porque não
+  # foi ela que causou o problema nem custa nada, mas ela é candidata a sair —
+  # nada escuta em 24800 deste lado.
   lcars.system.security.firewall.allowedTCPPorts = [ 24800 ];
 
   # --- fundo da tela de login (regreet) --------------------------------
