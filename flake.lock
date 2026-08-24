@@ -271,6 +271,24 @@
         "url": "https://github.com/ogulcancelik/herdr-browser"
       }
     },
+    "herdr-command-center": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1787150156,
+        "narHash": "sha256-zJYT/zb8tSr8AAm/J93F310MykmbxR6PBMumhOo3DjY=",
+        "ref": "main",
+        "rev": "739a0a4dc5b9efc3a82bd3cf0e981c4dd3c3a97e",
+        "revCount": 53,
+        "type": "git",
+        "url": "https://github.com/speardragon/herdr-command-center"
+      },
+      "original": {
+        "ref": "main",
+        "rev": "739a0a4dc5b9efc3a82bd3cf0e981c4dd3c3a97e",
+        "type": "git",
+        "url": "https://github.com/speardragon/herdr-command-center"
+      }
+    },
     "herdr-file-viewer": {
       "flake": false,
       "locked": {
@@ -341,6 +359,24 @@
         "shallow": true,
         "type": "git",
         "url": "https://github.com/persiyanov/herdr-reviewr"
+      }
+    },
+    "herdr-spreader": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1786864600,
+        "narHash": "sha256-nPuL1MUsMpgJYi0rPPBUdffp/SrI7T1fDkQBBVq/QZY=",
+        "ref": "refs/tags/v0.2.1",
+        "rev": "a84a19b29dbfdae6b73b2728d23a39bfeb2fdd0d",
+        "shallow": true,
+        "type": "git",
+        "url": "https://github.com/yuk1ty/herdr-spreader"
+      },
+      "original": {
+        "ref": "refs/tags/v0.2.1",
+        "shallow": true,
+        "type": "git",
+        "url": "https://github.com/yuk1ty/herdr-spreader"
       }
     },
     "herdr-telegram-plugin": {
@@ -518,10 +554,12 @@
         "herdr-automatic-rename": "herdr-automatic-rename",
         "herdr-bar": "herdr-bar",
         "herdr-browser": "herdr-browser",
+        "herdr-command-center": "herdr-command-center",
         "herdr-file-viewer": "herdr-file-viewer",
         "herdr-notes": "herdr-notes",
         "herdr-nvim": "herdr-nvim",
         "herdr-reviewr": "herdr-reviewr",
+        "herdr-spreader": "herdr-spreader",
         "herdr-telegram-plugin": "herdr-telegram-plugin",
         "herdr-usage-bar": "herdr-usage-bar",
         "herdr-yazi": "herdr-yazi",
