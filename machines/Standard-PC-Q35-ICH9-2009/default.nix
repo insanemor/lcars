@@ -93,6 +93,16 @@
     screenName = "nixos-niri";
   };
 
+  # A porta do waynergy em si (24800, saída) não precisa de nada aqui: quem
+  # disca é sempre o cliente, nunca o servidor. Isto libera a MESMA porta de
+  # ENTRADA — teste de diagnóstico da issue #148, porque a tela "Manage
+  # Computers" do Synergy 3 falhava ao cadastrar "nixos-niri" com um "Failed"
+  # genérico, e um nc a partir do servidor mostrou a porta caindo em silêncio
+  # (DROP) no firewall. Ainda assim nada escuta em 24800 nesta máquina — o
+  # waynergy não roda serviço de servidor — então isto pode não bastar; se o
+  # cadastro continuar falhando depois, o problema está em outro lugar.
+  lcars.system.security.firewall.allowedTCPPorts = [ 24800 ];
+
   # --- fundo da tela de login (regreet) --------------------------------
   # Direto no regreet, não em lcars.system.theme.wallpaper: aquela flag
   # alimenta stylix.image, que auto-liga o alvo hyprpaper do stylix NO
