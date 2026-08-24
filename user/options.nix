@@ -96,5 +96,9 @@
     };
 
     sudoAskpass.enable = lib.mkEnableOption "o diálogo gráfico do sudo (zenity, via SUDO_ASKPASS) para quando um programa pede elevação sem terminal — ex.: o botão Update do plugin nix-monitor do noctalia; a senha continua obrigatória, só muda o canal de entrada";
+
+    vscode.enable = lib.mkEnableOption "o VS Code como editor gráfico — perfil limpo, sem extensões geridas pelo Nix";
+
+    nautilus.enable = lib.mkEnableOption "o Nautilus como gerenciador de arquivos gráfico, e o app padrão para abrir diretórios — sem isto só existia o seletor de arquivos do portal (useNautilus em system/wm/niri.nix), não um app abrível";
   };
 }
