@@ -287,6 +287,38 @@
       flake = false;
     };
 
+    # Plugin herdr-spreader — aplica um layout de workspace inteiro (abas,
+    # painéis, comandos, cwd, env) a partir de um config.yaml. Tipo
+    # tmuxinator para o herdr. Veja user/app/herdr.nix.
+    #
+    # `flake = false`: binário Rust, mesmo trato do herdr-file-viewer/
+    # herdr-reviewr/ghzinga — o que a árvore fornece é o source, para
+    # `rustPlatform.buildRustPackage`. O Cargo.lock não tem dependência git,
+    # então `cargoLock.lockFile` basta, sem cargoHash por tentativa.
+    #
+    # PRESO NUMA TAG (v0.2.1), que o upstream publica.
+    herdr-spreader = {
+      url = "git+https://github.com/yuk1ty/herdr-spreader?ref=refs/tags/v0.2.1&shallow=1";
+      flake = false;
+    };
+
+    # Plugin herdr-command-center — um popup só, com "slots" (1-9, a-z), no
+    # lugar de uma tabela de prefix+tecla por comando registrado. Veja
+    # user/app/herdr.nix.
+    #
+    # `flake = false`: Node/npm, mesmo trato do herdr-annotations — o
+    # `package.json` não declara script de build (só `test`), então
+    # `dontNpmBuild = true` basta; `npmDepsHash` obtido por
+    # `prefetch-npm-deps` contra o package-lock.json do commit fixado (sem
+    # dependência git no lockfile, então um hash só já serve).
+    #
+    # PRESO NUM COMMIT, porque embora o upstream publique tags, a rev
+    # fixada é a que teve o hash conferido nesta entrega.
+    herdr-command-center = {
+      url = "git+https://github.com/speardragon/herdr-command-center?ref=main&rev=739a0a4dc5b9efc3a82bd3cf0e981c4dd3c3a97e";
+      flake = false;
+    };
+
     # FUTURO — descomente para ligar um repo privado sobreposto:
     # lcars-private = {
     #   url = "git+ssh://git@github.com/<voce>/lcars-private.git";
