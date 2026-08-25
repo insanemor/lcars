@@ -117,5 +117,6 @@ with lib;
     lcars.user.sudoAskpass.enable = mkDefault true;
     lcars.user.vscode.enable = mkDefault true;
     lcars.user.nautilus.enable = mkDefault true;
+    lcars.user.xdgUserDirs.enable = mkDefault true;
   };
 }

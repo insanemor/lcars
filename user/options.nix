@@ -103,6 +103,8 @@
 
     nautilus.enable = lib.mkEnableOption "o Nautilus como gerenciador de arquivos gráfico, e o app padrão para abrir diretórios — sem isto só existia o seletor de arquivos do portal (useNautilus em system/wm/niri.nix), não um app abrível";
 
+    xdgUserDirs.enable = lib.mkEnableOption "Desktop, Documentos, Imagens, Vídeos etc. em português, declarados e criados na ativação — em vez de depender do xdg-user-dirs-update rodar a tempo no primeiro login gráfico (issue #150)";
+
     waynergy = {
       enable = lib.mkEnableOption ''
         o waynergy — cliente Synergy que fala Wayland nativo, para esta máquina
