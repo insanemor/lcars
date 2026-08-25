@@ -48,8 +48,16 @@ ligar isso **dentro dele** — e são duas opções, não uma:
 | Settings → Developer | **Integrate with 1Password CLI** |
 
 São chaves independentes: ter o agente SSH funcionando **não** significa que a
-do CLI está ligada. Sem ela, `op account list` vem vazio e qualquer `op read`
-responde `no account found` — mesmo com o aplicativo aberto e logado.
+do CLI está ligada. Sem ela, `op account list` vem vazio — mesmo com o
+aplicativo aberto e logado.
+
+E aí o `op read` **não** se limita a devolver erro: se houver um terminal, ele
+abre o fluxo de configuração e pergunta `Do you want to add an account manually
+now? [Y/n]`. Foi o que aconteceu no meio de um `nupdate` numa máquina nova
+(#161). Redirecionar o stderr não segura o prompt, nem fechar o stdin: o `op`
+escreve direto em `/dev/tty`. Por isso todo `op read` deste repositório roda
+sob `setsid` — sem terminal de controle, ele falha em vez de perguntar, e a
+ativação nunca fica esperando alguém digitar.
 
 O que o NixOS faz por você é o outro lado: `programs._1password` instala o
 wrapper `setgid` de `op` (grupo `onepassword-cli`) e `programs._1password-gui`

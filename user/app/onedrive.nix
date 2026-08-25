@@ -199,8 +199,8 @@ lib.mkIf osConfig.lcars.user.onedrive.enable {
 
     # O `op` por caminho absoluto, o do wrapper primeiro. Esta ativação roda
     # numa unit systemd cujo PATH não tem /run/wrappers/bin, então
-    # `command -v op` falha sempre. Mesma receita do dotfiles.nix e do
-    # opencode — explicada em user/app/dotfiles.nix.
+    # `command -v op` falha sempre. Mesma receita do dotfiles.nix, do
+    # herdr-telegram.nix e do opencode — explicada em user/app/dotfiles.nix.
     op=""
     for candidato in /run/wrappers/bin/op "$(command -v op 2>/dev/null || true)"; do
       if [ -n "$candidato" ] && [ -x "$candidato" ]; then
@@ -215,7 +215,13 @@ lib.mkIf osConfig.lcars.user.onedrive.enable {
       echo "lcars: sem login no 1Password — onedrive vai subir sem refresh_token; autentique manualmente e copie o token para o item 1Password. Veja docs/secrets.md."
     else
       ref="op://Dotfiles/onedrive/refresh_token"
-      if token=$("$op" read "$ref" 2>/dev/null); then
+      # `setsid`: sem terminal de controle, o `op` não tem como abrir prompt.
+      # Sem conta configurada, `op read` NÃO falha — entra no fluxo de
+      # configuração e pergunta, travando a ativação. `2>` não segura isso: o
+      # prompt vai para /dev/tty (#161). Ver user/app/herdr-telegram.nix.
+      setsid=${lib.getExe' pkgs.util-linux "setsid"}
+      erro="$(mktemp)"
+      if token=$("$setsid" -w "$op" read "$ref" 2>"$erro"); then
         mkdir -p "$conf_dir"
         chmod 700 "$conf_dir"
         tmp="$token_file.tmp"
@@ -225,9 +231,13 @@ lib.mkIf osConfig.lcars.user.onedrive.enable {
         chmod 600 "$token_file"
         systemctl --user restart onedrivegui.service 2>/dev/null || true
         echo "lcars: onedrive refresh_token atualizado a partir do 1Password."
+      elif grep -qi "no accounts configured" "$erro"; then
+        echo "lcars: nenhuma conta do 1Password configurada nesta máquina — onedrive vai subir sem refresh_token. Veja docs/secrets.md."
       else
-        echo "lcars: não consegui ler $ref — abra o app 1Password, desbloqueie a CLI, e siga o procedimento em docs/secrets.md."
+        motivo="$(head -1 "$erro" 2>/dev/null || true)"
+        echo "lcars: não consegui ler $ref''${motivo:+ — $motivo} — abra o app 1Password, desbloqueie a CLI, e siga o procedimento em docs/secrets.md."
       fi
+      rm -f "$erro"
     fi
   '';
 }
