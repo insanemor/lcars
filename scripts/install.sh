@@ -182,50 +182,19 @@ nix-shell -p git --command "
   fi
 "
 
-# O clone lá em cima é HTTPS de propósito: numa máquina recém-instalada não
-# existe chave SSH nenhuma, e clonar por SSH quebraria antes de tudo. Só que num
-# remote HTTPS o git pede usuário e token a cada push, e o agente do 1Password
-# nunca é consultado — ele só atende git@github.com. Agora que o sistema subiu,
-# a troca vale.
-#
-# Derivado do remote atual, e não escrito à mão, para o fork de qualquer um
-# continuar apontando para o repositório dele.
-#
-# Fora do nix-shell acima e sem `set -e`: a instalação já terminou, e falhar
-# aqui não é motivo para o script sair com erro.
-ssh_url=$(git -C "$HOME/.dotfiles" remote get-url origin | sed 's#https://github.com/#git@github.com:#')
-git -C "$HOME/.dotfiles" remote set-url origin "$ssh_url"
-
+# O remote fica em HTTPS para sempre — de propósito, e não só na primeira
+# instalação. Sem chave nenhuma, é o que permite clonar; com origin apontando
+# para o repositório de outra pessoa (curl direto, sem fork), também é o que
+# impede que este script dê a quem instala uma falsa capacidade de publicar
+# ali. Publicar ficou fora do que este repositório automatiza — quem quiser,
+# configura o remote e o agente SSH por conta própria.
 cat <<AVISO
 
 ===============================================================
- Falta uma coisa, e ela é no 1Password — não dá para automatizar.
+ Instalação concluída.
 
- O remote agora é SSH:
-
-     $ssh_url
-
- Até você ligar o agente, nem 'nupdate' nem 'nsave' conseguem
- falar com o GitHub. São três passos:
-
-   1. Abra o 1Password e entre na sua conta.
-
-   2. Settings -> Developer -> ligue 'Use the SSH agent'.
-      Se ainda não tiver uma chave, crie um item do tipo SSH Key.
-
-   3. Copie a chave publica do item e adicione em
-      github.com/settings/keys
-
- Depois, teste:
-
-     ssh -T git@github.com
-
- Deve responder "Hi <voce>! You've successfully authenticated".
-
- Se precisar voltar ao HTTPS por qualquer motivo:
-
-     git -C ~/.dotfiles remote set-url origin \\
-       $(git -C "$HOME/.dotfiles" remote get-url origin | sed 's#git@github.com:#https://github.com/#')
-
+ O remote continua em HTTPS — este repositório não publica nada
+ sozinho, nem troca isso por você. Se quiser publicar mudanças suas
+ (no seu próprio fork), configure o remote e a autenticação manualmente.
 ===============================================================
 AVISO

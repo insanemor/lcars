@@ -8,18 +8,27 @@
 # O ciclo de ajuste
 # -----------------
 # É o motivo de ele estar aqui. Você mexe no centro de controle, olha o
-# resultado na hora, e quando gostar:
+# resultado na hora, e quando gostar, publica manualmente:
 #
-# CUIDADO: o export REESCREVE o noctalia-config.toml do zero, em ordem
-# alfabética e sem comentário nenhum. Não escreva nada lá que precise
-# sobreviver — o cabeçalho que existia foi apagado no primeiro ciclo real.
-# O que precisa durar mora aqui, neste arquivo, que o export não toca.
+#     noctalia config export merged > user/wm/noctalia-config.toml
+#     noctalia config validate user/wm/noctalia-config.toml
+#     git -C ~/.dotfiles diff -- user/wm/noctalia-config.toml
+#     git -C ~/.dotfiles add -- user/wm/noctalia-config.toml
+#     git -C ~/.dotfiles commit -- user/wm/noctalia-config.toml
 #
-#     nsave        # exporta, valida, mostra o diff, pergunta e publica
+# CUIDADO: o export REESCREVE o arquivo do zero, em ordem alfabética e sem
+# comentário nenhum. Não escreva nada lá que precise sobreviver — o cabeçalho
+# que existia foi apagado no primeiro ciclo real. O que precisa durar mora
+# aqui, neste arquivo, que o export não toca.
 #
-# É o scripts/save.sh, o caminho de volta do nupdate. Sem ele, o que você
-# ajustou vive só no state-dir daquela máquina e some num clone novo — ou no
-# próximo nupdate, que faz git reset --hard.
+# CUIDADO AO COMMITAR: o índice deste repositório nunca está limpo — o
+# nupdate faz `git add -f machines/<host>` a cada execução, porque flakes só
+# leem arquivos rastreados. Um `git commit -m "..."` seco, sem `-- <arquivo>`,
+# leva `machines/` junto sem avisar (foi o que aconteceu na #33). Sempre
+# commite pelo caminho explícito, como acima.
+#
+# Sem publicar, o que você ajustou vive só no state-dir desta máquina e some
+# num clone novo — ou no próximo nupdate, que faz git reset --hard.
 #
 # Por que `fromTOML` e não `settings = ./arquivo.toml`
 # ----------------------------------------------------
