@@ -157,8 +157,15 @@ sanitizar_hostname() {
 # O sed só substitui o que já existe: se o campo for removido do arquivo, ele
 # não faz nada e sai com status 0. Foi assim que grubDevice ficou vazio numa VM
 # BIOS e o build morreu numa assertion lá adiante, sem pista de onde começou
-# (#15). Aqui isso é erro fatal, não aviso: todo campo escrito por este script
-# é necessário para o rebuild seguinte.
+# (#15).
+#
+# Campo ausente é fatal numa máquina NOVA — ela acabou de sair do template, e
+# se a linha não está lá o template foi mexido. Numa máquina que já vive no
+# repositório é só aviso: apagar `grubDevice` de uma máquina UEFI, por exemplo,
+# é escolha legítima de quem a mantém, e abortar a instalação por causa dela
+# seria pior que seguir (#159).
+CAMPO_AUSENTE="fatal"
+
 _escrever_campo() {
     local arquivo="$1" campo="$2" valor="$3" campo_re escapado
 
@@ -166,7 +173,12 @@ _escrever_campo() {
     campo_re="${campo//./\\.}"
 
     if ! grep -qE "^[[:space:]]*${campo_re}[[:space:]]*=" "$arquivo"; then
-        die "o campo '$campo' não existe em $(basename "$arquivo") — o arquivo foi editado à mão? acrescente '$campo = $valor;' e rode de novo."
+        if [ "$CAMPO_AUSENTE" = "fatal" ]; then
+            die "o campo '$campo' não existe em $(basename "$arquivo") — o arquivo foi editado à mão? acrescente '$campo = $valor;' e rode de novo."
+        fi
+        printf '  AVISO: %s não tem o campo %s — não foi tocado.\n' "$(basename "$arquivo")" "$campo" >&2
+        printf '         se esta máquina precisar dele, acrescente à mão: %s = %s;\n' "$campo" "$valor" >&2
+        return
     fi
 
     # Barra, & e contrabarra têm significado na substituição do sed. Sem isto,
@@ -244,6 +256,21 @@ while :; do
     maquina="$limpo"
     break
 done
+
+# Uma máquina que JÁ está no repositório não pode receber o template por cima:
+# o default.nix dela é a configuração daquela máquina, e já custou issues para
+# chegar onde está — fundo do regreet, waynergy, portas de firewall. Antes da
+# #159 o `cp -rT` apagava tudo isso em silêncio, e o efeito só aparecia no
+# boot seguinte, na forma de coisas que sumiram.
+destino="$DOTFILES/machines/$maquina"
+if [ -d "$destino" ]; then
+    maquina_existe="sim"
+    info ""
+    info "Esta máquina já existe no repositório."
+    info "O default.nix dela é preservado — só o hardware é atualizado."
+else
+    maquina_existe="nao"
+fi
 
 # =====================================================================
 # 3. Quem você é
@@ -344,8 +371,14 @@ fi
 # 6. Resumo e confirmação
 # =====================================================================
 titulo "Resumo"
+if [ "$maquina_existe" = "sim" ]; then
+    origem_da_maquina="já existe no repositório — preservado, só as linhas abaixo mudam"
+else
+    origem_da_maquina="máquina nova, criada a partir de machines/template"
+fi
 cat >&2 <<RESUMO
   machines/$maquina/default.nix
+    ($origem_da_maquina)
     networking.hostName ................. $maquina
     lcars.system.core.bootLoader ........ $boot_loader${grub_device:+
     lcars.system.core.grubDevice ........ $grub_device}
@@ -371,14 +404,25 @@ sudo -v || die "sudo recusado."
 # =====================================================================
 # 7. Aplicar
 # =====================================================================
-destino="$DOTFILES/machines/$maquina"
+# `destino` foi definido no passo 2, junto com a checagem de a máquina já
+# existir.
 maquina_nix="$destino/default.nix"
 settings_nix="$DOTFILES/settings.nix"
 
-# `-T` (--no-target-directory) porque `cp -r origem destino` copia PARA DENTRO
-# quando o destino já existe — e aí sai machines/<host>/template/, uma cópia
-# inútil que ninguém importa e que depois viaja junto em algum commit (#33).
-cp -rT "$DOTFILES/machines/template" "$destino"
+if [ "$maquina_existe" = "sim" ]; then
+    # Nada de template aqui: o default.nix desta máquina fica exatamente como
+    # está, e só as linhas de hardware abaixo são reescritas. O
+    # hardware-configuration.nix é regerado de qualquer forma — é o arquivo
+    # que muda quando o disco muda, e é por isso que ele está no .gitignore.
+    CAMPO_AUSENTE="aviso"
+else
+    # `-T` (--no-target-directory) porque `cp -r origem destino` copia PARA
+    # DENTRO quando o destino já existe — e aí sai machines/<host>/template/,
+    # uma cópia inútil que ninguém importa e que depois viaja junto em algum
+    # commit (#33). O `-T` continua valendo para o caso de o diretório existir
+    # sem estar versionado.
+    cp -rT "$DOTFILES/machines/template" "$destino"
+fi
 
 # shellcheck disable=SC2024  # o redirecionamento é meu, não do sudo: o arquivo
 # nasce com o seu dono, não do root.
