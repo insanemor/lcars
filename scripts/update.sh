@@ -334,18 +334,49 @@ autentica_atuin() {
   # (#50), e não vai mandar de novo.
   local tmp erro=""
   tmp="$(mktemp -d)"
-  local u p k
-  u="$("$op" read "op://$vault/atuin/username" 2>>"$tmp/erro" || true)"
-  p="$("$op" read "op://$vault/atuin/password" 2>>"$tmp/erro" || true)"
-  k="$("$op" read "op://$vault/atuin/key" 2>>"$tmp/erro" || true)"
-  [[ -s "$tmp/erro" ]] && erro="$(head -1 "$tmp/erro")"
-  rm -rf "$tmp"
 
-  if [[ -z "$u" || -z "$p" || -z "$k" ]]; then
-    note "não consegui ler op://$vault/atuin — histórico fica local"
-    [[ -n "$erro" ]] && note "  op disse: $erro"
+  # `setsid`: sem terminal de controle, o `op` não tem como abrir prompt.
+  #
+  # Numa máquina sem conta configurada, `op read` NÃO falha — ele entra no
+  # fluxo de configuração e pergunta "Do you want to add an account manually
+  # now?". Aqui isso era pior que nos activation scripts (#161): este script
+  # roda no SEU terminal, então o `op` lia a resposta, e o `|| true` levava à
+  # leitura seguinte, que perguntava de novo. Três perguntas em fila, e a
+  # impressão de que responder "n" não sai nunca (#163).
+  #
+  # O popup do aplicativo, que o comentário lá em cima diz ser esperado aqui,
+  # continua aparecendo: `setsid` tira o terminal, não a sessão gráfica.
+  local setsid
+  setsid="$(command -v setsid 2>/dev/null || true)"
+
+  # Uma leitura só, para as três chamadas terem o mesmo tratamento.
+  le_segredo() {
+    if [[ -n "$setsid" ]]; then
+      "$setsid" -w "$op" read "$1" 2>>"$tmp/erro"
+    else
+      "$op" read "$1" 2>>"$tmp/erro"
+    fi
+  }
+
+  # Parar na primeira que falhar. Sem isto, uma máquina sem 1Password empilha
+  # três vezes o mesmo erro — e, antes do setsid, três vezes a mesma pergunta.
+  local u p k
+  if ! u="$(le_segredo "op://$vault/atuin/username")" \
+    || ! p="$(le_segredo "op://$vault/atuin/password")" \
+    || ! k="$(le_segredo "op://$vault/atuin/key")" \
+    || [[ -z "$u" || -z "$p" || -z "$k" ]]; then
+
+    if grep -qi "no accounts configured" "$tmp/erro" 2>/dev/null; then
+      note "nenhuma conta do 1Password configurada nesta máquina — histórico do atuin fica local"
+    else
+      [[ -s "$tmp/erro" ]] && erro="$(head -1 "$tmp/erro")"
+      note "não consegui ler op://$vault/atuin — histórico fica local"
+      [[ -n "$erro" ]] && note "  op disse: $erro"
+    fi
+    rm -rf "$tmp"
     return 0
   fi
+  rm -rf "$tmp"
 
   # A senha vai no argv porque `atuin login` não a lê de outro jeito — nem
   # stdin, nem variável de ambiente (conferido no --help da 18.18.1). Fica
