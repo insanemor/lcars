@@ -35,6 +35,7 @@
     ./app/vscode.nix
     ./app/nautilus.nix
     ./app/waynergy.nix
+    ./app/xdg-user-dirs.nix
     ./cli/crush/default.nix
     ./cli/opencode/default.nix
     ./wm/niri.nix

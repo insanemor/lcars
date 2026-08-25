@@ -512,6 +512,7 @@ Key.
 - [docs/adding-a-host.md](./docs/adding-a-host.md) — adicionar outra máquina e criar profiles.
 - [docs/secrets.md](./docs/secrets.md) — 1Password, dotfiles e opnix.
 - [docs/workflow.md](./docs/workflow.md) — como mudanças entram no repo.
+- [docs/formatar-e-instalar.md](./docs/formatar-e-instalar.md) — checklist do dia de formatar uma máquina para bare-metal.
 
 ## Licença
 

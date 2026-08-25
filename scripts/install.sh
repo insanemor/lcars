@@ -17,6 +17,35 @@ model_name=$(cat /sys/devices/virtual/dmi/id/product_name)
 model_name=$(printf '%s' "$model_name" | tr -c 'a-zA-Z0-9-' '-' | tr -s '-' | sed 's/^-//; s/-$//')
 # Máquinas sem DMI legível (ARM, algumas VMs) não têm modelo: cai em "nixos"
 model_name=${model_name:-nixos}
+
+# Passo 2b: o DMI às vezes não tem nada de útil pra oferecer — placas que a
+# fabricante não preencheu respondem literalmente "System Product Name"
+# (issue #150), e o slug resultante ("System-Product-Name") viraria o
+# hostname para sempre, sem ninguém perceber no momento certo. Em vez de
+# assumir qual dos dois nomes é o certo, mostra as duas opções e deixa a
+# escolha explícita: o hostname que a máquina já usa agora (por exemplo, se
+# ela já roda outra distro antes desta instalação) ou o derivado do hardware.
+current_hostname=$(hostname 2>/dev/null | tr -c 'a-zA-Z0-9-' '-' | tr -s '-' | sed 's/^-//; s/-$//')
+if [ -n "$current_hostname" ] && [ "$current_hostname" != "$model_name" ]; then
+    echo
+    echo "Dois nomes possíveis para esta máquina:"
+    echo "  1) manter o hostname atual .......... $current_hostname"
+    echo "  2) usar o derivado do hardware (DMI) . $model_name"
+    echo
+    echo "Este nome vira o diretório em machines/ e o networking.hostName —"
+    echo "para sempre, não é fácil de trocar depois."
+    # < /dev/tty: o script roda via 'curl | bash', e o stdin normal já está
+    # consumido pelo próprio pipe do script — sem isto, o read não pergunta
+    # nada, lê o resto do script como resposta e segue direto sem parar.
+    read -r -p "Escolha [1/2, padrão 1]: " escolha < /dev/tty
+    if [ "$escolha" = "2" ]; then
+        echo "Usando o nome derivado do hardware: $model_name"
+    else
+        model_name="$current_hostname"
+        echo "Mantendo o hostname atual: $model_name"
+    fi
+fi
+
 # Passo 3: Definir o diretório de destino
 destination="$HOME/.dotfiles/machines/$model_name"
 # Passo 4: Criar a máquina a partir do template (traz o default.nix que o flake importa)
