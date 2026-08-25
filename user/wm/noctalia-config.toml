@@ -178,12 +178,6 @@ background_opacity = 1.0
 [plugin_settings."avivbintangaringga/nix-monitor"]
 update_command = "$HOME/.dotfiles/scripts/update.sh"
 
-[plugin_settings."noctalia/mpvpaper"]
-video_directory = "/home/ins/Vídeos"
-
-[plugin_settings."noctalia/wallhaven"]
-download_dir = "/home/ins/Imagens/wallhaven"
-
 [plugins]
 enabled = [
     "noctalia/wallhaven",
@@ -220,18 +214,6 @@ wallpaper_scheme = "m3-tonal-spot"
 [wallpaper]
 fill_mode = "stretch"
 
-    [wallpaper.default]
-    path = "/home/ins/Imagens/wallhaven/wallhaven-zp93qo.jpg"
-
-    [wallpaper.last]
-    path = "/home/ins/.cache/noctalia/mpvpaper/_home_ins_V__deos_matrix_code_rain_moewalls_com_mp4.jpg"
-
-    [wallpaper.monitors.DP-3]
-    path = "/home/ins/.cache/noctalia/mpvpaper/_home_ins_V__deos_matrix_code_rain_moewalls_com_mp4.jpg"
-
-    [wallpaper.monitors.HDMI-A-1]
-    path = "/home/ins/.cache/noctalia/mpvpaper/_home_ins_V__deos_matrix_code_rain_moewalls_com_mp4.jpg"
-
 [widget.bar]
 type = "felipeartur/ai-usagebar:bar"
 
@@ -244,9 +226,6 @@ color = "secondary"
 [widget.control-center]
 color = "secondary"
 glyph = "menu-order"
-
-[widget.launcher]
-custom_image = "/home/ins/Imagens/simbioit-logo-reduzido.png"
 
 [widget.mpvpaper]
 type = "noctalia/mpvpaper:mpvpaper"

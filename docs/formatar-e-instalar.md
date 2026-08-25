@@ -79,12 +79,19 @@ de wallpapers hoje passa de meia centena de arquivos, vários vídeos entre 20
 e 100 MB cada). Foi decidido não fazer backup deles (item 6): o disco NTFS
 secundário não é tocado na formatação, e o essencial (1Password) é online.
 
-Isso significa que, depois da formatação, `[wallpaper.default]` e
-`[wallpaper.last]` no `noctalia-config.toml` vão apontar para arquivos que não
-existem. Não é um bug a corrigir no repo — a chave `[wallpaper.last]` sequer é
-um path literal: é uma chave de cache derivada pelo próprio mpvpaper a partir
-do path completo do vídeo em uso, e ela volta a bater assim que um vídeo for
-escolhido de novo pela interface.
+Até a #155, o TOML versionado ainda carregava esses caminhos: `wallpaper.default`,
+`wallpaper.last` e um `wallpaper.monitors` por saída de vídeo (`DP-3`,
+`HDMI-A-1`), todos apontando para arquivos e monitores que só existiam naquela
+máquina. Numa instalação limpa isso não dá erro — o papel de parede
+simplesmente não sobe. Hoje `user/wm/noctalia.nix` poda as três chaves do que
+lê do TOML, e elas ficam onde pertencem: no state-dir desta máquina, escolhidas
+pela interface.
+
+O que **passou** a sobreviver é o resto. `video_directory` e `download_dir` são
+calculados a partir de `xdg.userDirs`, então valem para qualquer usuário e
+qualquer máquina; e o ícone do launcher aponta para
+`system/theme/logo-fonte/logo-original.png`, versionado, em vez de um PNG solto
+em `~/Imagens`.
 
 No dia, depois do primeiro boot: abra o centro de controle do noctalia
 (`SUPER+C`) e escolha um wallpaper — o plugin `noctalia/wallhaven` já baixa

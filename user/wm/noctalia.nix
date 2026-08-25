@@ -49,6 +49,7 @@
 # Definido na prioridade normal, os dois lados fundem por chave. O preço é que
 # uma chave definida dos dois lados vira erro de conflito — daí a lista abaixo.
 {
+  config,
   osConfig,
   lib,
   pkgs,
@@ -173,13 +174,82 @@ let
     lockscreen.blurred_desktop = false;
   };
 
-  # A poda serve aos dois casos pelo mesmo motivo: o TOML e o Nix não podem
+  # --- o que não sobrevive a outra máquina ------------------------------
+  # O export escreve caminhos absolutos de quem exportou, e uma das chaves
+  # guarda o NOME DAS SAÍDAS de vídeo daquela máquina. Num clone — ou na mesma
+  # máquina depois de uma reformatação — elas apontam para arquivos e monitores
+  # que não existem, e o efeito é silencioso: o launcher fica sem ícone e o
+  # papel de parede não sobe. Foi o que a instalação limpa da #157 mostrou.
+  #
+  # As três primeiras voltam recalculadas logo abaixo. As três últimas só saem:
+  # `wallpaper.last` é o que você escolheu da última vez, `wallpaper.monitors`
+  # é por saída de vídeo, e `wallpaper.default.path` é uma imagem sua. Nenhuma
+  # tem valor certo para outra máquina — quem escolhe é o centro de controle,
+  # em SUPER+C, e a escolha vive no state-dir.
+  #
+  # Podar aqui é o que mantém o ciclo `nsave` seguro: no próximo
+  # `noctalia config export merged` os caminhos voltam ao TOML, e esta lista os
+  # tira de novo antes de virarem a configuração de alguém.
+  pessoais = [
+    [
+      "plugin_settings"
+      "noctalia/mpvpaper"
+      "video_directory"
+    ]
+    [
+      "plugin_settings"
+      "noctalia/wallhaven"
+      "download_dir"
+    ]
+    [
+      "widget"
+      "launcher"
+      "custom_image"
+    ]
+    [
+      "wallpaper"
+      "last"
+    ]
+    [
+      "wallpaper"
+      "monitors"
+    ]
+    # Também está em gerenciadosPeloStylix, que só poda com o tema ligado.
+    # Aqui sai sempre: com o tema desligado, nada define esta chave e o que
+    # sobraria era o caminho de uma imagem que não existe nesta máquina.
+    [
+      "wallpaper"
+      "default"
+      "path"
+    ]
+  ];
+
+  # O `$HOME` literal que `xdg.userDirs` guarda não serve para o noctalia, que
+  # lê estas chaves como caminho, não como linha de shell. Expandir aqui deixa
+  # `user/app/xdg-user-dirs.nix` como fonte única dos nomes ("Vídeos",
+  # "Imagens") — repeti-los seria a divergência que custou a #150.
+  comHome = lib.replaceStrings [ "$HOME" ] [ config.home.homeDirectory ];
+
+  # O logo é do repositório, não da máquina: é o mesmo PNG de onde saem os
+  # glifos U+F8F0 a U+F8F3 da fonte do sistema (system/theme/logo-fonte).
+  # Apontando para o store, o ícone do launcher existe em qualquer clone, sem
+  # depender de nada em ~/Imagens.
+  logoSimbioIT = ../../system/theme/logo-fonte/logo-original.png;
+
+  daMaquina = {
+    plugin_settings."noctalia/mpvpaper".video_directory = comHome config.xdg.userDirs.videos;
+    plugin_settings."noctalia/wallhaven".download_dir =
+      "${comHome config.xdg.userDirs.pictures}/wallhaven";
+    widget.launcher.custom_image = "${logoSimbioIT}";
+  };
+
+  # A poda serve aos três casos pelo mesmo motivo: o TOML e o Nix não podem
   # definir a mesma chave, senão o módulo aborta por conflito. Quem vai
   # sobrescrever, poda antes.
   podar = attrs: caminhos: builtins.foldl' removerCaminho attrs caminhos;
 
   base = podar exportado (
-    (lib.optionals temaLigado gerenciadosPeloStylix) ++ (lib.optionals (!animacoes) efeitos)
+    pessoais ++ (lib.optionals temaLigado gerenciadosPeloStylix) ++ (lib.optionals (!animacoes) efeitos)
   );
 
   # O CLI que o plugin felipeartur/ai-usagebar chama por nome
@@ -244,11 +314,16 @@ let
   # `//` aqui é seguro: `plugins.enabled` vive um nível só, e ele só é escrito
   # quando há pelo menos um plugin — sem flag ligada, o attrset fica
   # exatamente como veio do TOML.
-  attrsetFinal =
+  comPlugins =
     if pluginsHabilitados == [ ] then
       settingsComEfeitos
     else
       settingsComEfeitos // { plugins.enabled = pluginsHabilitados; };
+
+  # `recursiveUpdate` de novo, e não `//`: `daMaquina` toca em três chaves que
+  # vivem fundo (`plugin_settings."noctalia/mpvpaper".video_directory`), e a
+  # fusão rasa apagaria o resto de `plugin_settings` e de `widget`.
+  attrsetFinal = lib.recursiveUpdate comPlugins daMaquina;
 in
 lib.mkIf osConfig.lcars.user.noctalia.enable {
   programs.noctalia = {
