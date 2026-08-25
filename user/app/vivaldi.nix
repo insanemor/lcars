@@ -61,16 +61,29 @@
 # `home-manager switch`.
 #
 # O trade-off é direto: se o usuário ajusta uma chave gerenciada pela GUI
-# (tema, posição da tab bar, etc.), o próximo switch reverte. É a mesma
-# promessa de qualquer preferência gerenciada — você ganha em reprodutibilidade
-# entre máquinas, perde em ajustes improvisados pela GUI.
+# (tema, posição da tab bar, etc.), ela volta ao valor do repositório — antes
+# no switch seguinte, agora assim que o navegador for fechado, porque é aí que
+# ele grava o Preferences e a unidade `path` acorda. É a mesma promessa de
+# qualquer preferência gerenciada — você ganha em reprodutibilidade entre
+# máquinas, perde em ajustes improvisados pela GUI. Para mudar de verdade,
+# edite `vivaldi-prefs.json`.
 #
-# Quando o hook não roda
-# ----------------------
-# Em uma máquina nova, o Preferences ainda não existe — ele nasce no primeiro
-# boot do Vivaldi. O hook loga um aviso e sai sem fazer nada. Depois de
-# abrir o navegador uma vez e logar no Sync, basta rodar `home-manager switch`
-# de novo: o hook encontra o arquivo e aplica o merge.
+# Máquina nova, e por que a ativação não basta
+# -------------------------------------------
+# Numa máquina nova o Preferences não existe na hora da ativação — ele nasce
+# no primeiro boot do Vivaldi. A ordem é sempre a mesma e sempre foi contra
+# nós: o rebuild ativa o Home Manager (não há o que fazer), o usuário abre o
+# navegador (o arquivo nasce, cru), e nada mais dispara o merge. O navegador
+# ficava sem as preferências até alguém lembrar de rodar `nupdate` outra vez
+# (#158, visto na instalação limpa da #157).
+#
+# Por isso o merge tem duas entradas: a ativação do Home Manager e uma unidade
+# `path` do systemd do usuário, que espera o arquivo aparecer ou mudar. As duas
+# chamam o mesmo executável.
+#
+# Ele sai sem escrever em três situações, e nenhuma é erro: o perfil ainda não
+# existe, o navegador está aberto (ele reescreve o Preferences inteiro ao sair,
+# e essa escrita dispara a unidade de novo), ou o conteúdo já é o desejado.
 #
 # O stylix também não o alcança: não há alvo para Vivaldi, e a paleta de
 # interface é escolhida na Configuração dele.
@@ -98,7 +111,65 @@ let
   managedPrefsPath = pkgs.writeText "vivaldi-managed-prefs.json" (
     builtins.readFile ./vivaldi-prefs.json
   );
-  jq = lib.getExe pkgs.jq;
+
+  # O merge em si, num executável — porque duas coisas o chamam: a ativação do
+  # Home Manager e a unidade `path` que espera o Preferences aparecer (#158).
+  # Enquanto ele existia só dentro do activation script, uma máquina nova
+  # ficava sem as preferências até alguém lembrar de rodar o switch de novo.
+  aplicarPrefs = pkgs.writeShellApplication {
+    name = "lcars-vivaldi-prefs";
+    runtimeInputs = with pkgs; [
+      jq
+      procps
+      coreutils
+    ];
+    text = ''
+      prefs="$HOME/.config/vivaldi/Default/Preferences"
+      managed=${managedPrefsPath}
+
+      if [ ! -f "$prefs" ]; then
+        echo "lcars/vivaldi: o perfil ainda não existe. Abra o Vivaldi uma vez;"
+        echo "               as preferências entram sozinhas quando você fechá-lo."
+        exit 0
+      fi
+
+      # Com o navegador aberto, não adianta escrever: ele mantém o Preferences
+      # em memória e o reescreve inteiro ao sair, jogando fora o que
+      # puséssemos agora. Sair aqui não perde nada — essa escrita final é
+      # justamente o que dispara a unidade `path` de novo.
+      if pgrep -u "$(id -u)" -x vivaldi-bin > /dev/null 2>&1; then
+        echo "lcars/vivaldi: navegador aberto — aplico quando você fechá-lo."
+        exit 0
+      fi
+
+      tmp="$(mktemp -d)"
+      trap 'rm -rf "$tmp"' EXIT
+
+      # Deep-merge com override: para objetos, recursivamente; para arrays e
+      # escalares, substituição.
+      if ! jq -s '.[0] * .[1]' "$prefs" "$managed" > "$tmp/novo"; then
+        echo "lcars/vivaldi: falha no merge com jq — Preferences mantido como estava" >&2
+        exit 1
+      fi
+
+      # Comparação CANÔNICA, não byte a byte: o jq reindenta o arquivo, então
+      # o resultado nunca sai igual ao que o Chromium escreve (compacto).
+      # Sem isto o merge reescreveria o arquivo em toda execução — e como é
+      # justamente a escrita que dispara a unidade `path`, isso seria um laço
+      # que não para.
+      jq -S -c . "$prefs" > "$tmp/antes"
+      jq -S -c . "$tmp/novo" > "$tmp/depois"
+      if cmp -s "$tmp/antes" "$tmp/depois"; then
+        echo "lcars/vivaldi: preferências já estavam aplicadas"
+        exit 0
+      fi
+
+      # `cat >`, e não `mv`: mantém o inode, o dono e as permissões do arquivo
+      # que o navegador criou.
+      cat "$tmp/novo" > "$prefs"
+      echo "lcars/vivaldi: preferências gerenciadas aplicadas"
+    '';
+  };
 in
 lib.mkIf osConfig.lcars.user.vivaldi.enable {
   programs.vivaldi = {
@@ -138,11 +209,12 @@ lib.mkIf osConfig.lcars.user.vivaldi.enable {
     ];
   };
 
-  # Deep-merge das preferências gerenciadas (lidas de `vivaldi-prefs.json`)
-  # no Preferences que o navegador mantém em
-  # `~/.config/vivaldi/Default/Preferences`. Roda em `home-manager switch`,
-  # depois do `writeBoundary` (qualquer escrita de arquivo do HM já
-  # aconteceu).
+  # Duas entradas para o mesmo merge:
+  #
+  #   1. a ativação do Home Manager, que cobre a máquina onde o Vivaldi já
+  #      rodou alguma vez;
+  #   2. a unidade `path` abaixo, que cobre a máquina nova — onde, na hora da
+  #      ativação, o Preferences ainda não existe.
   #
   # O `jq -s '.[0] * .[1]' existing managed` faz deep-merge com override:
   # para objetos, recursivamente; para arrays e escalares, substituição. As
@@ -155,23 +227,39 @@ lib.mkIf osConfig.lcars.user.vivaldi.enable {
   # sincroniza — não toca em nada fora dali. Por isso é seguro sobrescrever
   # as outras chaves a partir do Nix sem brigar com o Sync.
   home.activation.vivaldiPrefs = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    prefs="$HOME/.config/vivaldi/Default/Preferences"
-    managed=${managedPrefsPath}
-
-    if [ ! -f "$prefs" ]; then
-      echo "lcars/vivaldi: $prefs ainda não existe — abra o Vivaldi uma vez para ele criar o perfil, depois rode \`home-manager switch\` de novo."
-      exit 0
-    fi
-
-    tmp="$prefs.tmp"
-    if ! ${jq} -s '.[0] * .[1]' "$prefs" "$managed" > "$tmp"; then
-      echo "lcars/vivaldi: falha no merge com jq — Preferences mantido como estava" >&2
-      rm -f "$tmp"
-      exit 0
-    fi
-    mv "$tmp" "$prefs"
-    echo "lcars/vivaldi: preferências gerenciadas aplicadas"
+    run ${lib.getExe aplicarPrefs} || true
   '';
+
+  # O que faltava numa instalação limpa (#158). A ordem numa máquina nova é
+  # sempre a mesma: o rebuild ativa o Home Manager (Preferences não existe),
+  # o usuário abre o Vivaldi pela primeira vez (Preferences nasce, cru), e
+  # nada mais dispara o merge. Esta unidade fecha esse buraco — quando o
+  # arquivo aparece, ou muda, o serviço roda.
+  #
+  # `PathChanged` e não `PathExists`: `PathExists` continua verdadeiro depois
+  # que o serviço termina, e o systemd o reativa em seguida, para sempre.
+  # `PathChanged` dispara na escrita, e o próprio script não reescreve quando
+  # não há o que mudar — é o que impede o laço.
+  #
+  # Com o arquivo ainda inexistente, o systemd observa o diretório ancestral
+  # mais próximo que existir, então isto funciona antes do primeiro boot do
+  # navegador.
+  systemd.user.services.vivaldi-prefs = {
+    Unit.Description = "Aplica as preferências gerenciadas do Vivaldi";
+    Service = {
+      Type = "oneshot";
+      ExecStart = lib.getExe aplicarPrefs;
+    };
+  };
+
+  systemd.user.paths.vivaldi-prefs = {
+    Unit.Description = "Espera o Preferences do Vivaldi aparecer ou mudar";
+    Path = {
+      PathChanged = "%h/.config/vivaldi/Default/Preferences";
+      Unit = "vivaldi-prefs.service";
+    };
+    Install.WantedBy = [ "default.target" ];
+  };
 
   # Quem abre um link no sistema. Até a #60 isto não era declarado em lugar
   # nenhum: o `xdg-open` não achava associação, caía no fallback da variável

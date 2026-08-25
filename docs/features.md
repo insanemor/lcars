@@ -1201,21 +1201,27 @@ próximo login sobrescreve.
 lado do módulo.** Posição da barra de endereço, posição da tab bar, posição
 do painel lateral, ordem dos botões nas toolbars, status bar, densidade da UI,
 scrollbar, agendamento de tema, workspaces, macros (chained commands),
-retenção de histórico e default search engine. Na ativação, um hook de
-`home.activation` faz deep-merge (`jq -s '.[0] * .[1]'`) do JSON gerenciado
-por cima do `~/.config/vivaldi/Default/Preferences` que o navegador mantém —
-chaves gerenciadas sobrescrevem, o resto (incluindo o que o Sync grava em
+retenção de histórico e default search engine. Um deep-merge
+(`jq -s '.[0] * .[1]'`) põe o JSON gerenciado por cima do
+`~/.config/vivaldi/Default/Preferences` que o navegador mantém — chaves
+gerenciadas sobrescrevem, o resto (incluindo o que o Sync grava em
 `account_values`) fica intacto.
 
-O trade-off é direto: ajustar uma chave gerenciada pela GUI reverte no
-próximo `home-manager switch` — é o preço de ter reprodutibilidade entre
-máquinas. O `vivaldi.theme.schedule.o_s.light` aponta para um UUID de tema
+Ele roda por duas entradas: o hook de `home.activation` e a unidade
+`vivaldi-prefs.path` do systemd do usuário, que espera o arquivo aparecer ou
+mudar. O merge não escreve com o navegador aberto — ele reescreveria o
+Preferences inteiro ao sair — nem quando não há o que mudar, e é essa segunda
+guarda que impede a unidade de se disparar em laço.
+
+O trade-off é direto: ajustar uma chave gerenciada pela GUI reverte assim que
+o navegador for fechado — é o preço de ter reprodutibilidade entre máquinas. O `vivaldi.theme.schedule.o_s.light` aponta para um UUID de tema
 custom; em uma máquina nova sem esse tema, o Vivaldi cai no default.
 Web panels (`WEBPANEL_*`) são UUIDs por perfil e ficam fora do JSON.
 
-Em uma máquina nova, o Preferences ainda não existe — ele nasce no primeiro
-boot do Vivaldi. O hook sai sem fazer nada e pede um `home-manager switch`
-depois do primeiro Sync.
+Em uma máquina nova, o Preferences ainda não existe na ativação — ele nasce no
+primeiro boot do Vivaldi. Não é preciso fazer nada: abra o navegador, logue no
+Sync e feche; a unidade `path` aplica as preferências nesse momento. Conferir,
+se quiser: `systemctl --user status vivaldi-prefs.service`.
 
 O stylix também não o alcança: não há alvo para Vivaldi, e a cor da interface
 se escolhe na Configuração dele.
