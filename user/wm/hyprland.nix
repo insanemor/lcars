@@ -25,10 +25,42 @@ let
   # colide com atalho de aplicativo, ao contrário de Alt ou Ctrl.
   mod = "SUPER";
 
-  terminal = "kitty";
+  # CAMINHO ABSOLUTO, e não o nome do programa. É a mesma armadilha que
+  # user/wm/niri.nix:41 documenta, e que este arquivo caiu quando entrou no
+  # repositório (#142/#151, corrigido na #160).
+  #
+  # O Hyprland resolve `exec` no PATH que herdou de quem o lançou — o greetd,
+  # cujo PATH é o do serviço do systemd. Ali está /run/current-system/sw/bin e
+  # nada do usuário: /etc/profiles/per-user/<user>/bin não entra. O resultado
+  # divide os atalhos em dois grupos sem nenhum aviso na tela:
+  #
+  #   grim, slurp, wl-copy, pamixer, brightnessctl, playerctl
+  #     vêm de environment.systemPackages (system/wm/hyprland.nix) e funcionam
+  #     — por acidente de PATH, não por garantia;
+  #
+  #   kitty (home.packages) e noctalia (programs.noctalia)
+  #     vêm do profile do usuário e simplesmente não eram encontrados. SUPER+Enter
+  #     e SUPER+D não faziam nada, e nem por isso havia erro em lugar nenhum.
+  #
+  # Com o caminho do store, a pergunta "está no PATH?" deixa de existir.
+  # `getExe` usa o `meta.mainProgram` do pacote, então não há nome de binário
+  # escrito à mão; `getExe'` nomeia o binário quando o pacote traz vários.
+  exe = lib.getExe;
+
+  terminal = exe pkgs.kitty;
+
   # O launcher é um painel do noctalia, não um programa à parte: um comando
   # de IPC para o shell que já está no ar (`noctalia msg panel-toggle <id>`).
-  launcher = "noctalia msg panel-toggle launcher";
+  noctalia = exe config.programs.noctalia.package;
+  painel = id: "${noctalia} msg panel-toggle ${id}";
+  launcher = painel "launcher";
+
+  grim = exe pkgs.grim;
+  slurp = exe pkgs.slurp;
+  wlCopy = lib.getExe' pkgs.wl-clipboard "wl-copy";
+  pamixer = exe pkgs.pamixer;
+  brightnessctl = exe pkgs.brightnessctl;
+  playerctl = exe pkgs.playerctl;
 in
 lib.mkIf osConfig.lcars.user.hyprland.enable {
   wayland.windowManager.hyprland = {
@@ -175,14 +207,14 @@ lib.mkIf osConfig.lcars.user.hyprland.enable {
         "${mod}, J, movefocus, d"
 
         # Captura de tela: seleciona uma região e joga na área de transferência.
-        ''${mod} SHIFT, S, exec, grim -g "$(slurp)" - | wl-copy''
+        ''${mod} SHIFT, S, exec, ${grim} -g "$(${slurp})" - | ${wlCopy}''
 
         # Painéis do noctalia. Os ids são os do shell; `panel-open` com um
         # segundo argumento abre direto numa aba (aqui, as notificações).
-        "${mod}, N, exec, noctalia msg panel-open control-center notifications"
-        "${mod}, C, exec, noctalia msg panel-toggle control-center"
-        "${mod}, V, exec, noctalia msg panel-toggle clipboard"
-        "${mod}, ESCAPE, exec, noctalia msg panel-toggle session"
+        "${mod}, N, exec, ${noctalia} msg panel-open control-center notifications"
+        "${mod}, C, exec, ${painel "control-center"}"
+        "${mod}, V, exec, ${painel "clipboard"}"
+        "${mod}, ESCAPE, exec, ${painel "session"}"
       ]
       # Workspaces 1–9: SUPER troca, SUPER+SHIFT leva a janela junto.
       ++ builtins.concatLists (
@@ -201,17 +233,17 @@ lib.mkIf osConfig.lcars.user.hyprland.enable {
       # Teclas de mídia e brilho. `bindel` repete enquanto segurada, que é o
       # que se espera de volume e brilho; `bindl` funciona com a tela travada.
       bindel = [
-        ", XF86AudioRaiseVolume, exec, pamixer -i 5"
-        ", XF86AudioLowerVolume, exec, pamixer -d 5"
-        ", XF86MonBrightnessUp, exec, brightnessctl set +5%"
-        ", XF86MonBrightnessDown, exec, brightnessctl set 5%-"
+        ", XF86AudioRaiseVolume, exec, ${pamixer} -i 5"
+        ", XF86AudioLowerVolume, exec, ${pamixer} -d 5"
+        ", XF86MonBrightnessUp, exec, ${brightnessctl} set +5%"
+        ", XF86MonBrightnessDown, exec, ${brightnessctl} set 5%-"
       ];
 
       bindl = [
-        ", XF86AudioMute, exec, pamixer -t"
-        ", XF86AudioPlay, exec, playerctl play-pause"
-        ", XF86AudioNext, exec, playerctl next"
-        ", XF86AudioPrev, exec, playerctl previous"
+        ", XF86AudioMute, exec, ${pamixer} -t"
+        ", XF86AudioPlay, exec, ${playerctl} play-pause"
+        ", XF86AudioNext, exec, ${playerctl} next"
+        ", XF86AudioPrev, exec, ${playerctl} previous"
       ];
 
       # Arrastar e redimensionar com o mouse, segurando SUPER.
