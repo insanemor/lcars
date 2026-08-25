@@ -15,12 +15,14 @@ curl -fsSL https://raw.githubusercontent.com/insanemor/lcars/main/scripts/instal
 O que ele faz, em ordem — [`scripts/install.sh`](./scripts/install.sh) é curto de propósito e dá para ler inteiro antes de rodar:
 
 1. **clona o repositório em `~/.dotfiles`**, usando `nix-shell -p git` — a máquina não precisa ter `git` instalado, e daqui em diante tudo acontece dentro do clone;
-2. lê o **modelo do hardware** em `/sys/devices/virtual/dmi/id/product_name` e o reduz ao que um hostname aceita: esse é o nome da máquina;
-3. cria `machines/<modelo>/` copiando `machines/template/`, e grava ali o `hardware-configuration.nix` real (`nixos-generate-config`);
-4. preenche o que dá para descobrir, cada coisa no seu arquivo: **UEFI vs BIOS** e o disco do GRUB em `machines/<modelo>/default.nix`, e o **usuário** no `settings.nix`;
-5. **abre os dois no seu editor** — primeiro o da máquina, onde estão `vm` e `laptop`, que nenhuma detecção preenche; depois o `settings.nix`, para profile, nome, chaves SSH e pacotes;
-6. registra `machines/<modelo>/` no index do git (flakes só leem arquivos rastreados);
-7. roda `nixos-rebuild switch --flake ~/.dotfiles#<modelo>`.
+2. **pergunta o que só você sabe**: nome da máquina (sugerindo o hostname atual e o modelo do DMI), usuário, nome completo, e-mail e o profile — a lista de profiles sai dos diretórios de `profiles/`, então um profile novo aparece sozinho;
+3. **detecta o que a máquina sabe de si mesma**, sem perguntar: UEFI vs BIOS e o disco do GRUB, máquina virtual (`systemd-detect-virt`) e notebook (chassi do DMI ou bateria) — e imprime o que encontrou;
+4. **mostra um resumo e pede confirmação** — até aqui nada foi escrito;
+5. cria `machines/<nome>/` copiando `machines/template/`, grava ali o `hardware-configuration.nix` real (`nixos-generate-config`) e escreve as respostas cada uma no seu arquivo: o que é da máquina em `machines/<nome>/default.nix`, o que é seu no `settings.nix`;
+6. registra `machines/<nome>/` no index do git (flakes só leem arquivos rastreados);
+7. roda `nixos-rebuild switch --flake ~/.dotfiles#<nome>`. **Se o rebuild falhar, a instalação para ali**, com o erro na tela e o comando para repetir só o build — nada de mensagem de sucesso por cima de uma falha.
+
+Nenhum editor é aberto: tudo é pergunta. As respostas são lidas de `/dev/tty`, e não do stdin, porque sob `curl | bash` o stdin do script é o próprio pipe — qualquer programa que tente ler do teclado ali lê o resto do script, ou desiste em silêncio.
 
 Não há passo separado para o Home Manager: ele entra como módulo NixOS no mesmo rebuild.
 
@@ -28,17 +30,17 @@ A primeira build de um desktop é longa — ela compila/baixa o niri, o 1Passwor
 
 Ao final, o usuário fica com a senha inicial `lcars`. **Troque com `passwd` no primeiro login** — o sshd deste flake só aceita chave, mas o login local aceita senha.
 
-### O nome da máquina é o modelo do hardware
+### O nome da máquina
 
-O diretório criado em `machines/` recebe o modelo relatado pelo DMI — `20BE0048BR`, `MS-7C56`, `OptiPlex-7070`. Como o `flake.nix` deriva `networking.hostName` do nome do diretório, é também assim que a máquina passa a se chamar, e é o alvo do rebuild:
+O instalador pergunta, sugerindo o hostname atual e o modelo relatado pelo DMI — `20BE0048BR`, `MS-7C56`, `OptiPlex-7070`. Como o `flake.nix` deriva `networking.hostName` do nome do diretório criado em `machines/`, é também assim que a máquina passa a se chamar, e é o alvo do rebuild:
 
 ```bash
 nixos-rebuild switch --flake ~/.dotfiles#20BE0048BR --elevate=sudo
 ```
 
-O nome é reduzido ao que um hostname aceita: tudo que não for letra, número ou hífen vira hífen, e os repetidos colapsam. **Em máquina virtual isso costuma dar um nome feio** — uma VM QEMU/KVM se apresenta como `Standard PC (Q35 + ICH9, 2009)`, que sai como `Standard-PC-Q35-ICH9-2009`. É válido, mas você provavelmente vai querer trocar.
+O que você digitar é reduzido ao que um hostname aceita: tudo que não for letra, número ou hífen vira hífen, e os repetidos colapsam. É por isso que a sugestão do DMI **em máquina virtual costuma ser feia** — uma VM QEMU/KVM se apresenta como `Standard PC (Q35 + ICH9, 2009)`, que sai como `Standard-PC-Q35-ICH9-2009`. Nesse caso, digite outro nome em vez de aceitar a sugestão.
 
-Renomeie o diretório — é só isso, não há campo de hostname em lugar nenhum:
+Se você só perceber depois, renomeie o diretório — é só isso, não há campo de hostname em lugar nenhum:
 
 ```bash
 cd ~/.dotfiles

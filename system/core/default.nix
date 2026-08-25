@@ -289,14 +289,17 @@ in
     hardware.cpu.intel.updateMicrocode = true;
 
     # --- preferências do usuário ---------------------------------------
-    # Os programas em si precisam estar instalados — por um módulo (o
-    # navegador vem de user/app/vivaldi.nix), por userSettings.packages ou
-    # por systemSettings.extraPackages. Aqui só dizemos qual usar.
+    # O editor em si precisa estar instalado — por um módulo, por
+    # userSettings.packages ou por systemSettings.extraPackages. Aqui só
+    # dizemos qual usar.
+    #
+    # BROWSER e TERMINAL saíram daqui na #157. Nada neste repositório os lia,
+    # e BROWSER ainda era definido duas vezes: user/app/herdr.nix:712 põe o
+    # dele por home.sessionVariables, que numa sessão do Home Manager vence
+    # este. Uma variável com dois donos e nenhum leitor é ruído.
     environment.variables = {
       EDITOR = user.editor;
       VISUAL = user.editor;
-      BROWSER = user.browser;
-      TERMINAL = user.terminal;
     };
 
     # --- rede ----------------------------------------------------------
