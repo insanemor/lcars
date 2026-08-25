@@ -43,9 +43,12 @@
     fullName = "Seu Nome";
     email = "seu@email.com";
 
+    # Alimenta EDITOR e VISUAL em system/core/default.nix. Não houve um par
+    # para terminal e navegador: eles só definiam TERMINAL e BROWSER, que nada
+    # neste repositório lia — quem abre link no desktop é o mimeapps do xdg, e
+    # quem abre terminal é o atalho do compositor, cada um com o seu próprio
+    # nome de pacote. Duas perguntas a menos no instalador (#157).
     editor = "nano";
-    terminal = "konsole";
-    browser = "vivaldi";
 
     # ---------------------------------------------------------------
     # 1Password

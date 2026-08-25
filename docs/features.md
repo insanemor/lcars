@@ -1173,9 +1173,11 @@ atenção ao aviso acima.
 
 ### Navegador · `user/app/vivaldi.nix` · `lcars.user.vivaldi.enable` · só personal
 
-O [Vivaldi](https://vivaldi.com) é o navegador do profile `personal`, e é o que
-`browser` no `settings.nix` aponta — `$BROWSER` finalmente resolve para um
-programa que existe na máquina.
+O [Vivaldi](https://vivaldi.com) é o navegador do profile `personal`. Quem
+abre um link no desktop é o portal do xdg pelo mimeapps, não uma variável de
+ambiente: o campo `browser` do `settings.nix` saiu na #157 justamente por não
+ter leitor. `$BROWSER`, quando existe, vem de `user/app/herdr.nix`, que aponta
+para o wrapper `lcars-browser` (veja "Navegador no painel", adiante).
 
 Ele **não** é só o `pkgs.vivaldi`. O módulo existe porque três coisas precisam
 ser decididas na derivação, e nenhuma delas cabe num nome de pacote numa lista:
@@ -1554,9 +1556,9 @@ Para não haver surpresa:
 - **Nenhum container, VPN, impressora ou bluetooth** configurado.
 - **Nenhum editor além do `vim`**, e nenhuma IDE.
 - **Nenhum segundo navegador.** O Vivaldi vem no profile `personal` (veja
-  "Navegador" acima) e é o que `browser` no `settings.nix` aponta. Se você
-  quiser outro, ponha em `userSettings.packages` — e lembre de trocar o
-  `browser`, que é só a variável `$BROWSER`, não uma instalação:
+  "Navegador" acima). Se você quiser outro, ponha em `userSettings.packages` e
+  ajuste o aplicativo padrão do desktop — não há campo de navegador no
+  `settings.nix` desde a #157:
 
   ```nix
   userSettings.packages = [ "firefox" ];
