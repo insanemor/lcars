@@ -50,33 +50,28 @@ nixos-rebuild switch --flake .#vm-teste --elevate=sudo
 
 Ele não foi feito para rodar duas vezes: o `git clone` falha se `~/.dotfiles` já existir. Para uma máquina nova a partir de um clone que já existe, siga o [caminho manual](./docs/adding-a-host.md#caminho-manual).
 
-## Depois de instalado: `nupdate` e `nsave`
-
-Dois comandos, um em cada sentido.
+## Depois de instalado: `nupdate`
 
 ```bash
 nupdate               # traz o que mudou no repositório e aplica
 nupdate --inputs      # …e também atualiza o nixpkgs (build longo)
 nupdate --no-check    # pula a avaliação, vai direto ao rebuild
-
-nsave                 # publica o que você ajustou nesta máquina
-nsave -n              # mostra o que faria, sem alterar nada
 ```
 
-Os aliases vêm do próprio repo (`user/shell/zsh.nix`) e chamam
-[`scripts/update.sh`](./scripts/update.sh) e
-[`scripts/save.sh`](./scripts/save.sh). Ambos descobrem a máquina pelo
-`hostname`, então não há nome para decorar, e rodam de qualquer diretório.
+O alias vem do próprio repo (`user/shell/zsh.nix`) e chama
+[`scripts/update.sh`](./scripts/update.sh). Ele descobre a máquina pelo
+`hostname`, então não há nome para decorar, e roda de qualquer diretório.
 
-O `nupdate` faz: sincroniza → (opcional) atualiza inputs → **avalia** →
+Faz: sincroniza → (opcional) atualiza inputs → **avalia** →
 `nixos-rebuild switch`. A avaliação leva segundos e evita descobrir um erro de
 código depois de meio sistema compilado; se ela falhar, o rebuild não roda.
 
-O `nsave` faz o contrário: exporta a configuração do noctalia, valida, mostra o
-diff, pergunta e publica em `main`. Ele **não** publica `machines/`, e se o
-rebase conflitar ele desfaz e explica, em vez de escolher um lado. Existe
-porque o `nupdate` faz `git reset --hard` — um ajuste feito aqui e não
-publicado some no próximo `nupdate`.
+O repositório não publica nada sozinho — só traz o que já está em
+`origin/main`. Um ajuste feito localmente (por exemplo, no centro de controle
+do noctalia) fica só nesta máquina até você mesmo commitar e publicar à mão;
+veja o aviso sobre `machines/` no índice do git em
+[docs/features.md](./docs/features.md#nupdate--trazer-o-repositório-para-esta-máquina)
+antes de rodar um `git commit` seco neste repositório.
 
 Para editar a configuração antes de aplicar, o caminho continua o de sempre:
 
@@ -138,7 +133,8 @@ Duas coisas nunca são tocadas:
 
 Se você mantém edições em `settings.nix` que quer preservar, vale movê-las para `machines/<máquina>/default.nix`, que o `nupdate` respeita.
 
-E se a edição é para valer em todas as máquinas, publique-a com **`nsave`** antes do próximo `nupdate` — é exatamente o buraco que ele fecha.
+E se a edição é para valer em todas as máquinas, commite e publique à mão
+antes do próximo `nupdate` — sem isso, ela some no próximo `reset --hard`.
 
 ### O `settings.nix` é versionado; o hardware-config não
 
@@ -266,11 +262,8 @@ qualquer ambiente que esteja ligado.
 
 Barra, lançador, notificações, centro de controle e menu de sessão são painéis
 do **noctalia**, um shell só no lugar de waybar + rofi + swaync. Ele tem centro
-de controle gráfico, e o que você ajustar ali dá para versionar:
-
-```bash
-nsave                       # exporta, mostra o diff, pergunta e publica
-```
+de controle gráfico, e o que você ajustar ali dá para versionar exportando à
+mão — veja o cabeçalho de `user/wm/noctalia.nix`.
 
 Detalhes em [docs/features.md](./docs/features.md#o-ciclo-gui--export--commit).
 
@@ -366,7 +359,7 @@ A árvore é dividida por **papel**, não por mecanismo do Nix:
 │   └── personal/   # escape hatch via private.nix em $HOME (sem flag)
 │
 ├── settings.nix    # SUA configuração — o único arquivo que você edita
-├── scripts/        # install.sh, update.sh (nupdate), save.sh (nsave), check.sh
+├── scripts/        # install.sh, update.sh (nupdate), check.sh
 └── docs/
 ```
 
@@ -408,14 +401,21 @@ A diferença para o instalador: aqui você escolhe o nome da máquina em vez de 
 ## 1Password
 
 No profile `personal`, o CLI e a GUI vêm instalados, e o `ssh` do sistema já
-está apontado para o socket do agente. **Falta o que só dá para fazer no app** —
-o instalador imprime estes passos ao terminar:
+está apontado para o socket do agente. O `install.sh` **não mexe no remote** —
+ele clona por HTTPS e fica assim; publicar de volta não é algo que este
+repositório automatiza para você (veja "Por que o remote fica em HTTPS"
+abaixo).
+
+Se você quiser usar o agente SSH do 1Password mesmo assim — para clonar por
+SSH, para o input opcional `lcars-private` (`docs/secrets.md`), ou para
+publicar manualmente no seu próprio fork —, os passos são:
 
 1. Abra `1password` e entre com email, ou pareie via QR code.
 2. **Settings → Developer** → ligue *Use the SSH agent*. Se ainda não tiver uma
    chave, crie um item do tipo *SSH Key*.
 3. Copie a chave pública do item e adicione em
    [github.com/settings/keys](https://github.com/settings/keys).
+4. `git -C ~/.dotfiles remote set-url origin git@github.com:<você>/<repo>.git`
 
 Teste com:
 
@@ -428,23 +428,15 @@ socket aparece em `~/.1password/agent.sock`, e o que o flake faz é apontar o
 ssh para lá (`IdentityAgent`), além de já trazer a chave do host `github.com`
 para não haver prompt de host desconhecido.
 
-### Por que o remote vira SSH no fim da instalação
+### Por que o remote fica em HTTPS
 
-O `install.sh` clona por **HTTPS**: numa máquina recém-instalada não existe
-chave SSH nenhuma, e clonar por SSH quebraria antes de tudo. Mas num remote
-HTTPS o git pede usuário e token a cada push, e **o agente do 1Password nunca é
-consultado** — ele só atende `git@github.com`.
-
-Por isso, depois do rebuild, o instalador troca o remote para SSH (derivado do
-remote atual, então o seu fork continua apontando para o seu repositório).
-
-**A consequência:** até você completar os três passos acima, nem `nupdate` nem
-`nsave` conseguem falar com o GitHub — o `git fetch` também passa por ali. Se
-precisar voltar ao HTTPS enquanto isso:
-
-```bash
-git -C ~/.dotfiles remote set-url origin https://github.com/<você>/<repo>.git
-```
+Clonar por SSH numa máquina recém-instalada quebraria antes de tudo — não
+existe chave nenhuma ainda. Mas a razão de o remote **continuar** em HTTPS
+depois da instalação não é só essa: é deliberado. Este repositório não publica
+nada sozinho, e o instalador não troca o remote por você — quem instala sem
+ter forkado antes (o comando de um passo clona direto de
+`insanemor/lcars`) não ganha, à toa, uma configuração de push para um
+repositório que não é dele. Publicar é uma escolha manual, descrita acima.
 
 ### Se o SSH falhar com "REMOTE HOST IDENTIFICATION HAS CHANGED"
 

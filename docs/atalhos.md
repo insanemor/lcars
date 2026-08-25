@@ -59,7 +59,6 @@ de verdade, editável fora do herdr.
 | Comando | O que faz |
 |---|---|
 | `nupdate` | atualiza o repo e aplica no sistema (`--inputs` atualiza nixpkgs junto, `--no-check` pula a avaliação) |
-| `nsave` | exporta o ajuste do noctalia, mostra o diff, commita e publica |
 | `ll` / `la` / `l` | listagem longa / oculta / curta (via `eza`, com ícones e git) |
 | `ls` / `lt` | listagem / árvore (via `eza`) |
 | `cat` | via `bat`, com highlight e número de linha (vira `cat` puro em pipe) |

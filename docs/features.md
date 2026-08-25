@@ -303,29 +303,32 @@ silêncio parece normal.
 #### O ciclo GUI → export → commit
 
 É o motivo de ele estar aqui. O noctalia tem centro de controle gráfico, e o
-que você ajusta ali dá para exportar e versionar:
+que você ajusta ali dá para exportar e versionar.
 
-Ajuste no centro de controle (`SUPER+C`) e veja o resultado na hora. Quando
-gostar, um comando faz o resto:
-
-```bash
-nsave
-```
-
-O `nsave` (`scripts/save.sh`) exporta, valida o TOML, mostra o diff, pergunta e
-publica. É o [`nupdate` ao contrário](#nsave--publicar-o-que-voc%C3%AA-ajustou-aqui).
-
-À mão, se preferir ver cada passo:
+Ajuste no centro de controle (`SUPER+C`), veja o resultado na hora e, quando
+gostar, publique à mão:
 
 ```bash
 noctalia config export merged > ~/.dotfiles/user/wm/noctalia-config.toml
-cd ~/.dotfiles && git diff && git commit -am "config: barra no topo" && git push
+noctalia config validate ~/.dotfiles/user/wm/noctalia-config.toml
+cd ~/.dotfiles
+git diff -- user/wm/noctalia-config.toml
+git add -- user/wm/noctalia-config.toml
+git commit -- user/wm/noctalia-config.toml
 ```
+
+**Nunca `git commit -a` ou `git commit -m "..."` sem `-- <arquivo>` neste
+repositório.** O índice nunca está limpo: o `nupdate` faz
+`git add -f machines/<host>` a cada execução, porque flakes só leem arquivos
+rastreados — um commit sem caminho explícito leva `machines/` junto, sem
+avisar (foi o que aconteceu na
+[#33](https://github.com/insanemor/lcars/issues/33)).
 
 Sem o export, o ajuste vive só no state-dir daquela máquina e some num clone
 novo — e some **mais rápido** do que parece: o `nupdate` faz
-`git reset --hard`, então rodá-lo antes de salvar apaga o que você exportou. É
-justamente o que o `nsave` evita.
+`git reset --hard`, então rodá-lo antes de commitar apaga o que você
+exportou. Publicar (o `git push`, se você mesmo configurou um remote com
+permissão de escrita) é decisão sua — o repositório não faz isso sozinho.
 
 O arquivo fica pequeno por conta do `merged`, que exporta **a sua**
 configuração e não os defaults embutidos do noctalia (esse é o `full`). O diff
@@ -555,11 +558,13 @@ fingerprints publicadas; o README traz a saída do impasse.
 
 ### O que só pode ser feito à mão
 
-Três cliques que nenhum módulo cobre, e sem os quais o `nsave` não publica:
+Três cliques que nenhum módulo cobre, e que só importam se você quiser usar o
+agente para autenticar no GitHub por SSH (o `install.sh` não pede isso, nem
+troca o remote sozinho — veja "Por que o remote fica em HTTPS" no README):
 ligar *Use the SSH agent* em **Settings → Developer**, ter um item do tipo *SSH
 Key* no cofre, e cadastrar a chave pública em
-[github.com/settings/keys](https://github.com/settings/keys). O `install.sh`
-imprime esses passos ao terminar; o README os detalha.
+[github.com/settings/keys](https://github.com/settings/keys). O README
+detalha os passos, pra quem quiser fazer isso deliberadamente.
 
 ### `IdentityAgent` depende da GUI, não só do agente
 
@@ -832,7 +837,7 @@ um aparece uma única vez no `.zshrc`.
 O preset *rainbow*, copiado do pacote para o repositório para poder ser
 editado. Para mudar: rode `p10k configure`, que escreve em `~/.p10k.zsh` — um
 arquivo que o Nix **não** gerencia —, copie por cima de
-`user/shell/p10k.zsh` e publique com `nsave`.
+`user/shell/p10k.zsh` e commite com `git commit -- user/shell/p10k.zsh`.
 
 **A cor do prompt vem do tema, mas por um caminho próprio.** O preset traz 232
 variáveis de cor, todas em índices de terminal (0-255) — e um índice é "o azul
@@ -1078,12 +1083,11 @@ O profile `basic` fica de fora pelo mesmo motivo dos dotfiles: sem sessão no
 1Password numa máquina headless, o atuin seria o histórico do zsh com passos a
 mais.
 
-#### `nupdate` e `nsave` sincronizam antes
+#### `nupdate` sincroniza antes
 
-Os dois scripts rodam um `atuin sync` logo no começo — silencioso quando dá
-certo, e incapaz de parar o comando quando não dá (sem atuin, sem login ou sem
-rede, sai uma linha amarela e a vida segue). No `nsave -n` ele não roda: o dry
-run promete não alterar nada, e um sync altera o servidor.
+O script roda um `atuin sync` logo no começo — silencioso quando dá certo, e
+incapaz de parar o comando quando não dá (sem atuin, sem login ou sem rede,
+sai uma linha amarela e a vida segue).
 
 Isso **não** é resgate de desastre. O banco vive em `~/.local/share/atuin/`,
 fora do store, e o `nixos-rebuild` não encosta nele — o histórico não corre
@@ -1123,7 +1127,7 @@ não é gerada e o kitty volta ao shell de login da conta.
 de comando faz o kitty ignorar o `shell` configurado. É a saída de emergência —
 o herdr é compilado de um input preso numa tag, e se um `nupdate --inputs` o
 quebrar, esse atalho é o terminal gráfico que ainda roda o rollback.
-- **`nupdate`** e **`nsave`** — os dois sentidos, descritos logo abaixo
+- **`nupdate`** — descrito logo abaixo
 - `zsh-completions`
 
 Esta flag é a única de `user/` que mexe também no sistema: ela decide o shell
@@ -1154,56 +1158,18 @@ da causa ([#37](https://github.com/insanemor/lcars/issues/37)).
 Antes de tudo isso, um `atuin sync` silencioso; e depois de tudo, o login do
 atuin, se faltar. Os dois estão em "Histórico", acima.
 
-#### `nsave` — publicar o que você ajustou aqui
+**O índice deste repositório nunca está limpo**, e isso importa pra qualquer
+commit manual que você fizer em `~/.dotfiles`. O `nupdate` faz
+`git add -f machines/<host>` a cada execução, porque flakes só leem arquivos
+rastreados — um `git commit -m "..."` ou `git commit -a` sem caminho explícito
+leva `machines/` junto, sem avisar (foi o que aconteceu na
+[#33](https://github.com/insanemor/lcars/issues/33)). Sempre commite pelo
+caminho: `git commit -- <arquivo>`.
 
-`scripts/save.sh`. O caminho de volta, e o par natural do ciclo do noctalia:
-
-```bash
-nsave                       # exporta, valida, mostra o diff, pergunta, publica
-nsave -m "barra no topo"    # com a sua mensagem de commit
-nsave -n                    # mostra tudo que faria, sem alterar nada
-nsave -y                    # sem perguntar
-nsave --no-export           # não roda o export do noctalia
-```
-
-Na ordem: sincroniza o histórico do atuin (fora do `-n`), exporta a configuração
-do noctalia por cima do arquivo versionado, **valida o TOML** (inválido para
-aqui, antes de qualquer commit), consulta o remoto, mostra o que mudou aqui e o
-que ainda não subiu, espera você confirmar, commita em `main` e publica.
-
-Quatro decisões que valem saber:
-
-- **`machines/` não é publicado.** É o único diretório que descreve hardware, e
-  cada máquina tem o seu — levá-lo junto num comando que roda sem atenção faria
-  uma máquina sobrescrever a configuração da outra. Se você mexeu lá, o script
-  lista os arquivos e segue sem eles.
-
-  O commit usa `--only` com os caminhos, e não é detalhe: **o index deste
-  repositório nunca está limpo.** O `nupdate` faz `git add -f machines/<host>`
-  a cada execução, porque flakes só leem arquivos rastreados — então um
-  `git commit` seco levaria a máquina junto, que foi o que aconteceu na
-  [#33](https://github.com/insanemor/lcars/issues/33). Vale para você também:
-  um `git commit -m` à mão dentro de `~/.dotfiles` carrega `machines/` sem
-  avisar. Use `git commit -- <arquivo>`.
-- **Ter o que commitar e ter o que publicar são coisas diferentes.** Um commit
-  feito à mão deixa a árvore limpa e o remoto desatualizado ao mesmo tempo; o
-  `nsave` publica esse commit sem criar um vazio por cima. A primeira versão
-  olhava só a árvore e saía dizendo que estava tudo em dia sem ter consultado o
-  remoto ([#31](https://github.com/insanemor/lcars/issues/31)) — por isso o
-  `fetch` acontece antes de decidir se há trabalho.
-- **Conflito não é adivinhado.** Se o remoto estiver à frente, ele rebaseia; se
-  o rebase parar, desfaz o rebase e sai explicando, com o seu commit intacto e
-  nada pela metade. Ao contrário do `nupdate`, aqui não há lado que sempre
-  vence — os dois são trabalho seu.
-- **Ele não aplica nada.** Publicar e aplicar são coisas diferentes; aplicar é
-  o `nupdate`.
-
-Sem rede, ou com o SSH ainda por configurar, o `fetch` falha — e aí ele avisa e
-segue com a referência em cache, em vez de abortar. Dá para commitar offline; o
-`push` é que vai falhar no fim.
-
-Se o noctalia não estiver no PATH, o script avisa e segue sem exportar — o que
-o torna útil para publicar qualquer ajuste feito na máquina, não só o do shell.
+Este repositório não publica nada sozinho — não há um comando equivalente ao
+`nupdate` no sentido contrário. O que você ajustar numa máquina e quiser
+levar para todas as outras precisa ser commitado e publicado à mão, com
+atenção ao aviso acima.
 
 ### Navegador · `user/app/vivaldi.nix` · `lcars.user.vivaldi.enable` · só personal
 

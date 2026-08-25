@@ -12,8 +12,10 @@
 #
 #        cp ~/.p10k.zsh ~/.dotfiles/user/shell/p10k.zsh
 #
-#   3. reaplique as marcações da seção seguinte, confira o diff e publique
-#      com `nsave`.
+#   3. reaplique as marcações da seção seguinte, confira o diff e commite:
+#
+#        git -C ~/.dotfiles add -- user/shell/p10k.zsh
+#        git -C ~/.dotfiles commit -- user/shell/p10k.zsh
 #
 # É o mesmo ciclo do noctalia, com um passo a mais: o assistente não escreve
 # direto no repositório.
