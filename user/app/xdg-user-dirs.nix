@@ -21,9 +21,7 @@
 #
 # Os nomes abaixo são os que `xdg-user-dirs-update` já produz sozinho com o
 # locale pt_BR — não é uma escolha nova, é fixar o que já era o resultado
-# esperado. `XDG_PROJECTS_DIR` não é um dos campos padrão do XDG (por isso
-# `extraConfig`, e não uma opção nomeada): é uma extensão específica desta
-# máquina, mantida pelo mesmo motivo dos outros.
+# esperado.
 { osConfig, lib, ... }:
 
 lib.mkIf osConfig.lcars.user.xdgUserDirs.enable {
@@ -36,12 +34,9 @@ lib.mkIf osConfig.lcars.user.xdgUserDirs.enable {
     download = "$HOME/Downloads";
     music = "$HOME/Músicas";
     pictures = "$HOME/Imagens";
+    projects = "$HOME/Projetos";
     publicShare = "$HOME/Público";
     templates = "$HOME/Modelos";
     videos = "$HOME/Vídeos";
-
-    extraConfig = {
-      XDG_PROJECTS_DIR = "$HOME/Projetos";
-    };
   };
 }
