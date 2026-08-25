@@ -18,7 +18,7 @@ O que ele faz, em ordem — [`scripts/install.sh`](./scripts/install.sh) é curt
 2. **pergunta o que só você sabe**: nome da máquina (sugerindo o hostname atual e o modelo do DMI), usuário, nome completo, e-mail e o profile — a lista de profiles sai dos diretórios de `profiles/`, então um profile novo aparece sozinho;
 3. **detecta o que a máquina sabe de si mesma**, sem perguntar: UEFI vs BIOS e o disco do GRUB, máquina virtual (`systemd-detect-virt`) e notebook (chassi do DMI ou bateria) — e imprime o que encontrou;
 4. **mostra um resumo e pede confirmação** — até aqui nada foi escrito;
-5. cria `machines/<nome>/` copiando `machines/template/`, grava ali o `hardware-configuration.nix` real (`nixos-generate-config`) e escreve as respostas cada uma no seu arquivo: o que é da máquina em `machines/<nome>/default.nix`, o que é seu no `settings.nix`;
+5. cria `machines/<nome>/` copiando `machines/template/`, grava ali o `hardware-configuration.nix` real (`nixos-generate-config`) e escreve as respostas cada uma no seu arquivo: o que é da máquina em `machines/<nome>/default.nix`, o que é seu no `settings.nix`. **Se essa máquina já existir no repositório**, o `default.nix` dela é preservado — o instalador só regenera o hardware e reescreve as linhas que detectou, sem passar o template por cima do que você já declarou ali;
 6. registra `machines/<nome>/` no index do git (flakes só leem arquivos rastreados);
 7. roda `nixos-rebuild switch --flake ~/.dotfiles#<nome>`. **Se o rebuild falhar, a instalação para ali**, com o erro na tela e o comando para repetir só o build — nada de mensagem de sucesso por cima de uma falha.
 
