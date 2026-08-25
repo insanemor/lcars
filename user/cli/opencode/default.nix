@@ -226,10 +226,36 @@ lib.mkIf osConfig.lcars.user.opencode.enable (
       jq_bin=${lib.getExe pkgs.jq}
       ref="op://Dotfiles/minimax token/token"
 
-      if ! command -v op >/dev/null 2>&1; then
+      # O `op` por caminho absoluto, o do wrapper primeiro. Esta ativação roda
+      # numa unit systemd cujo PATH não tem /run/wrappers/bin, então
+      # `command -v op` — que estava aqui até a #161 — falha SEMPRE, e entre os
+      # dois binários possíveis só o wrapper (setgid do grupo
+      # `onepassword-cli`) é aceito pelo aplicativo. A história completa está
+      # em user/app/dotfiles.nix e na #56.
+      op=""
+      for candidato in /run/wrappers/bin/op "$(command -v op 2>/dev/null || true)"; do
+        if [ -n "$candidato" ] && [ -x "$candidato" ]; then
+          op="$candidato"
+          break
+        fi
+      done
+
+      # `setsid`: sem terminal de controle, o `op` não tem como abrir prompt.
+      # Sem conta configurada, `op read` NÃO falha — entra no fluxo de
+      # configuração e pergunta, travando a ativação. `2>` não segura isso: o
+      # prompt vai para /dev/tty (#161). Ver user/app/herdr-telegram.nix.
+      setsid=${lib.getExe' pkgs.util-linux "setsid"}
+      erro="$(mktemp)"
+
+      if [ -z "$op" ]; then
         echo "lcars: opencode precisa de API key, mas o \`op\` (1Password CLI) não está no PATH — abra o app e rode \`/connect\` dentro do opencode."
-      elif ! key=$(op read "$ref" 2>/dev/null); then
-        echo "lcars: não consegui ler $ref — abra o app 1Password, desbloqueie a CLI, e rode \`/connect\` dentro do opencode como fallback."
+      elif ! key=$("$setsid" -w "$op" read "$ref" 2>"$erro"); then
+        if grep -qi "no accounts configured" "$erro"; then
+          echo "lcars: nenhuma conta do 1Password configurada nesta máquina — opencode fica sem a API key. Configure o app, ou rode \`/connect\` dentro do opencode."
+        else
+          motivo="$(head -1 "$erro" 2>/dev/null || true)"
+          echo "lcars: não consegui ler $ref''${motivo:+ — $motivo} — abra o app 1Password, desbloqueie a CLI, e rode \`/connect\` dentro do opencode como fallback."
+        fi
       else
         mkdir -p "$auth_dir"
         chmod 700 "$auth_dir"
@@ -241,6 +267,7 @@ lib.mkIf osConfig.lcars.user.opencode.enable (
         chmod 600 "$auth_file"
         echo "lcars: opencode auth.json atualizado a partir do 1Password."
       fi
+      rm -f "$erro"
     '';
   }
 )

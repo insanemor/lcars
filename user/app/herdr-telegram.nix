@@ -175,11 +175,20 @@ lib.mkIf osConfig.lcars.user.herdrTelegram.enable {
       fi
     done
 
+    # `setsid`: sem terminal de controle, o `op` não tem como abrir prompt.
+    # Numa máquina sem conta configurada, `op read` NÃO falha — ele entra no
+    # fluxo de configuração e pergunta "Do you want to add an account manually
+    # now?", travando a ativação. E `2>/dev/null` não segura isso: o prompt vai
+    # direto para /dev/tty, não para o stderr (#161). Redirecionar o stdin
+    # também não resolve, pela mesma razão — só tirar o tty resolve.
+    setsid=${lib.getExe' pkgs.util-linux "setsid"}
+
     if [ -z "$op" ]; then
       echo "lcars: herdr-telegram precisa de bot_token, mas o \`op\` (1Password CLI) não está no PATH — veja docs/secrets.md."
     else
       ref="op://Dotfiles/herdr telegram bot/token"
-      if token=$("$op" read "$ref" 2>/dev/null); then
+      erro="$(mktemp)"
+      if token=$("$setsid" -w "$op" read "$ref" 2>"$erro"); then
         mkdir -p "$conf_dir"
         chmod 700 "$conf_dir"
         tmp="$env_file.tmp"
@@ -189,9 +198,13 @@ lib.mkIf osConfig.lcars.user.herdrTelegram.enable {
         chmod 600 "$env_file"
         systemctl --user restart herdr-telegram.service 2>/dev/null || true
         echo "lcars: herdr-telegram bot_token atualizado a partir do 1Password."
+      elif grep -qi "no accounts configured" "$erro"; then
+        echo "lcars: nenhuma conta do 1Password configurada nesta máquina — herdr-telegram fica sem bot_token. Configure o app e rode nupdate. Veja docs/secrets.md."
       else
-        echo "lcars: não consegui ler $ref — confira se o item existe no 1Password (vault Dotfiles) e se o app está desbloqueado (Settings → Developer → Integrate with 1Password CLI), depois rode nupdate. Veja docs/secrets.md."
+        motivo="$(head -1 "$erro" 2>/dev/null || true)"
+        echo "lcars: não consegui ler $ref''${motivo:+ — $motivo} — confira se o item existe no 1Password (vault Dotfiles) e se o app está desbloqueado (Settings → Developer → Integrate with 1Password CLI), depois rode nupdate. Veja docs/secrets.md."
       fi
+      rm -f "$erro"
     fi
   '';
 }

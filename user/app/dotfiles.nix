@@ -70,8 +70,14 @@ mkIf osConfig.lcars.user.dotfiles.enable {
       elif [ -z "''${OP_SERVICE_ACCOUNT_TOKEN:-}" ] && ! "$op" whoami >/dev/null 2>&1; then
         echo "lcars: sem login no 1Password — pulando dotfiles"
       else
+        # `setsid`: sem terminal de controle, o `op` não tem como abrir prompt.
+        # Sem conta configurada, `op read` NÃO falha — entra no fluxo de
+        # configuração e pergunta, travando a ativação. O `op whoami` acima já
+        # cobre esse caso hoje, mas ele é um proxy indireto: quem garante que a
+        # ativação não vira interativa é isto (#161).
+        setsid=${lib.getExe' pkgs.util-linux "setsid"}
         ${concatMapStringsSep "\n  " (item: ''
-          if "$op" read ${escapeShellArg item.opPath} > ${escapeShellArg "${item.cachePath}.tmp"} 2>${escapeShellArg "${item.cachePath}.tmp.err"}; then
+          if "$setsid" -w "$op" read ${escapeShellArg item.opPath} > ${escapeShellArg "${item.cachePath}.tmp"} 2>${escapeShellArg "${item.cachePath}.tmp.err"}; then
             mv ${escapeShellArg "${item.cachePath}.tmp"} ${escapeShellArg item.cachePath}
             rm -f ${escapeShellArg "${item.cachePath}.tmp.err"}
           else
