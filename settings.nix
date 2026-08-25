@@ -34,8 +34,14 @@
   # -------------------------------------------------------------------
   userSettings = {
     username = "ins";
-    fullName = "Rodrigo Moreira";
-    email = "moreira@zaia.com.br";
+
+    # fullName e email identificam você em git commits, GPG e no gerenciador
+    # de login. O instalador os preenche na hora; os placeholders abaixo
+    # existem para o repositório em si não carregar dado pessoal de ninguém —
+    # editá-los aqui é esperado e é o que deixa o clone "sujo" de propósito
+    # (ver cabeçalho do arquivo).
+    fullName = "Seu Nome";
+    email = "seu@email.com";
 
     editor = "nano";
     terminal = "konsole";
