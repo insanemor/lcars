@@ -29,6 +29,14 @@ lib.mkIf osConfig.lcars.user.xdgUserDirs.enable {
     enable = true;
     createDirectories = true;
 
+    # Explícito, e não o default: a partir de home.stateVersion 26.05 o
+    # home-manager para de exportar XDG_PICTURES_DIR e companhia como
+    # variável de ambiente. Nada neste repo lê essas variáveis diretamente,
+    # mas seletores de arquivo GTK/Qt de terceiros costumam depender delas —
+    # `true` mantém o comportamento que `xdg-user-dirs-update` sempre teve
+    # (issue #153). Sem esta linha o eval avisa a cada rebuild.
+    setSessionVariables = true;
+
     desktop = "$HOME/Área de trabalho";
     documents = "$HOME/Documentos";
     download = "$HOME/Downloads";

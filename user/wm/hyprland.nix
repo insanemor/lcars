@@ -34,6 +34,13 @@ lib.mkIf osConfig.lcars.user.hyprland.enable {
   wayland.windowManager.hyprland = {
     enable = true;
 
+    # Explícito, e não o default: a partir de home.stateVersion 26.05 o
+    # home-manager passa a esperar Lua por padrão, e o `settings = { ... }`
+    # abaixo é hyprlang de verdade — migrar para Lua reescreveria o arquivo
+    # inteiro num formato diferente, fora do escopo de silenciar um aviso
+    # (issue #153). Sem esta linha o eval avisa a cada rebuild.
+    configType = "hyprlang";
+
     # null porque quem instala é o módulo NixOS (programs.hyprland). A
     # documentação do home-manager pede exatamente isto: "Set this to null if
     # you use the NixOS module to install Hyprland." Sem isso, duas cópias do
