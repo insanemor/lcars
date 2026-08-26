@@ -48,6 +48,32 @@ let
       "";
 
   sessao = if cfg.defaultSession != "" then cfg.defaultSession else automatica;
+
+  # O pacote do Hyprland instala DUAS sessões em share/wayland-sessions:
+  # hyprland.desktop e hyprland-uwsm.desktop. A segunda aparecia na tela de
+  # login como "Hyprland (uwsm-managed)" e roda o compositor por dentro do uwsm
+  # (Universal Wayland Session Manager) — que este repo não configura:
+  # `programs.hyprland.withUWSM`, a opção que liga `programs.uwsm.enable`, está
+  # desligada. Era um caminho não testado à distância de um clique (#165).
+  #
+  # Esta derivação carrega só o .desktop que queremos. Nada do Hyprland é
+  # recompilado: `programs.hyprland.package` continua intocado, e o compositor,
+  # o portal e os wrappers do módulo do nixpkgs seguem usando o pacote de
+  # sempre — o que muda é apenas quais arquivos de sessão o NixOS entrega ao
+  # regreet. Tirar o .desktop no próprio pacote (`overrideAttrs`) custaria uma
+  # compilação inteira do Hyprland a cada bump do nixpkgs.
+  sessaoHyprland =
+    pkgs.runCommand "hyprland-sessao"
+      {
+        passthru.providedSessions = [ "hyprland" ];
+        preferLocalBuild = true;
+        allowSubstitutes = false;
+      }
+      ''
+        mkdir -p "$out/share/wayland-sessions"
+        cp ${config.programs.hyprland.package}/share/wayland-sessions/hyprland.desktop \
+          "$out/share/wayland-sessions/"
+      '';
 in
 {
   imports = [
@@ -62,11 +88,15 @@ in
       example = "niri";
       description = ''
         Sessão pré-selecionada na tela de login. Vazio = decide sozinho, e
-        hoje só há uma.
+        hoje isso quer dizer Hyprland quando ele está ligado.
 
-        Os nomes vêm dos .desktop que cada ambiente instala. Com o sistema no
-        ar, `ls /run/current-system/sw/share/wayland-sessions/` mostra os que
-        existem.
+        Os nomes válidos são os `providedSessions` dos pacotes listados em
+        `services.displayManager.sessionPackages`, logo abaixo — hoje
+        `hyprland` e `niri`. Não adianta procurar em
+        `/run/current-system/sw/share/wayland-sessions/`: esse diretório não
+        existe, porque `/share/wayland-sessions` não está em
+        `environment.pathsToLink`. Errar o nome não passa calado — o NixOS
+        tem uma assertion que aborta a avaliação listando os nomes aceitos.
       '';
     };
   };
@@ -77,6 +107,20 @@ in
     # `sessao` pode ser vazia se alguém ligar um WM sem sessão conhecida; aí
     # não declaramos nada e o regreet usa a ordem dele.
     services.displayManager.defaultSession = mkIf (sessao != "") sessao;
+
+    # ATENÇÃO: esta lista é COMPLETA, e é ela que vira a tela de login.
+    #
+    # Normalmente cada módulo acrescenta o seu pacote aqui por conta própria
+    # (`programs.hyprland` e `programs.niri` fazem `sessionPackages = [ cfg.package ]`,
+    # sem mkDefault). Como o NixOS monta o diretório de sessões copiando todo o
+    # `share/wayland-sessions/` de cada pacote da lista, não há como remover um
+    # único .desktop sem reescrever a lista inteira — daí o mkForce.
+    #
+    # A consequência é a de sempre com mkForce: WM novo que não for somado aqui
+    # não aparece na tela de login, por mais que o módulo dele esteja ligado.
+    services.displayManager.sessionPackages = mkForce (
+      optional cfg.hyprland.enable sessaoHyprland ++ optional cfg.niri.enable config.programs.niri.package
+    );
 
     # As fontes moraram dentro do plasma.nix, e não eram do KDE: qualquer
     # ambiente gráfico precisa delas, e desligar o Plasma levava as fontes do
