@@ -371,17 +371,47 @@ lib.mkIf osConfig.lcars.user.niri.enable {
     '';
   };
 
-  # A pasta de presets do niri-animations tem que ser gravável de verdade —
-  # o README recomenda soltar coleções de terceiros (ex.: nirimation) direto
-  # ali. Um xdg.configFile a deixaria como link simbólico pro nix store,
-  # somente leitura. `mkdir -p` na ativação, como o herdr faz pro registro de
-  # plugins dele (user/app/herdr.nix), só garante que a pasta existe — o
-  # conteúdo é seu, não muda em nenhum nupdate.
+  # Duas coisas em $HOME, e é fácil confundir uma com a outra:
+  #
+  #   ~/.config/niri/animations/     PASTA de presets do plugin
+  #   ~/.config/niri/animations.kdl  ARQUIVO que o config.kdl inclui
+  #
+  # A pasta tem que ser gravável de verdade — o README do niri-animations
+  # recomenda soltar coleções de terceiros (ex.: nirimation) direto ali. Um
+  # xdg.configFile a deixaria como link simbólico pro nix store, somente
+  # leitura. `mkdir -p` na ativação, como o herdr faz pro registro de plugins
+  # dele (user/app/herdr.nix), só garante que ela existe — o conteúdo é seu, e
+  # não muda em nenhum nupdate.
+  #
+  # O ARQUIVO precisa existir por outro motivo, e ele derrubou a sessão inteira
+  # numa instalação limpa (#164). O `include` do niri não é opcional: apontando
+  # para um arquivo que não existe, ele REJEITA A CONFIGURAÇÃO INTEIRA e sobe
+  # com a padrão embutida. Verificado com `niri validate` sobre o KDL que este
+  # módulo gera:
+  #
+  #   error loading config
+  #     └─▶ failed to read included config from "./animations.kdl": No such file
+  #
+  # E o estrago é discreto, porque a config padrão do niri tem `Mod+Q`, os
+  # focos e `Mod+Shift+/` iguais aos daqui: o que some é `Mod+Return` (que lá
+  # não existe) e `Mod+D` (que lá é `spawn fuzzel`, não instalado). A sessão
+  # parece bem, e só alguns atalhos não respondem.
+  #
+  # Quem escreve o arquivo é o plugin, em runtime, quando você aplica uma
+  # animação pela interface — ou seja, nunca numa máquina recém-instalada. O
+  # `checkConfig` não pega isso: ele está desligado justamente aqui (veja lá em
+  # cima, #120), porque `niri validate` roda no sandbox e não enxerga $HOME.
+  #
+  # Criado VAZIO, e só quando não existir: um arquivo vazio é KDL válido, e
+  # sobrescrever apagaria as animações que o plugin já tiver escrito.
   home.activation.criarPastaAnimacoesNiri =
     lib.mkIf osConfig.lcars.user.noctalia.plugins.niriAnimations.enable
       (
         lib.hm.dag.entryAfter [ "writeBoundary" ] ''
           run mkdir -p "$HOME/.config/niri/animations"
+          if [ ! -e "$HOME/.config/niri/animations.kdl" ]; then
+            run touch "$HOME/.config/niri/animations.kdl"
+          fi
         ''
       );
 
